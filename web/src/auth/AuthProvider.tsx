@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { api, UNAUTHORIZED_EVENT } from '../api/client';
 import { t } from '../i18n';
-import { AuthContext, useAuth, type AuthState } from './context';
+import { AuthContext, hasRole, useAuth, type AuthState } from './context';
 
 /** Route element that provides the login state to all pages below it. */
 export function AuthProvider() {
@@ -51,8 +51,7 @@ export function AuthProvider() {
 export function RequireRole({ role }: { role: 'moderator' | 'admin' }) {
   const { state } = useAuth();
   if (state.status !== 'authenticated') return null;
-  const rank = { viewer: 1, moderator: 2, admin: 3 } as const;
-  if (rank[state.user.role] < rank[role]) {
+  if (!hasRole(state.user, role)) {
     return (
       <section>
         <h1>{t('page.forbidden.title')}</h1>

@@ -9,10 +9,15 @@ import type {
   Leaderboard,
   LeaderboardMetric,
   LeaderboardPeriod,
+  Note,
+  NoteRevision,
   OnlineNow,
   OnlineSeries,
   Overview,
   Paged,
+  Tag,
+  TagColor,
+  TagWithUsage,
   TimeRange,
   UserDetail,
   UserListItem,
@@ -31,6 +36,11 @@ export class ApiRequestError extends Error {
     super(message);
     this.name = 'ApiRequestError';
   }
+}
+
+/** Display text for any error thrown by an API call. */
+export function describeError(error: unknown): string {
+  return error instanceof ApiRequestError ? error.message : errorMessage('UNKNOWN');
 }
 
 /** Dispatched on `window` whenever the API answers 401 (session missing or expired). */
@@ -57,7 +67,7 @@ function isErrorBody(value: unknown): value is ApiErrorBody {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   path: string,
   query?: Query,
   body?: unknown,
@@ -102,6 +112,10 @@ export function apiGet<T>(path: string, query?: Query, signal?: AbortSignal): Pr
 
 export function apiPost<T>(path: string, body: unknown = {}): Promise<T> {
   return request<T>('POST', path, undefined, body);
+}
+
+function apiSend<T>(method: 'PATCH' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T> {
+  return request<T>(method, path, undefined, body);
 }
 
 /** Typed endpoint functions. */
@@ -156,4 +170,18 @@ export const api = {
     },
     signal?: AbortSignal,
   ) => apiGet<Leaderboard>('/leaderboards', query, signal),
+  notes: (userId: number, signal?: AbortSignal) =>
+    apiGet<{ notes: Note[] }>(`/users/${String(userId)}/notes`, {}, signal),
+  addNote: (userId: number, body: string) =>
+    apiPost<Note>(`/users/${String(userId)}/notes`, { body }),
+  updateNote: (noteId: number, body: string) =>
+    apiSend<Note>('PATCH', `/notes/${String(noteId)}`, { body }),
+  deleteNote: (noteId: number) => apiSend<undefined>('DELETE', `/notes/${String(noteId)}`),
+  noteRevisions: (noteId: number, signal?: AbortSignal) =>
+    apiGet<{ revisions: NoteRevision[] }>(`/notes/${String(noteId)}/revisions`, {}, signal),
+  tags: (signal?: AbortSignal) => apiGet<{ tags: TagWithUsage[] }>('/tags', {}, signal),
+  createTag: (name: string, color: TagColor) => apiPost<Tag>('/tags', { name, color }),
+  deleteTag: (tagId: number) => apiSend<undefined>('DELETE', `/tags/${String(tagId)}`),
+  setUserTags: (userId: number, tagIds: number[]) =>
+    apiSend<{ tags: Tag[] }>('PUT', `/users/${String(userId)}/tags`, { tagIds }),
 };

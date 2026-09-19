@@ -272,3 +272,72 @@ export const auditLog = sqliteTable(
     index('audit_log_action_idx').on(t.action, t.at),
   ],
 );
+
+/** Moderator notes about a player. Deleting is soft, so the history stays available. */
+export const playerNotes = sqliteTable(
+  'player_notes',
+  {
+    id: integer('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    authorId: integer('author_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+    authorName: text('author_name').notNull(),
+    body: text('body').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+    deletedAt: integer('deleted_at'),
+  },
+  (t) => [index('player_notes_user_idx').on(t.userId, t.createdAt)],
+);
+
+/** Previous versions of a note (one row per edit or deletion). */
+export const playerNoteRevisions = sqliteTable(
+  'player_note_revisions',
+  {
+    id: integer('id').primaryKey(),
+    noteId: integer('note_id')
+      .notNull()
+      .references(() => playerNotes.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    /** Who replaced or deleted this version, and when. */
+    editorName: text('editor_name').notNull(),
+    replacedAt: integer('replaced_at').notNull(),
+  },
+  (t) => [index('player_note_revisions_note_idx').on(t.noteId, t.replacedAt)],
+);
+
+export const TAG_COLORS = ['blue', 'orange', 'green', 'red', 'purple', 'gray'] as const;
+export type TagColor = (typeof TAG_COLORS)[number];
+
+export const tags = sqliteTable(
+  'tags',
+  {
+    id: integer('id').primaryKey(),
+    name: text('name').notNull(),
+    color: text('color', { enum: TAG_COLORS }).notNull().default('gray'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('tags_name_unique').on(sql`lower(${t.name})`),
+    check(
+      'tags_color_check',
+      sql`${t.color} IN ('blue', 'orange', 'green', 'red', 'purple', 'gray')`,
+    ),
+  ],
+);
+
+export const userTags = sqliteTable(
+  'user_tags',
+  {
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+    addedBy: text('added_by').notNull(),
+    addedAt: integer('added_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.tagId] }), index('user_tags_tag_idx').on(t.tagId)],
+);

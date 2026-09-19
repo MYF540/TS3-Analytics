@@ -1,6 +1,12 @@
 /* Design tokens: light by default, dark via [data-theme='dark'] (set from the saved choice or
    the system preference before the first render). */
 :root {
+  --tag-blue: #2563eb;
+  --tag-orange: #c2410c;
+  --tag-green: #15803d;
+  --tag-red: #b91c1c;
+  --tag-purple: #7e22ce;
+  --tag-gray: #64748b;
   --bg: #f6f7f9;
   --surface: #ffffff;
   --surface-2: #eef0f4;
@@ -20,6 +26,12 @@
 }
 
 :root[data-theme='dark'] {
+  --tag-blue: #60a5fa;
+  --tag-orange: #fb923c;
+  --tag-green: #4ade80;
+  --tag-red: #f87171;
+  --tag-purple: #c084fc;
+  --tag-gray: #94a3b8;
   --bg: #0f1218;
   --surface: #171b23;
   --surface-2: #1f2430;
@@ -605,6 +617,150 @@ a.button {
   white-space: normal;
   min-width: 12rem;
   color: var(--muted);
+}
+
+/* Tags: the colour marks identity (dot + border), the name stays in the text colour. */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.tag {
+  --tag: var(--tag-gray);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.05rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--tag) 55%, transparent);
+  background: color-mix(in srgb, var(--tag) 10%, transparent);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.tag::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--tag);
+}
+
+.tag--blue {
+  --tag: var(--tag-blue);
+}
+
+.tag--orange {
+  --tag: var(--tag-orange);
+}
+
+.tag--green {
+  --tag: var(--tag-green);
+}
+
+.tag--red {
+  --tag: var(--tag-red);
+}
+
+.tag--purple {
+  --tag: var(--tag-purple);
+}
+
+.tag-editor {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tag-editor__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 0.35rem 1rem;
+}
+
+.tag-editor__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tag-editor__new {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.notes {
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.note {
+  border-left: 3px solid var(--border);
+  padding: 0.25rem 0 0.25rem 0.75rem;
+}
+
+.note__body {
+  margin: 0.25rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.note__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.note__history summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.note__revisions {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.field textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.7rem;
+  resize: vertical;
 }
 
 @media (max-width: 720px) {

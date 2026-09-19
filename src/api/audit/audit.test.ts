@@ -47,7 +47,7 @@ describe('audit middleware', () => {
     expect(writing.length).toBeGreaterThan(0);
     const admin = sessionCookie(context, 'admin');
     for (const route of writing) {
-      const url = route.url.replace(':id', '1');
+      const url = route.url.replace(/:\w+/g, '1');
       const before = entries().length;
       await app.inject({
         method: route.method as 'POST',

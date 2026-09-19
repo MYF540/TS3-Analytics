@@ -1,6 +1,8 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { listUsers, USER_SORTS, userDetail } from '../../db/queries/stats.js';
+import { getUserTags } from '../../db/repositories/index.js';
+import { tag } from './notes.js';
 import { daysBefore } from '../../domain/periods.js';
 import { berlinDay } from '../../domain/time.js';
 import type { ApiContext } from '../context.js';
@@ -85,6 +87,7 @@ export const userDetailResponse = z.object({
   countries: z.array(
     z.object({ country: z.string(), lastSeen: z.number().int(), connections: z.number().int() }),
   ),
+  tags: z.array(tag),
 });
 
 export function userRoutes(context: ApiContext): FastifyPluginAsyncZod {
@@ -200,6 +203,7 @@ export function userRoutes(context: ApiContext): FastifyPluginAsyncZod {
           daily: detail.daily as z.infer<typeof userDetailResponse>['daily'],
           topChannels: detail.topChannels as z.infer<typeof userDetailResponse>['topChannels'],
           countries: detail.countries as z.infer<typeof userDetailResponse>['countries'],
+          tags: getUserTags(context.database.db, request.params.id),
         };
       },
     );

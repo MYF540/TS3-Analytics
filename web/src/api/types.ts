@@ -128,6 +128,7 @@ export interface UserDetail {
   }[];
   topChannels: { channelId: number | null; name: string | null; seconds: number }[];
   countries: { country: string; lastSeen: number; connections: number }[];
+  tags: Tag[];
 }
 
 export interface OnlineNow {
@@ -140,6 +141,35 @@ export interface OnlineNow {
     state: 'active' | 'idle' | 'afk' | null;
     since: number;
   }[];
+}
+
+export type TagColor = 'blue' | 'orange' | 'green' | 'red' | 'purple' | 'gray';
+
+export interface Tag {
+  id: number;
+  name: string;
+  color: TagColor;
+}
+
+export interface TagWithUsage extends Tag {
+  users: number;
+}
+
+export interface Note {
+  id: number;
+  userId: number;
+  authorName: string;
+  body: string;
+  createdAt: number;
+  updatedAt: number;
+  revisions: number;
+  editable: boolean;
+}
+
+export interface NoteRevision {
+  body: string;
+  editorName: string;
+  replacedAt: number;
 }
 
 export interface LeaderboardEntry {

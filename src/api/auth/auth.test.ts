@@ -238,7 +238,7 @@ describe('permissions of every API route', () => {
 
     const viewer = sessionCookie(context, 'viewer');
     for (const route of app.apiRoutes.filter((r) => r.auth !== 'public')) {
-      const url = route.url.replace(':id', '1');
+      const url = route.url.replace(/:\w+/g, '1');
       const anonymous = await app.inject({ method: route.method as 'GET', url });
       expect(anonymous.statusCode, `${route.method} ${route.url}`).toBe(401);
       const asViewer = await app.inject({

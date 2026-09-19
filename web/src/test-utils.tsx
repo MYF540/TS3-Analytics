@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import type {
   Health,
   Heatmap,
+  Note,
   OnlineSeries,
   Overview,
   Paged,
@@ -115,7 +116,31 @@ export const sampleUser: UserDetail = {
     { channelId: null, name: null, seconds: 10_000 },
   ],
   countries: [{ country: 'DE', lastSeen: 1_789_790_000, connections: 12 }],
+  tags: [{ id: 1, name: 'Stammspieler', color: 'green' }],
 };
+
+export const sampleNotes: Note[] = [
+  {
+    id: 7,
+    userId: 1,
+    authorName: 'admin',
+    body: 'Organisiert die Turniere',
+    createdAt: 1_789_700_000,
+    updatedAt: 1_789_750_000,
+    revisions: 1,
+    editable: true,
+  },
+  {
+    id: 3,
+    userId: 1,
+    authorName: 'mod',
+    body: 'Früher als Al1ce unterwegs',
+    createdAt: 1_789_600_000,
+    updatedAt: 1_789_600_000,
+    revisions: 0,
+    editable: false,
+  },
+];
 
 type Responder = (url: URL, init?: RequestInit) => { status?: number; body: unknown } | undefined;
 
@@ -159,6 +184,13 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     },
     '/api/users': sampleUsers,
     '/api/users/1': sampleUser,
+    '/api/users/1/notes': { notes: sampleNotes },
+    '/api/tags': {
+      tags: [
+        { id: 1, name: 'Stammspieler', color: 'green', users: 4 },
+        { id: 2, name: 'Clan', color: 'blue', users: 0 },
+      ],
+    },
   };
   const table = { ...defaults, ...overrides };
   const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -175,7 +207,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
       body: { error: { code: 'NOT_FOUND', message: 'Route not found' } },
     };
     return Promise.resolve(
-      new Response(JSON.stringify(body), {
+      new Response(status === 204 ? null : JSON.stringify(body), {
         status: status ?? 200,
         headers: { 'content-type': 'application/json' },
       }),

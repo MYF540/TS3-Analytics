@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
-import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify';
+import Fastify, { LogController, type FastifyBaseLogger, type FastifyInstance } from 'fastify';
 import {
   serializerCompiler,
   validatorCompiler,
@@ -17,6 +17,7 @@ import { auditRoutes } from './routes/audit.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
+import { noteRoutes } from './routes/notes.js';
 import { onlineRoutes } from './routes/online.js';
 import { statsRoutes } from './routes/stats.js';
 import { userRoutes } from './routes/users.js';
@@ -59,7 +60,7 @@ export async function buildServer(
   const app = Fastify({
     loggerInstance: logger,
     // Per-request logs only at debug level; errors are logged by the error handler.
-    disableRequestLogging: true,
+    logController: new LogController({ disableRequestLogging: true }),
     trustProxy: false,
     bodyLimit: 1024 * 1024,
   }).withTypeProvider<ZodTypeProvider>();
@@ -104,6 +105,7 @@ export async function buildServer(
       await api.register(leaderboardRoutes(context));
       await api.register(onlineRoutes(context));
       await api.register(auditRoutes(context));
+      await api.register(noteRoutes(context));
     },
     { prefix: '/api' },
   );

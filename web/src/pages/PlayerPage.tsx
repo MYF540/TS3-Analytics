@@ -5,6 +5,8 @@ import type { UserDetail } from '../api/types';
 import { EChart } from '../charts/EChart';
 import { playtimeChartOption, STATE_KEYS } from '../charts/options';
 import { CHART_PALETTES } from '../charts/palette';
+import { PlayerNotes } from '../components/PlayerNotes';
+import { PlayerTags } from '../components/PlayerTags';
 import { RangePicker } from '../components/RangePicker';
 import { useApi } from '../hooks/useApi';
 import { formatDateTime, formatDay, formatDuration, formatNumber, t } from '../i18n';
@@ -233,6 +235,7 @@ export function PlayerPage() {
           )}{' '}
           {t('player.uid')}: <code className="uid">{data.user.uid}</code>
         </p>
+        <PlayerTags key={id} userId={id} tags={data.tags} />
       </header>
       <Kpis detail={data} />
       <section className="card chart-card">
@@ -260,6 +263,10 @@ export function PlayerPage() {
           <Countries countries={data.countries} />
         </section>
       </div>
+      <section className="card">
+        <h2>{t('notes.title')}</h2>
+        <PlayerNotes key={id} userId={id} />
+      </section>
     </section>
   );
 }
