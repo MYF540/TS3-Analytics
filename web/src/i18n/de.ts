@@ -83,6 +83,9 @@ export const de = {
   'error.FLAG_NOT_FOUND': 'Diesen Hinweis gibt es nicht mehr.',
   'error.SAME_USER': 'Ein Account kann nicht mit sich selbst verknüpft werden.',
   'error.NOT_LINKED': 'Dieser Account ist mit keinem anderen verknüpft.',
+  'error.INVALID_WEBHOOK':
+    'Das ist keine gültige Discord-Webhook-URL (https://discord.com/api/webhooks/…).',
+  'error.NO_WEBHOOK': 'Es ist noch kein Webhook eingerichtet.',
 
   'common.loading': 'Wird geladen …',
   'common.range': 'Zeitraum',
@@ -287,6 +290,8 @@ export const de = {
   'audit.action.person.link': 'Accounts verknüpft',
   'audit.action.person.unlink': 'Account-Verknüpfung entfernt',
   'audit.action.person.primary': 'Haupt-Account geändert',
+  'audit.action.settings.alerts': 'Discord-Benachrichtigungen geändert',
+  'audit.action.settings.alerts_test': 'Discord-Test gesendet',
 
   'settings.activity.title': 'Aktivität',
   'settings.activity.futureOnly':
@@ -309,6 +314,28 @@ export const de = {
   'settings.defaults': 'Standardwerte eintragen',
   'settings.saved': 'Gespeichert.',
   'settings.invalidIdle': 'Bitte eine ganze Zahl zwischen 1 und 1440 eingeben.',
+  'alerts.title': 'Discord-Benachrichtigungen',
+  'alerts.intro':
+    'Meldungen an einen Discord-Kanal über einen Webhook. Sie enthalten Nicknames und UIDs von Spielern, aber nie IP-Adressen.',
+  'alerts.configured': 'Webhook eingerichtet (endet auf {hint})',
+  'alerts.notConfigured': 'Noch kein Webhook eingerichtet.',
+  'alerts.webhook': 'Webhook-URL',
+  'alerts.webhookKeep': 'Leer lassen, um die gespeicherte URL zu behalten.',
+  'alerts.webhookHelp': 'In Discord: Kanal bearbeiten → Integrationen → Webhooks → URL kopieren.',
+  'alerts.removeWebhook': 'Webhook entfernen',
+  'alerts.events': 'Ereignisse',
+  'alerts.event.flag.high': 'Neuer Hinweis mit Stufe „hoch“ (gleiche IP wie ein gebannter Spieler)',
+  'alerts.event.flag.medium': 'Neuer Hinweis mit Stufe „mittel“ (gleiches Subnetz)',
+  'alerts.event.ban.added': 'Neuer Ban auf dem Server',
+  'alerts.event.bot.connection': 'Bot länger als 2 Minuten ohne Verbindung und wieder verbunden',
+  'alerts.rate': 'Höchstens Meldungen pro Minute',
+  'alerts.rateHint': 'Weitere Meldungen werden zusammengefasst. 1 bis 30.',
+  'alerts.save': 'Benachrichtigungen speichern',
+  'alerts.saved': 'Gespeichert.',
+  'alerts.test': 'Test-Nachricht senden',
+  'alerts.testOk': 'Test-Nachricht gesendet.',
+  'alerts.testFailed': 'Discord hat die Nachricht abgelehnt (HTTP {status}).',
+  'alerts.testUnreachable': 'Discord war nicht erreichbar.',
 
   'botstatus.refresh': 'Jetzt aktualisieren',
   'botstatus.updated': 'Stand: {time}',

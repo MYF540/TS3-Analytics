@@ -73,7 +73,13 @@ describe('applyBanList', () => {
       SECRET,
       NOW,
     );
-    expect(result).toEqual({ added: 5, removed: 0, active: 5 });
+    expect(result).toEqual({
+      added: 5,
+      removed: 0,
+      active: 5,
+      addedIds: [1, 2, 3, 4, 5],
+      initial: true,
+    });
 
     const [uidBan, ipBan, patternBan, nameBan, unknown] = rows();
     expect(uidBan).toMatchObject({ uid: 'bad-uid=', user_id: userId, ip_hash: null });
@@ -92,16 +98,19 @@ describe('applyBanList', () => {
 
   it('marks vanished bans as removed and reactivates bans that come back', () => {
     applyBanList(database, [ban(1), ban(2)], SECRET, NOW);
-    expect(applyBanList(database, [ban(2)], SECRET, NOW + 600)).toEqual({
-      added: 0,
+    expect(applyBanList(database, [ban(2), ban(3)], SECRET, NOW + 600)).toMatchObject({
+      added: 1,
       removed: 1,
-      active: 1,
+      active: 2,
+      addedIds: [3],
+      initial: false,
     });
     expect(rows().map((r) => [r.id, r.removed_at])).toEqual([
       [1, NOW + 600],
       [2, null],
+      [3, null],
     ]);
-    applyBanList(database, [ban(1), ban(2)], SECRET, NOW + 1200);
+    applyBanList(database, [ban(1), ban(2), ban(3)], SECRET, NOW + 1200);
     expect(rows()[0]).toMatchObject({
       removed_at: null,
       first_synced: NOW,

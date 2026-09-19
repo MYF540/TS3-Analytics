@@ -263,6 +263,15 @@ export interface BotStatus {
   }[];
 }
 
+export type AlertEvent = 'flag.high' | 'flag.medium' | 'ban.added' | 'bot.connection';
+
+export interface AlertSettings {
+  configured: boolean;
+  webhookHint: string | null;
+  events: AlertEvent[];
+  ratePerMinute: number;
+}
+
 export interface ActivitySettings {
   idleThresholdS: number;
   afkChannelIds: number[];

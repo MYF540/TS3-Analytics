@@ -9,6 +9,9 @@ import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
 import { RealTs3Transport } from './ts3/real-transport.js';
+import { ConnectionAlerts } from './alerts/connection.js';
+import { alertNewBans, alertNewFlags } from './alerts/dispatch.js';
+import { AlertNotifier } from './alerts/notifier.js';
 import { BanSync } from './watcher/bans.js';
 import { Watcher } from './watcher/watcher.js';
 
@@ -39,15 +42,25 @@ async function main(): Promise<void> {
     resumeGraceS: config.watcher.resumeGraceS,
   });
   watcher.start();
+  const alerts = new AlertNotifier({ db: database.db, logger });
+  const connectionAlerts = new ConnectionAlerts(connection, alerts);
+  connectionAlerts.start();
+  /** Flag detection plus alerts for new hints; returns the counts for the job log. */
+  const detectFlags = (now: number) => {
+    const result = runFlagDetection(database, now);
+    alertNewFlags(alerts, database.sqlite, result);
+    return { detected: result.detected, created: result.created };
+  };
   const banSync = new BanSync({
     database,
     connection,
     logger,
     hmacSecret: config.security.hmacSecret,
     intervalS: config.watcher.banSyncIntervalS,
-    onChange: () => {
+    onChange: (change) => {
       try {
-        const result = runFlagDetection(database, Math.floor(Date.now() / 1000));
+        alertNewBans(alerts, database.sqlite, change);
+        const result = detectFlags(Math.floor(Date.now() / 1000));
         logger.info({ result }, 'Flag detection after ban list change');
       } catch (error) {
         logger.error({ err: error }, 'Flag detection failed');
@@ -80,7 +93,7 @@ async function main(): Promise<void> {
       {
         name: 'flag-detection',
         intervalS: 15 * 60,
-        run: (now) => runFlagDetection(database, now),
+        run: (now) => detectFlags(now),
       },
       {
         name: 'maintenance',
@@ -119,6 +132,8 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Shutting down');
     jobs.stop();
     banSync.stop();
+    connectionAlerts.stop();
+    alerts.stop();
     void api.close();
     try {
       watcher.stop();

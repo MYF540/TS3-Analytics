@@ -36,6 +36,7 @@ export const REDACTED_KEYS = [
   'client_ip',
   'connection_client_ip',
   'remoteAddress',
+  'webhookUrl',
 ] as const;
 
 const REDACT_PATHS = REDACTED_KEYS.flatMap((key) => [key, `*.${key}`, `*.*.${key}`]);
@@ -45,9 +46,17 @@ const IPV6_CANDIDATE =
   /(?<![\w:.])[0-9a-f]*:[0-9a-f:]*(?:\d{1,3}(?:\.\d{1,3}){3})?(?![\w:]|\.\d)/gi;
 const IPV4_CANDIDATE = /(?<![\w.])\d{1,3}(?:\.\d{1,3}){3}(?!\w|\.\d)/g;
 
-/** Replaces every IPv4/IPv6 address in free text, e.g. inside error messages from the query. */
+export const WEBHOOK_PLACEHOLDER = '[WEBHOOK]';
+/** Discord webhook URLs contain their token (AGENTS.md rule 2). */
+const WEBHOOK_URL = /https?:\/\/(?:[\w-]+\.)?discord(?:app)?\.com\/api\/webhooks\/[\w/-]+/gi;
+
+/**
+ * Replaces every IPv4/IPv6 address in free text, e.g. inside error messages from the query, and
+ * Discord webhook URLs (they contain a secret token).
+ */
 export function scrubIps(text: string): string {
   return text
+    .replace(WEBHOOK_URL, WEBHOOK_PLACEHOLDER)
     .replace(IPV6_CANDIDATE, (match) => (isIP(match) === 6 ? IP_PLACEHOLDER : match))
     .replace(IPV4_CANDIDATE, (match) => (isIP(match) === 4 ? IP_PLACEHOLDER : match));
 }

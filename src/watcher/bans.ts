@@ -11,6 +11,10 @@ export interface BanSyncResult {
   removed: number;
   /** Bans on the server right now. */
   active: number;
+  /** Ids of the new bans. */
+  addedIds: number[];
+  /** First sync into an empty table: the existing bans are not "new" (no alerts). */
+  initial: boolean;
 }
 
 /**
@@ -46,9 +50,10 @@ export function applyBanList(
     WHERE removed_at IS NULL AND id NOT IN (SELECT value FROM json_each(?))`);
 
   return sqlite.transaction(() => {
-    let added = 0;
+    const initial = sqlite.prepare('SELECT count(*) FROM bans').pluck().get() === 0;
+    const addedIds: number[] = [];
     for (const ban of bans) {
-      if (!known.get(ban.banId)) added++;
+      if (!known.get(ban.banId)) addedIds.push(ban.banId);
       const ip = ban.ip === undefined ? undefined : normalizeIp(ban.ip);
       const hashes = ip ? hashIp(ip, hmacSecret) : undefined;
       upsert.run({
@@ -71,7 +76,7 @@ export function applyBanList(
       });
     }
     const removed = markRemoved.run(now, JSON.stringify(bans.map((b) => b.banId))).changes;
-    return { added, removed, active: bans.length };
+    return { added: addedIds.length, removed, active: bans.length, addedIds, initial };
   })();
 }
 
@@ -124,7 +129,10 @@ export class BanSync {
       const bans = await connection.banList();
       const now = this.deps.now?.() ?? Math.floor(Date.now() / 1000);
       const result = applyBanList(database, bans, hmacSecret, now);
-      logger.info(result, 'Ban list synced');
+      logger.info(
+        { added: result.added, removed: result.removed, active: result.active },
+        'Ban list synced',
+      );
       if (result.added > 0 || result.removed > 0) this.deps.onChange?.(result);
       return result;
     } catch (error) {

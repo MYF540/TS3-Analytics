@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { AppDatabase } from '../db/client.js';
 import { getSetting, setSetting, type DbExecutor } from '../db/repositories/index.js';
-import { detectFlags, type ActiveBan, type SeenIp } from '../domain/flags.js';
+import { detectFlags, type ActiveBan, type FlagCandidate, type SeenIp } from '../domain/flags.js';
 
 export const FLAGS_LAST_RUN_KEY = 'flags.lastRun';
 
@@ -10,6 +10,10 @@ export interface FlagDetectionResult {
   detected: number;
   /** Pairs found for the first time. */
   created: number;
+  /** The new pairs themselves (for alerts). */
+  newFlags: FlagCandidate[];
+  /** First run ever: everything is new, so nothing is alerted. */
+  initial: boolean;
 }
 
 /** Start of the last detection run; flags with an older `last_detected` no longer apply. */
@@ -56,10 +60,11 @@ export function runFlagDetection(database: AppDatabase, now: number): FlagDetect
       related_user_id = excluded.related_user_id, ban_id = excluded.ban_id,
       evidence = excluded.evidence, last_detected = excluded.last_detected`);
 
+  const initial = flagsLastRun(database.db) === undefined;
   return sqlite.transaction(() => {
-    let created = 0;
+    const newFlags: FlagCandidate[] = [];
     for (const flag of candidates) {
-      if (!exists.get(flag.pairKey)) created++;
+      if (!exists.get(flag.pairKey)) newFlags.push(flag);
       upsert.run({
         pairKey: flag.pairKey,
         kind: flag.kind,
@@ -72,6 +77,6 @@ export function runFlagDetection(database: AppDatabase, now: number): FlagDetect
       });
     }
     setSetting(database.db, FLAGS_LAST_RUN_KEY, now, now);
-    return { detected: candidates.length, created };
+    return { detected: candidates.length, created: newFlags.length, newFlags, initial };
   })();
 }

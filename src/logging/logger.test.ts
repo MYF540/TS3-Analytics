@@ -151,3 +151,13 @@ describe('createLogger', () => {
     expect(content).not.toContain('hunter2');
   });
 });
+
+describe('webhook scrubbing', () => {
+  it('removes Discord webhook URLs from free text', () => {
+    expect(
+      scrubIps(
+        'POST https://discord.com/api/webhooks/123/abcDEF-xyz failed (canary: https://canary.discordapp.com/api/webhooks/1/x)',
+      ),
+    ).toBe('POST [WEBHOOK] failed (canary: [WEBHOOK])');
+  });
+});

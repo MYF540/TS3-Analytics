@@ -14,6 +14,7 @@ import { errorBody, registerErrorHandler } from './errors.js';
 import { registerAudit } from './audit/plugin.js';
 import { registerAuth, type RouteAuth } from './auth/plugin.js';
 import { auditRoutes } from './routes/audit.js';
+import { alertRoutes } from './routes/alerts.js';
 import { authRoutes } from './routes/auth.js';
 import { flagRoutes } from './routes/flags.js';
 import { healthRoutes } from './routes/health.js';
@@ -114,6 +115,7 @@ export async function buildServer(
       await api.register(statusRoutes(context));
       await api.register(flagRoutes(context));
       await api.register(personRoutes(context));
+      await api.register(alertRoutes(context));
     },
     { prefix: '/api' },
   );

@@ -2,6 +2,8 @@ import { errorMessage } from '../i18n';
 import type {
   ActivitySettings,
   ActivitySettingsResponse,
+  AlertEvent,
+  AlertSettings,
   ApiErrorBody,
   AuditEntry,
   AuditFilters,
@@ -199,6 +201,13 @@ export const api = {
   ) => apiGet<FlagsResponse>('/flags', query, signal),
   setFlagStatus: (id: number, status: FlagStatus) =>
     apiPost<{ id: number; status: FlagStatus }>(`/flags/${String(id)}/status`, { status }),
+  alertSettings: (signal?: AbortSignal) => apiGet<AlertSettings>('/settings/alerts', {}, signal),
+  saveAlertSettings: (settings: {
+    webhookUrl?: string | null;
+    events: AlertEvent[];
+    ratePerMinute: number;
+  }) => apiSend<AlertSettings>('PUT', '/settings/alerts', settings),
+  testAlert: () => apiPost<{ ok: boolean; status: number | null }>('/settings/alerts/test'),
   activitySettings: (signal?: AbortSignal) =>
     apiGet<ActivitySettingsResponse>('/settings/activity', {}, signal),
   saveActivitySettings: (settings: ActivitySettings) =>

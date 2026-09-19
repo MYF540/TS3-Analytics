@@ -73,7 +73,11 @@ afterEach(() => {
 
 describe('runFlagDetection', () => {
   it('stores high, medium and info flags with counts as evidence', () => {
-    expect(runFlagDetection(database, NOW)).toEqual({ detected: 3, created: 3 });
+    expect(runFlagDetection(database, NOW)).toMatchObject({
+      detected: 3,
+      created: 3,
+      initial: true,
+    });
     expect(flagRows()).toEqual([
       {
         kind: 'ban_ip',
@@ -98,7 +102,12 @@ describe('runFlagDetection', () => {
       .run();
     sawIp('sibling', '192.0.2.44', NOW);
     sawIp('alt', '192.0.2.44', NOW);
-    expect(runFlagDetection(database, NOW + 900)).toEqual({ detected: 3, created: 0 });
+    expect(runFlagDetection(database, NOW + 900)).toMatchObject({
+      detected: 3,
+      created: 0,
+      newFlags: [],
+      initial: false,
+    });
     const shared = flagRows().find((f) => f.kind === 'shared_ip');
     expect(shared).toMatchObject({ status: 'ignored' });
     expect(JSON.parse(shared?.evidence ?? '{}')).toMatchObject({ sharedIps: 2 });
@@ -108,7 +117,9 @@ describe('runFlagDetection', () => {
     runFlagDetection(database, NOW);
     applyBanList(database, [], SECRET, NOW + 60);
     // Without the ban, alt and banned simply share an IP.
-    expect(runFlagDetection(database, NOW + 900)).toEqual({ detected: 2, created: 1 });
+    const result = runFlagDetection(database, NOW + 900);
+    expect(result).toMatchObject({ detected: 2, created: 1 });
+    expect(result.newFlags.map((f) => f.kind)).toEqual(['shared_ip']);
     const lastDetected = database.sqlite
       .prepare(`SELECT last_detected FROM flags WHERE kind = 'ban_ip'`)
       .pluck()
