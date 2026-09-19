@@ -153,6 +153,6 @@ describe('FlagsPage', () => {
     renderAt('/spieler/1');
     const link = await screen.findByRole('link', { name: 'Anzeigen' });
     expect(link).toHaveAttribute('href', '/hinweise?spieler=1');
-    expect(screen.getByText(/2 offene Hinweise zu diesem Spieler/)).toBeInTheDocument();
+    expect(screen.getByText(/Offene Hinweise zu diesem Spieler: 2/)).toBeInTheDocument();
   });
 });

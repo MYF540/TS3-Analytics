@@ -404,7 +404,7 @@ export const de = {
   'flags.filteredPlayer': 'Nur Hinweise zu {name}',
   'flags.clearPlayer': 'Filter aufheben',
   'flags.unknownPlayer': 'Spieler #{id}',
-  'player.flags': '{count} offene Hinweise zu diesem Spieler',
+  'player.flags': 'Offene Hinweise zu diesem Spieler: {count}',
   'accounts.title': 'Verknüpfte Accounts',
   'accounts.none': 'Dieser Account ist mit keinem anderen verknüpft.',
   'accounts.combined':
