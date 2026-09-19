@@ -182,7 +182,7 @@ describe('activity tracking', () => {
     ]);
   });
 
-  it('creates placeholder rows for channels not in the channel list yet', async () => {
+  it('creates placeholder rows for channels not in the channel list yet', () => {
     const clid = server.join({ uid: UID, nickname: 'Alice' });
     now = T0 + 30;
     server.move(clid, 4242); // temporary channel created after the last channel list
