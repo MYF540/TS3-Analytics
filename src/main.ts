@@ -21,7 +21,13 @@ function main(): void {
     { commandsPerSecond: config.ts3.queryRateLimit },
     { logger },
   );
-  const watcher = new Watcher({ database, connection, logger });
+  const watcher = new Watcher({
+    database,
+    connection,
+    logger,
+    pollIntervalS: config.watcher.pollIntervalS,
+    flushIntervalS: config.watcher.flushIntervalS,
+  });
   watcher.start();
   connection.start();
   // API is wired up here in a later task.

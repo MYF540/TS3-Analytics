@@ -42,6 +42,8 @@ const envSchema = z.object({
   SQLITE_CACHE_SIZE_MB: optional(z.coerce.number().int().min(1).default(64)),
   SQLITE_MMAP_SIZE_MB: optional(z.coerce.number().int().min(0).default(256)),
   IP_RETENTION_DAYS: optional(z.coerce.number().int().min(1).default(90)),
+  POLL_INTERVAL_S: optional(z.coerce.number().int().min(10).max(600).default(60)),
+  SEGMENT_FLUSH_INTERVAL_S: optional(z.coerce.number().int().min(30).max(3600).default(300)),
   LOG_LEVEL: optional(z.enum(LOG_LEVELS).default('info')),
   LOG_DIR: optional(z.string().default('./data/logs')),
   LOG_RETENTION_DAYS: optional(z.coerce.number().int().min(1).default(14)),
@@ -78,6 +80,12 @@ export interface Config {
   };
   readonly retention: {
     readonly ipDays: number;
+  };
+  readonly watcher: {
+    /** Seconds between client-list polls. */
+    readonly pollIntervalS: number;
+    /** Seconds between batched writes of activity segments. */
+    readonly flushIntervalS: number;
   };
   readonly logging: {
     readonly level: LogLevel;
@@ -127,6 +135,10 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
       mmapSizeMb: e.SQLITE_MMAP_SIZE_MB,
     }),
     retention: Object.freeze({ ipDays: e.IP_RETENTION_DAYS }),
+    watcher: Object.freeze({
+      pollIntervalS: e.POLL_INTERVAL_S,
+      flushIntervalS: e.SEGMENT_FLUSH_INTERVAL_S,
+    }),
     logging: Object.freeze({
       level: e.LOG_LEVEL,
       dir: e.LOG_DIR,

@@ -24,7 +24,8 @@ import {
 } from '../domain/aggregation.js';
 import { berlinDayStart, HOUR_S, hourStart, nextDay } from '../domain/time.js';
 import type { AppDatabase } from './client.js';
-import { closeSegment, type ActivitySegment } from './repositories/segments.js';
+import { closeSegment, type ActivitySegment, type NewSegment } from './repositories/segments.js';
+import { activitySegments } from './schema.js';
 import { closeSession, type ClosedSession } from './repositories/sessions.js';
 
 interface Statements {
@@ -142,18 +143,44 @@ export function finalizeSegment(
   return database.sqlite.transaction(() => {
     const closed = closeSegment(database.db, segmentId, endAt);
     if (!closed) return undefined;
-    const { sqlite } = database;
-    addDaily(sqlite, closed.userId, segmentDailyDeltas(closed));
-    statements(sqlite).addTotals.run({
-      userId: closed.userId,
-      onlineS: 0,
-      activeS: closed.state === 'active' ? closed.endAt - closed.startAt : 0,
-      sessions: 0,
-      longestSessionS: 0,
-      firstSeen: closed.startAt,
-      lastSeen: closed.endAt,
-    });
+    foldSegment(database.sqlite, closed);
     return closed;
+  })();
+}
+
+function foldSegment(
+  sqlite: Database.Database,
+  segment: Pick<ActivitySegment, 'userId' | 'startAt' | 'endAt' | 'state'>,
+): void {
+  addDaily(sqlite, segment.userId, segmentDailyDeltas(segment));
+  statements(sqlite).addTotals.run({
+    userId: segment.userId,
+    onlineS: 0,
+    activeS: segment.state === 'active' ? segment.endAt - segment.startAt : 0,
+    sessions: 0,
+    longestSessionS: 0,
+    firstSeen: segment.startAt,
+    lastSeen: segment.endAt,
+  });
+}
+
+/**
+ * Inserts a segment that is already complete (it was only kept in memory while open) and folds
+ * it into the aggregates, in one transaction. Returns the new segment id.
+ */
+export function recordClosedSegment(
+  database: AppDatabase,
+  segment: Omit<NewSegment, 'startAt'> & { startAt: number; endAt: number },
+): number {
+  return database.sqlite.transaction(() => {
+    const endAt = Math.max(segment.startAt, segment.endAt);
+    const row = database.db
+      .insert(activitySegments)
+      .values({ ...segment, endAt, isOpen: false })
+      .returning({ id: activitySegments.id })
+      .get();
+    foldSegment(database.sqlite, { ...segment, endAt });
+    return row.id;
   })();
 }
 

@@ -1,8 +1,10 @@
 import type { AppDatabase } from '../db/client.js';
-import { upsertChannels } from '../db/repositories/index.js';
+import { recordServerMinute, upsertChannels } from '../db/repositories/index.js';
 import type { Logger } from '../logging/logger.js';
 import type { Ts3Connection } from '../ts3/connection.js';
 import type { Ts3Client, Ts3ClientLeft, Ts3ClientMoved } from '../ts3/types.js';
+import { ActivityTracker } from './activity.js';
+import { loadActivitySettings } from './settings.js';
 import { SessionTracker } from './tracker.js';
 
 export interface WatcherDeps {
@@ -11,11 +13,22 @@ export interface WatcherDeps {
   logger: Logger;
   /** Current time in UTC seconds (injectable for tests). */
   now?: () => number;
+  /** Seconds between client-list polls (default 60). */
+  pollIntervalS?: number;
+  /** Minimum seconds between batched segment writes (default 300). */
+  flushIntervalS?: number;
 }
 
-/** Wires TS3 connection events to the session tracker. */
+/**
+ * Wires TS3 connection events to the session and activity trackers and polls the client list
+ * (nick changes, activity state, missed events, online count).
+ */
 export class Watcher {
   readonly tracker: SessionTracker;
+  readonly activity: ActivityTracker;
+  private pollTimer: NodeJS.Timeout | undefined;
+  private lastFlushAt: number | undefined;
+  private syncing: Promise<void> | undefined;
   private readonly now: () => number;
   /** When the query connection was lost; clients gone meanwhile are closed at this time. */
   private lostAt: number | undefined;
@@ -26,6 +39,10 @@ export class Watcher {
   constructor(private readonly deps: WatcherDeps) {
     this.now = deps.now ?? (() => Math.floor(Date.now() / 1000));
     this.tracker = new SessionTracker(deps.database, deps.logger);
+    this.activity = new ActivityTracker(deps.database, () =>
+      loadActivitySettings(deps.database.db),
+    );
+    this.tracker.addListener(this.activity);
   }
 
   start(): void {
@@ -65,10 +82,25 @@ export class Watcher {
       connection.off('connected', onConnected);
     });
     if (connection.isConnected) void this.sync();
+    const intervalMs = (this.deps.pollIntervalS ?? 60) * 1000;
+    this.pollTimer = setInterval(() => {
+      if (connection.isConnected) void this.sync();
+    }, intervalMs);
   }
 
-  /** Reads the channel and client lists and reconciles the tracker (initial sync, reconnect). */
-  async sync(): Promise<void> {
+  /**
+   * One poll: reads channel and client lists, reconciles sessions (missed events, nick changes),
+   * updates activity segments, records the online count and flushes segments when due.
+   * Runs on (re)connect and every poll interval; concurrent calls share one run.
+   */
+  sync(): Promise<void> {
+    this.syncing ??= this.runSync().finally(() => {
+      this.syncing = undefined;
+    });
+    return this.syncing;
+  }
+
+  private async runSync(): Promise<void> {
     const { connection, database, logger } = this.deps;
     const touched = new Set<number>();
     this.touchedDuringSync = touched;
@@ -86,7 +118,11 @@ export class Watcher {
       })();
       this.tracker.sync(clients, at, this.lostAt ?? at, touched);
       this.lostAt = undefined;
-      logger.info({ online: this.tracker.onlineClients.length }, 'Client list synchronized');
+      this.activity.observe(clients, (clid) => this.tracker.get(clid), at, touched);
+      recordServerMinute(database.db, at, this.tracker.onlineClients.length);
+      this.lastFlushAt ??= at;
+      if (at - this.lastFlushAt >= (this.deps.flushIntervalS ?? 300)) this.flush(at);
+      logger.debug({ online: this.tracker.onlineClients.length }, 'Client list synchronized');
     } catch (error) {
       logger.warn({ err: error }, 'Client list synchronization failed');
     } finally {
@@ -94,10 +130,19 @@ export class Watcher {
     }
   }
 
-  /** Detaches from the connection and closes all open sessions. */
+  /** Writes pending activity segments. */
+  flush(at = this.now()): void {
+    this.activity.flush();
+    this.lastFlushAt = at;
+  }
+
+  /** Detaches from the connection, closes all open sessions and writes pending segments. */
   stop(): void {
+    if (this.pollTimer) clearInterval(this.pollTimer);
+    this.pollTimer = undefined;
     for (const off of this.detach.splice(0)) off();
     this.tracker.closeAll(this.now());
+    this.flush();
   }
 
   private safely(fn: () => unknown): void {

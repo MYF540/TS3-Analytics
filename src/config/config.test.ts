@@ -40,6 +40,7 @@ describe('parseConfig', () => {
       paths: { geoipDb: './data/GeoLite2-Country.mmdb' },
       database: { path: './data/ts3-analytics.sqlite', cacheSizeMb: 64, mmapSizeMb: 256 },
       retention: { ipDays: 90 },
+      watcher: { pollIntervalS: 60, flushIntervalS: 300 },
       logging: { level: 'info', dir: './data/logs', retentionDays: 14, pretty: undefined },
     });
   });
@@ -135,6 +136,8 @@ describe('parseConfig', () => {
     ['IP_RETENTION_DAYS', '1.5'],
     ['LOG_LEVEL', 'verbose'],
     ['LOG_PRETTY', 'maybe'],
+    ['POLL_INTERVAL_S', '5'],
+    ['SEGMENT_FLUSH_INTERVAL_S', '10'],
   ])('rejects invalid %s=%s', (key, value) => {
     const error = configError({ ...minimalEnv, [key]: value });
     expect(error.problems).toHaveLength(1);
