@@ -40,7 +40,12 @@ describe('parseConfig', () => {
       paths: { geoipDb: './data/GeoLite2-Country.mmdb' },
       database: { path: './data/ts3-analytics.sqlite', cacheSizeMb: 64, mmapSizeMb: 256 },
       retention: { ipDays: 90, segmentMonths: 0 },
-      watcher: { pollIntervalS: 60, flushIntervalS: 300, resumeGraceS: 300 },
+      watcher: {
+        pollIntervalS: 60,
+        flushIntervalS: 300,
+        resumeGraceS: 300,
+        banSyncIntervalS: 600,
+      },
       logging: { level: 'info', dir: './data/logs', retentionDays: 14, pretty: undefined },
     });
   });

@@ -36,6 +36,13 @@
       "when": 1789835982163,
       "tag": "0004_notes_and_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789837653093,
+      "tag": "0005_bans",
+      "breakpoints": true
     }
   ]
 }

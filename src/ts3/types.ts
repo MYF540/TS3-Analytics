@@ -36,6 +36,27 @@ export interface Ts3Channel {
   name: string;
 }
 
+/**
+ * One entry of the server ban list (`banlist`). `ip` may hold a plain address or a regex; it must
+ * be hashed right away and never stored or logged (AGENTS.md rule 1).
+ */
+export interface Ts3Ban {
+  banId: number;
+  ip: string | undefined;
+  /** Nickname regex. */
+  name: string | undefined;
+  uid: string | undefined;
+  lastNickname: string | undefined;
+  reason: string | undefined;
+  invokerName: string | undefined;
+  invokerUid: string | undefined;
+  /** UTC seconds. */
+  createdAt: number;
+  /** Seconds; 0 = permanent. */
+  durationS: number;
+  enforcements: number;
+}
+
 export interface Ts3ClientLeft {
   clid: number;
   /** TS3 reason id (e.g. 8 = left, 3 = timeout, 4/5 = kicked, 6 = banned). */

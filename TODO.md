@@ -197,8 +197,9 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 ## Phase 5 – Sicherheit & Moderation
 
-- [ ] **T5.1 Banlist-Sync** · `Watcher` · braucht: T2.5
+- [x] **T5.1 Banlist-Sync** · `Watcher` · braucht: T2.5
   - Banliste periodisch vom Server lesen und lokal spiegeln (inkl. UID, falls vorhanden)
+  - Notiz: Tabelle `bans` (Migration 0005). `BanSync` liest die Liste nach jedem (Wieder-)Verbinden und dann alle `BAN_SYNC_INTERVAL_S` (Standard 600 s) über die Query-Queue, seitenweise; Fehler 1281 („empty result set“) gilt als leere Liste. Einzelne IP-Adressen werden wie in `ip_seen` nur als HMAC von IP und Subnetz gespeichert; IP-Regeln, die Muster sind, werden nur markiert (`ip_pattern`), ihr Text wird nicht gespeichert. Die UID wird, wenn bekannt, mit `users` verknüpft. Bans, die nicht mehr auf dem Server stehen, bekommen `removed_at` (bei erneutem Auftauchen wieder aktiv). Schlägt das Lesen fehl, wird nichts als entfernt markiert. Die Retention löscht die IP-Hashes aufgehobener Bans nach `IP_RETENTION_DAYS`. Der Query-Account braucht das Recht `b_client_ban_list`.
 
 - [ ] **T5.2 Alt- & Evasion-Erkennung** · `Security` · braucht: T5.1, T4.2
   - Reine Funktion in `/domain`, die Flags erzeugt: gleicher IP-Hash wie gebannte UID → hoch; gleicher Subnetz-Hash wie gebannte UID → mittel; gleicher IP-Hash wie andere UID → info

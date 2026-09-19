@@ -341,3 +341,42 @@ export const userTags = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.tagId] }), index('user_tags_tag_idx').on(t.tagId)],
 );
+
+/**
+ * Mirror of the server's ban list (T5.1). Bans that disappear from the server keep their row with
+ * `removed_at` set. IP bans only keep HMAC hashes (AGENTS.md rule 1); regex IP patterns are only
+ * flagged, their text is not stored. Hashes of removed bans are cleared by the retention job.
+ */
+export const bans = sqliteTable(
+  'bans',
+  {
+    /** TS3 ban id (`banid`). */
+    id: integer('id').primaryKey(),
+    uid: text('uid'),
+    /** Resolved from `uid` when the user is known. */
+    userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+    ipHash: blob('ip_hash', { mode: 'buffer' }),
+    subnetHash: blob('subnet_hash', { mode: 'buffer' }),
+    /** The ban has an IP rule that is a pattern (regex), not a single address. */
+    ipPattern: integer('ip_pattern', { mode: 'boolean' }).notNull().default(false),
+    /** Nickname regex of a name ban. */
+    namePattern: text('name_pattern'),
+    lastNickname: text('last_nickname'),
+    reason: text('reason'),
+    invokerName: text('invoker_name'),
+    invokerUid: text('invoker_uid'),
+    createdAt: integer('created_at').notNull(),
+    /** 0 = permanent. */
+    durationS: integer('duration_s').notNull(),
+    enforcements: integer('enforcements').notNull().default(0),
+    firstSynced: integer('first_synced').notNull(),
+    lastSynced: integer('last_synced').notNull(),
+    removedAt: integer('removed_at'),
+  },
+  (t) => [
+    index('bans_uid_idx').on(t.uid),
+    index('bans_user_idx').on(t.userId),
+    index('bans_ip_hash_idx').on(t.ipHash),
+    index('bans_subnet_hash_idx').on(t.subnetHash),
+  ],
+);

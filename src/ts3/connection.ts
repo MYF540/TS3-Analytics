@@ -4,6 +4,7 @@ import { CommandQueue, systemClock, type Clock } from './command-queue.js';
 import type { Ts3Transport, Ts3TransportFactory } from './transport.js';
 import {
   CLIENT_TYPE_QUERY,
+  type Ts3Ban,
   type Ts3Channel,
   type Ts3Client,
   type Ts3ClientLeft,
@@ -159,6 +160,10 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
   async clientList(): Promise<Ts3Client[]> {
     const clients = await this.command((t) => t.clientList());
     return clients.filter((c) => c.type !== CLIENT_TYPE_QUERY);
+  }
+
+  async banList(): Promise<Ts3Ban[]> {
+    return this.command((t) => t.banList());
   }
 
   async channelList(): Promise<Ts3Channel[]> {

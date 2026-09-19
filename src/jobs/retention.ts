@@ -19,6 +19,8 @@ export interface RetentionOptions {
 
 export interface RetentionResult {
   ipSeen: number;
+  /** Removed bans whose IP hashes were cleared. */
+  banIpHashes: number;
   serverMinutely: number;
   segments: number;
 }
@@ -51,6 +53,14 @@ export function runRetention(
     .prepare(`DELETE FROM ip_seen WHERE last_seen < ?`)
     .run(now - options.ipRetentionDays * DAY).changes;
 
+  // Lifted or expired bans keep their row (history), but not the IP hashes.
+  const banIpHashes = sqlite
+    .prepare(
+      `UPDATE bans SET ip_hash = NULL, subnet_hash = NULL
+       WHERE removed_at < ? AND (ip_hash IS NOT NULL OR subnet_hash IS NOT NULL)`,
+    )
+    .run(now - options.ipRetentionDays * DAY).changes;
+
   const serverMinutely = deleteInBatches(
     sqlite,
     `DELETE FROM server_minutely WHERE ts IN (SELECT ts FROM server_minutely WHERE ts < ? LIMIT ?)`,
@@ -69,7 +79,7 @@ export function runRetention(
     const previous = segmentsPrunedBefore(database.db) ?? Number.NEGATIVE_INFINITY;
     if (cutoff > previous) setSetting(database.db, SEGMENTS_PRUNED_BEFORE_KEY, cutoff, now);
   }
-  return { ipSeen, serverMinutely, segments };
+  return { ipSeen, banIpHashes, serverMinutely, segments };
 }
 
 /** Weekly maintenance: refresh planner statistics and shrink the WAL file. */

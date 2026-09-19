@@ -2,6 +2,7 @@ import type { EventEmitter as NodeEventEmitter } from 'node:events';
 import { EventEmitter } from 'node:events';
 import {
   QueryProtocol,
+  ResponseError,
   TeamSpeak,
   type TeamSpeakChannel,
   type TeamSpeakClient,
@@ -10,7 +11,7 @@ import type { Config } from '../config/config.js';
 import type { Logger } from '../logging/logger.js';
 import { useWithFreeNickname } from './nickname.js';
 import type { Ts3Transport } from './transport.js';
-import type { Ts3Channel, Ts3Client, Ts3TransportEvents } from './types.js';
+import type { Ts3Ban, Ts3Channel, Ts3Client, Ts3TransportEvents } from './types.js';
 
 type ClientLike = Pick<
   TeamSpeakClient,
@@ -116,6 +117,54 @@ function toTs3Channel(channel: Pick<TeamSpeakChannel, 'cid' | 'pid' | 'name'>): 
   return { cid: Number(channel.cid), pid: Number(channel.pid), name: channel.name };
 }
 
+const BAN_PAGE_SIZE = 1000;
+const BAN_PAGES_MAX = 50;
+
+/** Reads `banlist` page by page. An empty list answers with error 1281 ("empty result set"). */
+export async function fetchAllBans(
+  fetchPage: (start: number, count: number) => Promise<RawBan[]>,
+): Promise<Ts3Ban[]> {
+  const result: Ts3Ban[] = [];
+  for (let page = 0; page < BAN_PAGES_MAX; page++) {
+    let rows: RawBan[];
+    try {
+      rows = await fetchPage(page * BAN_PAGE_SIZE, BAN_PAGE_SIZE);
+    } catch (error) {
+      if (error instanceof ResponseError && error.id === '1281') break;
+      throw error;
+    }
+    result.push(...rows.map(toTs3Ban));
+    if (rows.length < BAN_PAGE_SIZE) break;
+  }
+  return result;
+}
+
+const count = (value: unknown): number => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const optional = (value: unknown): string | undefined =>
+  typeof value === 'string' && value !== '' ? value : undefined;
+
+type RawBan = Awaited<ReturnType<TeamSpeak['banList']>>[number];
+
+export function toTs3Ban(row: RawBan): Ts3Ban {
+  return {
+    banId: Number(row.banid),
+    ip: optional(row.ip),
+    name: optional(row.name),
+    uid: optional(row.uid),
+    lastNickname: optional(row.lastnickname),
+    reason: optional(row.reason),
+    invokerName: optional(row.invokername),
+    invokerUid: optional(row.invokeruid),
+    createdAt: count(row.created),
+    durationS: count(row.duration),
+    enforcements: count(row.enforcements),
+  };
+}
+
 /** ServerQuery over SSH via ts3-nodejs-library. */
 export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implements Ts3Transport {
   private teamspeak: TeamSpeak | undefined;
@@ -206,6 +255,11 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
       if (row.connectionClientIp) result.set(Number(row.clid), row.connectionClientIp);
     }
     return result;
+  }
+
+  async banList(): Promise<Ts3Ban[]> {
+    const query = this.connected();
+    return fetchAllBans((start, count) => query.banList(start, count));
   }
 
   async clientIp(clid: number): Promise<string | undefined> {

@@ -20,29 +20,36 @@ Beim Start führt der Dienst alle ausstehenden Migrationen aus (`runMigrations()
 
 ## Konventionen
 
-- Alle Tabellen sind `STRICT`. Zusammengesetzte oder Text-Primärschlüssel (`user_daily_stats`, `ip_seen`, `settings`) sind zusätzlich `WITHOUT ROWID`.
+- Alle Tabellen sind `STRICT`. Zusammengesetzte oder Text-Primärschlüssel (`user_daily_stats`, `ip_seen`, `settings`, `admin_sessions`, `user_tags`) sind zusätzlich `WITHOUT ROWID`.
 - Zeitpunkte: UTC-Unix-Sekunden (`INTEGER`). Dauern: Sekunden.
 - `user_daily_stats.day`: Kalendertag in `Europe/Berlin` als Zahl `YYYYMMDD` (z. B. `20260919`), damit unabhängig von der Zeitumstellung.
-- Die TS3-UID steht nur in `users.uid`; alle anderen Tabellen referenzieren `users.id`.
-- IP-Daten nur als HMAC-SHA256 (`BLOB`, 32 Byte) in `ip_seen`, nie im Klartext.
+- Die TS3-UID steht in `users.uid`; alle anderen Tabellen referenzieren `users.id`. Einzige Ausnahme ist `bans.uid`, weil ein Ban auch UIDs betreffen kann, die der Bot nie gesehen hat (`bans.user_id` wird gesetzt, sobald die UID bekannt ist).
+- IP-Daten nur als HMAC-SHA256 (`BLOB`, 32 Byte) in `ip_seen` und `bans`, nie im Klartext. IP-Regeln der Banliste, die Muster sind, werden nur mit `bans.ip_pattern = 1` markiert.
 - Aktivitätszustände: `active`, `idle`, `afk`, `unknown` (importierte Zeiten).
 - Offene Sessions haben `leave_at = NULL`; offene Segmente `is_open = 1`, `end_at` ist dann der Zeitpunkt der letzten Verlängerung.
 
 ## Tabellen (Überblick)
 
-| Tabelle             | Zweck                                                                    |
-| ------------------- | ------------------------------------------------------------------------ |
-| `users`             | Ein Eintrag pro UID                                                      |
-| `nicknames`         | Nickverlauf, dazu FTS5-Index `nicknames_fts` (Trigram, Teilstring-Suche) |
-| `channels`          | Channel-Namen nach TS3-cid                                               |
-| `sessions`          | Verbindungen (`source` = `live` oder `import`)                           |
-| `activity_segments` | Zusammenhängende Abschnitte gleichen Zustands und Channels               |
-| `user_daily_stats`  | Tagesaggregat pro Nutzer                                                 |
-| `user_totals`       | Allzeit-Aggregat pro Nutzer (Leaderboards)                               |
-| `server_minutely`   | Online-Zahl pro Minute (kurzfristig)                                     |
-| `server_hourly`     | Stundenaggregat (dauerhaft); Ø online = `online_s / 3600`                |
-| `ip_seen`           | IP- und Subnetz-Hashes pro Nutzer                                        |
-| `settings`          | Schlüssel/JSON-Wert                                                      |
+| Tabelle                 | Zweck                                                                    |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `users`                 | Ein Eintrag pro UID                                                      |
+| `nicknames`             | Nickverlauf, dazu FTS5-Index `nicknames_fts` (Trigram, Teilstring-Suche) |
+| `channels`              | Channel-Namen nach TS3-cid                                               |
+| `sessions`              | Verbindungen (`source` = `live` oder `import`)                           |
+| `activity_segments`     | Zusammenhängende Abschnitte gleichen Zustands und Channels               |
+| `user_daily_stats`      | Tagesaggregat pro Nutzer                                                 |
+| `user_totals`           | Allzeit-Aggregat pro Nutzer (Leaderboards)                               |
+| `server_minutely`       | Online-Zahl pro Minute (kurzfristig)                                     |
+| `server_hourly`         | Stundenaggregat (dauerhaft); Ø online = `online_s / 3600`                |
+| `ip_seen`               | IP- und Subnetz-Hashes pro Nutzer                                        |
+| `settings`              | Schlüssel/JSON-Wert                                                      |
+| `admin_users`           | Konten des Webinterfaces (Rolle, argon2-Hash)                            |
+| `admin_sessions`        | Login-Sessions (nur Hash des Tokens)                                     |
+| `audit_log`             | Protokoll aller Änderungen und Anmeldungen                               |
+| `player_notes`          | Notizen zu Spielern (weich gelöscht über `deleted_at`)                   |
+| `player_note_revisions` | Frühere Fassungen von Notizen                                            |
+| `tags`, `user_tags`     | Frei definierbare Tags und ihre Zuordnung zu Spielern                    |
+| `bans`                  | Spiegel der Banliste; aufgehobene Bans behalten `removed_at`             |
 
 Das maßgebliche Schema steht in `src/db/schema.ts`.
 

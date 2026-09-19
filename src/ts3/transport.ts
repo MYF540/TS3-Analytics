@@ -1,5 +1,5 @@
 import type { EventEmitter } from 'node:events';
-import type { Ts3Channel, Ts3Client, Ts3TransportEvents } from './types.js';
+import type { Ts3Ban, Ts3Channel, Ts3Client, Ts3TransportEvents } from './types.js';
 
 /**
  * One physical ServerQuery connection. It does not reconnect or rate-limit by itself; that is
@@ -22,6 +22,8 @@ export interface Ts3Transport extends EventEmitter<Ts3TransportEvents> {
   clientIp(clid: number): Promise<string | undefined>;
   /** IP addresses of all online clients in one command (`clientlist -ip`). Same rules apply. */
   clientIps(): Promise<Map<number, string>>;
+  /** The whole ban list (empty when there are no bans). Same rules apply to `ip`. */
+  banList(): Promise<Ts3Ban[]>;
 }
 
 /** Creates a fresh transport for every connection attempt. */

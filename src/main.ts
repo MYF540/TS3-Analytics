@@ -8,6 +8,7 @@ import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
 import { RealTs3Transport } from './ts3/real-transport.js';
+import { BanSync } from './watcher/bans.js';
 import { Watcher } from './watcher/watcher.js';
 
 async function main(): Promise<void> {
@@ -37,6 +38,14 @@ async function main(): Promise<void> {
     resumeGraceS: config.watcher.resumeGraceS,
   });
   watcher.start();
+  const banSync = new BanSync({
+    database,
+    connection,
+    logger,
+    hmacSecret: config.security.hmacSecret,
+    intervalS: config.watcher.banSyncIntervalS,
+  });
+  banSync.start();
   connection.start();
 
   const jobs = new JobRunner(
@@ -95,6 +104,7 @@ async function main(): Promise<void> {
     stopping = true;
     logger.info({ signal }, 'Shutting down');
     jobs.stop();
+    banSync.stop();
     void api.close();
     try {
       watcher.stop();

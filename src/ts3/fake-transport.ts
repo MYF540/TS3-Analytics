@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import type { Ts3Transport } from './transport.js';
 import {
   CLIENT_TYPE_REGULAR,
+  type Ts3Ban,
   type Ts3Channel,
   type Ts3Client,
   type Ts3TransportEvents,
@@ -19,6 +20,8 @@ export class FakeTs3Server {
   readonly channels = new Map<number, Ts3Channel>([[1, { cid: 1, pid: 0, name: 'Lobby' }]]);
   /** Every executed command, in order, with the time it started. */
   readonly commandLog: { command: string; at: number }[] = [];
+  /** Ban list as returned by `banlist`. */
+  bans: Ts3Ban[] = [];
   /** Number of upcoming connection attempts that should fail. */
   failConnects = 0;
   /** When set, `ping` fails (simulates a dead connection that did not emit `close`). */
@@ -142,6 +145,11 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
   channelList(): Promise<Ts3Channel[]> {
     this.assertOpen('channellist');
     return Promise.resolve([...this.server.channels.values()].map((c) => ({ ...c })));
+  }
+
+  banList(): Promise<Ts3Ban[]> {
+    this.assertOpen('banlist');
+    return Promise.resolve(this.server.bans.map((b) => ({ ...b })));
   }
 
   clientIps(): Promise<Map<number, string>> {

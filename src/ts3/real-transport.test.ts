@@ -1,9 +1,10 @@
 import { EventEmitter } from 'node:events';
-import { TeamSpeak } from 'ts3-nodejs-library';
+import { ResponseError, TeamSpeak } from 'ts3-nodejs-library';
 import { describe, expect, it, vi } from 'vitest';
 import {
   attachNotificationHandlers,
   enterViewToClient,
+  fetchAllBans,
   type RawEnterView,
 } from './real-transport.js';
 import type { Ts3TransportEvents } from './types.js';
@@ -94,5 +95,66 @@ describe('attachNotificationHandlers', () => {
     expect(query.listenerCount('cliententerview')).toBe(1);
     expect(query.listenerCount('clientleftview')).toBe(1);
     expect(query.listenerCount('clientmoved')).toBe(1);
+  });
+});
+
+type RawBan = Awaited<ReturnType<Parameters<typeof fetchAllBans>[0]>>[number];
+
+describe('fetchAllBans', () => {
+  const raw = (id: number): RawBan => ({
+    banid: String(id),
+    ip: id === 1 ? '203.0.113.9' : '',
+    name: '',
+    uid: id === 2 ? 'uid-2=' : '',
+    mytsid: '',
+    lastnickname: 'Troll',
+    created: 1_789_000_000,
+    duration: 3600,
+    invokername: 'Admin',
+    invokercldbid: '1',
+    invokeruid: 'admin=',
+    reason: '',
+    enforcements: 4,
+  });
+
+  it('maps entries and turns empty strings into undefined', async () => {
+    const bans = await fetchAllBans(() => Promise.resolve([raw(1), raw(2)]));
+    expect(bans).toEqual([
+      {
+        banId: 1,
+        ip: '203.0.113.9',
+        name: undefined,
+        uid: undefined,
+        lastNickname: 'Troll',
+        reason: undefined,
+        invokerName: 'Admin',
+        invokerUid: 'admin=',
+        createdAt: 1_789_000_000,
+        durationS: 3600,
+        enforcements: 4,
+      },
+      expect.objectContaining({ banId: 2, ip: undefined, uid: 'uid-2=' }),
+    ]);
+  });
+
+  it('reads further pages while they are full', async () => {
+    const fetchPage = vi.fn((start: number) =>
+      Promise.resolve(
+        start === 0 ? Array.from({ length: 1000 }, (_, i) => raw(i + 10)) : [raw(5000)],
+      ),
+    );
+    const bans = await fetchAllBans(fetchPage);
+    expect(bans).toHaveLength(1001);
+    expect(fetchPage.mock.calls).toEqual([
+      [0, 1000],
+      [1000, 1000],
+    ]);
+  });
+
+  it('treats error 1281 as an empty list and rethrows other errors', async () => {
+    const empty = new ResponseError({ id: '1281', msg: 'database empty result set' }, '');
+    await expect(fetchAllBans(() => Promise.reject(empty))).resolves.toEqual([]);
+    const denied = new ResponseError({ id: '2568', msg: 'insufficient client permissions' }, '');
+    await expect(fetchAllBans(() => Promise.reject(denied))).rejects.toBe(denied);
   });
 });
