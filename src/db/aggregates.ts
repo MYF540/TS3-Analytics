@@ -10,6 +10,7 @@
  * Open sessions/segments are not part of the aggregates until they are closed.
  */
 import type Database from 'better-sqlite3';
+import { z } from 'zod';
 import {
   aggregateHours,
   emptyDelta,
@@ -22,11 +23,13 @@ import {
   type HourStats,
   type SessionSpan,
 } from '../domain/aggregation.js';
-import { berlinDayStart, HOUR_S, hourStart, nextDay } from '../domain/time.js';
+import { berlinDay, berlinDayStart, HOUR_S, hourStart, nextDay } from '../domain/time.js';
 import type { AppDatabase } from './client.js';
 import { closeSegment, type ActivitySegment, type NewSegment } from './repositories/segments.js';
 import { activitySegments } from './schema.js';
 import { closeSession, type ClosedSession } from './repositories/sessions.js';
+import { getSetting } from './repositories/settings.js';
+import type { DbExecutor } from './repositories/types.js';
 
 interface Statements {
   addDaily: Database.Statement;
@@ -184,6 +187,29 @@ export function recordClosedSegment(
   })();
 }
 
+/** Segments ending before this time were deleted (retention); set by the retention job. */
+export const SEGMENTS_PRUNED_BEFORE_KEY = 'retention.segmentsPrunedBefore';
+
+export function segmentsPrunedBefore(db: DbExecutor): number | undefined {
+  return getSetting(db, SEGMENTS_PRUNED_BEFORE_KEY, z.number().int());
+}
+
+/** First Berlin day whose activity segments are complete, or undefined if nothing was pruned. */
+export function firstCompleteDay(db: DbExecutor): number | undefined {
+  const cutoff = segmentsPrunedBefore(db);
+  return cutoff === undefined ? undefined : nextDay(berlinDay(cutoff));
+}
+
+export class PrunedRangeError extends Error {
+  constructor(readonly firstCompleteDay: number) {
+    super(
+      `Activity segments before ${String(firstCompleteDay)} were deleted by retention; ` +
+        'rebuilding that period would lose activity times',
+    );
+    this.name = 'PrunedRangeError';
+  }
+}
+
 export interface RebuildOptions {
   /** First Berlin day (YYYYMMDD) to rebuild; default: beginning of the data. */
   fromDay?: number | undefined;
@@ -191,6 +217,8 @@ export interface RebuildOptions {
   toDay?: number | undefined;
   /** Called after each processed user, e.g. for progress output. */
   onProgress?: ((done: number, total: number) => void) | undefined;
+  /** Rebuild even days whose activity segments were pruned (their activity times drop to 0). */
+  allowPrunedRange?: boolean | undefined;
 }
 
 export interface RebuildResult {
@@ -213,6 +241,14 @@ export function rebuildAggregates(
   options: RebuildOptions = {},
 ): RebuildResult {
   const { sqlite } = database;
+  const safeFrom = firstCompleteDay(database.db);
+  if (
+    safeFrom !== undefined &&
+    !options.allowPrunedRange &&
+    (options.fromDay === undefined || options.fromDay < safeFrom)
+  ) {
+    throw new PrunedRangeError(safeFrom);
+  }
   const fromTs = options.fromDay === undefined ? MIN_TS : berlinDayStart(options.fromDay);
   const toTs = options.toDay === undefined ? MAX_TS : berlinDayStart(nextDay(options.toDay));
   const fromDay = options.fromDay ?? 0;

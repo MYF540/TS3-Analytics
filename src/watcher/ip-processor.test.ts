@@ -15,7 +15,14 @@ const IPV4_B = '192.0.2.200'; // same /24 as A
 const IPV4_C = '198.51.100.7';
 const IPV6_A = '2001:db8:1:2::abcd';
 const IPV6_A_ALT = '2001:0db8:0001:0002:0:0:0:abcd'; // same address, other notation
-const ALL_IPS = [IPV4_A, IPV4_B, IPV4_C, IPV6_A, '2001:db8:1:2:0:0:0:abcd', 'abcd'];
+const ALL_IPS = [
+  IPV4_A,
+  IPV4_B,
+  IPV4_C,
+  IPV6_A,
+  '2001:db8:1:2:0:0:0:abcd',
+  '2001:0db8:0001:0002:0000:0000:0000:abcd', // canonical form used for hashing
+];
 const SECRET = 'test-secret-with-at-least-32-characters!';
 const T0 = 1_780_000_020;
 
@@ -157,7 +164,7 @@ describe('IP processing', () => {
       .pluck()
       .all() as string[];
     expect(tables.length).toBeGreaterThan(10);
-    const needles = ALL_IPS.filter((ip) => ip.length > 5);
+    const needles = ALL_IPS;
     for (const table of tables) {
       for (const row of database.sqlite.prepare(`SELECT * FROM "${table}"`).all() as Record<
         string,

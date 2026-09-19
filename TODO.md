@@ -96,11 +96,12 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Fertig wenn: Tests für IPv4 und IPv6, gleiche IP → gleicher Hash, gleiches Subnetz → gleicher Subnetz-Hash; ein Test durchsucht die DB nach der Klar-IP und findet nichts
   - Notiz: `src/domain/ip.ts`: `normalizeIp` (IPv6 voll ausgeschrieben/kleingeschrieben, Zonen-ID entfernt, IPv4-mapped → IPv4, Subnetz /24 bzw. /64) und `hashIp` (HMAC-SHA256 mit `HMAC_SECRET`, Präfixe `ip:`/`net:` trennen die Hash-Räume). `src/geoip/country-lookup.ts`: MaxMind-Reader mit `watchForUpdates` (GeoLite2-Update ohne Neustart); fehlende/defekte `.mmdb` → Warnung, Dienst läuft ohne Länder. `IpProcessor` (Listener am SessionTracker) holt beim Join `clientinfo` über die Queue, schreibt `ip_seen` und `users.country`. Test durchsucht alle Tabellen (inkl. FTS-Schattentabellen, Text und BLOB-Bytes) und die komplette Log-Ausgabe (Level trace) nach allen Klar-IPs; per Mutation geprüft, dass ein DB-Leck erkannt wird (ein Log-Leck maskiert der Logger bereits selbst). `Ts3Transport.clientIp()` neu. Hinweis: Beim Start mit N Online-Clients entstehen N `clientinfo`-Befehle (bei 5/s z. B. 200 Clients ≈ 40 s Queue); Optimierung möglich über ein einzelnes `clientlist -ip` beim Sync. `main` ist jetzt async (GeoIP wird beim Start geladen).
 
-- [ ] **T2.6 Retention & Wartung** · `Watcher` `DB` · braucht: T2.5, T1.3
+- [x] **T2.6 Retention & Wartung** · `Watcher` `DB` · braucht: T2.5, T1.3
   - Täglicher Job: `ip_seen` älter als Aufbewahrungsfrist löschen; `server_minutely` älter als 14 Tage löschen (steckt dann in `server_hourly`)
   - `activity_segments` älter als X Monate optional löschen (Standard: behalten; konfigurierbar). Tages- und Gesamtaggregate bleiben immer erhalten
   - Wöchentlich `PRAGMA optimize` und `wal_checkpoint(TRUNCATE)`
   - Fertig wenn: Tests belegen Löschung ohne Veränderung der Aggregate
+  - Notiz: `src/jobs/runner.ts` (`JobRunner`: prüft alle 10 min, letzte Läufe in `settings['jobs.<name>.lastRun']`, übersteht Neustarts; fehlgeschlagene Jobs werden geloggt und erst im nächsten Intervall wiederholt) und `src/jobs/retention.ts`: täglich `ip_seen` (`last_seen` älter als `IP_RETENTION_DAYS`), `server_minutely` > 14 Tage (in 10k-Blöcken), optional abgeschlossene Segmente älter als `SEGMENT_RETENTION_MONTHS` (Standard 0 = behalten); wöchentlich `PRAGMA optimize` + `wal_checkpoint(TRUNCATE)`. Beim Segment-Löschen wird `retention.segmentsPrunedBefore` gesetzt; `rebuildAggregates` wirft dann `PrunedRangeError` für Zeiträume davor (sonst fiele `active_s` dort auf 0), `stats:rebuild` startet ohne `--from` automatisch danach, `--force` erzwingt. Beide Jobs laufen direkt beim Start, wenn fällig.
 
 ## Phase 3 – API & Webinterface (lokal)
 

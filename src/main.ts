@@ -1,6 +1,8 @@
 import { loadConfigOrExit } from './config/config.js';
 import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
+import { runMaintenance, runRetention } from './jobs/retention.js';
+import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
 import { RealTs3Transport } from './ts3/real-transport.js';
@@ -33,6 +35,33 @@ async function main(): Promise<void> {
   });
   watcher.start();
   connection.start();
+
+  const jobs = new JobRunner(
+    [
+      {
+        name: 'retention',
+        intervalS: 86_400,
+        run: (now) =>
+          runRetention(
+            database,
+            {
+              ipRetentionDays: config.retention.ipDays,
+              segmentRetentionMonths: config.retention.segmentMonths,
+            },
+            now,
+          ),
+      },
+      {
+        name: 'maintenance',
+        intervalS: 7 * 86_400,
+        run: () => {
+          runMaintenance(database.sqlite);
+        },
+      },
+    ],
+    { db: database.db, logger },
+  );
+  jobs.start();
   // API is wired up here in a later task.
 
   let stopping = false;
@@ -40,6 +69,7 @@ async function main(): Promise<void> {
     if (stopping) return;
     stopping = true;
     logger.info({ signal }, 'Shutting down');
+    jobs.stop();
     try {
       watcher.stop();
     } catch (error) {
