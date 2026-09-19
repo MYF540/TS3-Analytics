@@ -16,6 +16,7 @@ export function createTestContext(
     ts3: undefined,
     live: undefined,
     bot: undefined,
+    moderation: undefined,
     now: () => 1_789_800_000,
     startedAt: 1_789_799_000,
     auth: { sessionTtlS: 12 * 3600, cookieSecure: false },

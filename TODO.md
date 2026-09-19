@@ -221,10 +221,11 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Alarm, wenn neue UIDs in Zeitfenster X über Schwelle Y liegen (beides konfigurierbar)
   - Notiz: `JoinSpikeDetector` hängt als Listener am SessionTracker. „Neu“ ist eine UID, die beim Join zum ersten Mal gesehen wird. Joins aus einem Clientlisten-Abgleich (Start, verpasste Events) zählen nicht; dafür gibt es die neuen Listener-Hooks `onSyncStart`/`onSyncEnd`. Schwelle (2–1000) und Zeitfenster (1–240 min, Standard 10 in 10 min) stehen bei den Discord-Einstellungen, Ereignis `join.spike`. Pro Zeitfenster höchstens eine Meldung; sie nennt bis zu 10 Nicknames. Zusätzlich eine Warnung im Log (erscheint auf der Bot-Status-Seite).
 
-- [ ] **T5.6 Moderationsaktionen** · `Backend` `Frontend` · braucht: T4.2
+- [x] **T5.6 Moderationsaktionen** · `Backend` `Frontend` · braucht: T4.2
   - Kick, Ban (Vorlagen für Grund und Dauer), Poke, Nachricht, Move – je nach Rolle
   - Fertig wenn: jede Aktion läuft über die Query-Queue und landet im Audit-Log
   - Entscheidung (19.09.2026): Alle Aktionen nur für Admins. Globaler Schalter „Moderationsaktionen erlauben“ in den Einstellungen, standardmäßig aus; solange er aus ist, lehnt die API die Aktionen ab und die Buttons sind deaktiviert.
+  - Notiz: `POST /api/users/:id/moderation` mit `poke` (max. 100 Zeichen), `message` (1024), `kick` (Server oder Channel, Grund max. 40), `move`, `ban` (Vorlage oder eigener Grund/Dauer). Aktionen gelten für alle Verbindungen des Spielers. Ban standardmäßig per `banadd uid=` (nur UID, auch offline möglich) plus Kick; optional „auch IP sperren“ per `banclient` (nur online, trifft alle mit derselben Adresse). Die UID wird laut ServerQuery-Handbuch unverändert übergeben (`uid={clientUID}`); das sollte beim ersten echten Einsatz geprüft werden. Schalter und Ban-Vorlagen auf der Einstellungsseite (`GET/PUT /api/settings/moderation`), Karte „Moderation“ auf der Spielerseite (nur Admin, Bestätigung bei Kick und Ban). Audit: `moderation.<aktion>` inklusive Grund/Dauer/Text (gekürzt), auch bei Ablehnung. Fehler: ausgeschaltet 409, offline 409, keine Verbindung 503, vom Server abgelehnt 502 (Details nur im Log). Neue Bans erscheinen spätestens mit dem nächsten Ban-Abgleich im Spiegel.
 
 - [ ] **T5.7 Servergruppen-Überwachung** · `Watcher` `Security` · braucht: T5.4
   - Serverlog per `logview` auf Gruppenzuweisungen auswerten; Alarm bei als „geschützt“ markierten Gruppen

@@ -17,6 +17,8 @@ import type {
   Leaderboard,
   LeaderboardMetric,
   LeaderboardPeriod,
+  ModerationAction,
+  ModerationSettings,
   Note,
   NoteRevision,
   OnlineNow,
@@ -201,6 +203,12 @@ export const api = {
   ) => apiGet<FlagsResponse>('/flags', query, signal),
   setFlagStatus: (id: number, status: FlagStatus) =>
     apiPost<{ id: number; status: FlagStatus }>(`/flags/${String(id)}/status`, { status }),
+  moderationSettings: (signal?: AbortSignal) =>
+    apiGet<ModerationSettings>('/settings/moderation', {}, signal),
+  saveModerationSettings: (settings: ModerationSettings) =>
+    apiSend<ModerationSettings>('PUT', '/settings/moderation', settings),
+  moderate: (userId: number, action: ModerationAction) =>
+    apiPost<{ affected: number }>(`/users/${String(userId)}/moderation`, action),
   alertSettings: (signal?: AbortSignal) => apiGet<AlertSettings>('/settings/alerts', {}, signal),
   saveAlertSettings: (settings: {
     webhookUrl?: string | null;

@@ -22,6 +22,15 @@ export class FakeTs3Server {
   readonly commandLog: { command: string; at: number }[] = [];
   /** Ban list as returned by `banlist`. */
   bans: Ts3Ban[] = [];
+  /** Moderation commands received (T5.6), for assertions. */
+  readonly moderation: {
+    command: string;
+    clid?: number;
+    uid?: string;
+    text?: string;
+    value?: number;
+  }[] = [];
+  private nextBanId = 1000;
   /** Number of upcoming connection attempts that should fail. */
   failConnects = 0;
   /** When set, `ping` fails (simulates a dead connection that did not emit `close`). */
@@ -107,6 +116,23 @@ export class FakeTs3Server {
     if (client) Object.assign(client, changes);
   }
 
+  /** Adds a ban rule, like `banadd` on the real server. */
+  addBan(ban: { uid: string; reason: string; durationS: number }): void {
+    this.bans.push({
+      banId: this.nextBanId++,
+      ip: undefined,
+      name: undefined,
+      uid: ban.uid,
+      lastNickname: undefined,
+      reason: ban.reason,
+      invokerName: 'TS3 Analytics',
+      invokerUid: undefined,
+      createdAt: Math.floor(this.now() / 1000),
+      durationS: ban.durationS,
+      enforcements: 0,
+    });
+  }
+
   /** Simulates a network failure or server restart. */
   dropConnection(error = new Error('connection lost (fake)')): void {
     const transport = this.active;
@@ -145,6 +171,60 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
   channelList(): Promise<Ts3Channel[]> {
     this.assertOpen('channellist');
     return Promise.resolve([...this.server.channels.values()].map((c) => ({ ...c })));
+  }
+
+  kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {
+    this.assertOpen(`clientkick ${from}`);
+    this.requireClient(clid);
+    this.server.moderation.push({ command: `kick.${from}`, clid, text: reason });
+    if (from === 'server') this.server.leave(clid, 5);
+    else this.server.move(clid, 1);
+    return Promise.resolve();
+  }
+
+  poke(clid: number, message: string): Promise<void> {
+    this.assertOpen('clientpoke');
+    this.requireClient(clid);
+    this.server.moderation.push({ command: 'poke', clid, text: message });
+    return Promise.resolve();
+  }
+
+  sendMessage(clid: number, message: string): Promise<void> {
+    this.assertOpen('sendtextmessage');
+    this.requireClient(clid);
+    this.server.moderation.push({ command: 'message', clid, text: message });
+    return Promise.resolve();
+  }
+
+  move(clid: number, channelId: number): Promise<void> {
+    this.assertOpen('clientmove');
+    this.requireClient(clid);
+    if (!this.server.channels.has(channelId)) throw new Error('invalid channelID (fake)');
+    this.server.moderation.push({ command: 'move', clid, value: channelId });
+    this.server.move(clid, channelId);
+    return Promise.resolve();
+  }
+
+  banUid(uid: string, durationS: number, reason: string): Promise<void> {
+    this.assertOpen('banadd');
+    this.server.moderation.push({ command: 'ban.uid', uid, text: reason, value: durationS });
+    this.server.addBan({ uid, reason, durationS });
+    return Promise.resolve();
+  }
+
+  banClient(clid: number, durationS: number, reason: string): Promise<void> {
+    this.assertOpen('banclient');
+    const client = this.requireClient(clid);
+    this.server.moderation.push({ command: 'ban.client', clid, text: reason, value: durationS });
+    this.server.addBan({ uid: client.uid, reason, durationS });
+    this.server.leave(clid, 6);
+    return Promise.resolve();
+  }
+
+  private requireClient(clid: number): Ts3Client {
+    const client = this.server.clients.get(clid);
+    if (!client) throw new Error('invalid clientID (fake)');
+    return client;
   }
 
   banList(): Promise<Ts3Ban[]> {

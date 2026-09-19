@@ -263,6 +263,32 @@ export interface BotStatus {
   }[];
 }
 
+export interface BanTemplate {
+  id: string;
+  label: string;
+  reason: string;
+  /** 0 = permanent. */
+  durationS: number;
+}
+
+export interface ModerationSettings {
+  enabled: boolean;
+  banTemplates: BanTemplate[];
+}
+
+export type ModerationAction =
+  | { type: 'poke'; message: string }
+  | { type: 'message'; message: string }
+  | { type: 'kick'; from: 'server' | 'channel'; reason?: string | undefined }
+  | { type: 'move'; channelId: number }
+  | {
+      type: 'ban';
+      templateId?: string | undefined;
+      reason?: string | undefined;
+      durationS?: number | undefined;
+      includeIp?: boolean | undefined;
+    };
+
 export type AlertEvent =
   'flag.high' | 'flag.medium' | 'ban.added' | 'bot.connection' | 'join.spike';
 

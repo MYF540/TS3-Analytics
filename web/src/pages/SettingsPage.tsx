@@ -4,6 +4,7 @@ import type { ActivitySettings, ActivitySettingsResponse } from '../api/types';
 import { useApi } from '../hooks/useApi';
 import { formatDateTime, t } from '../i18n';
 import { AlertSettingsCard } from '../components/AlertSettingsCard';
+import { ModerationSettingsCard } from '../components/ModerationSettingsCard';
 import { PageHeader } from './pages';
 
 /** A channel counts as gone when the bot has not seen it for a day longer than the newest one. */
@@ -257,6 +258,7 @@ export function SettingsPage() {
       {error && <p className="alert">{error}</p>}
       {!data && !error && <p className="muted">{t('common.loading')}</p>}
       {data && <ActivityForm data={data} />}
+      <ModerationSettingsCard />
       <AlertSettingsCard />
     </section>
   );

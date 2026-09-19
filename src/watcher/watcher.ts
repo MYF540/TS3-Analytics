@@ -195,6 +195,11 @@ export class Watcher {
     }
   }
 
+  /** Client ids of a user's current connections (a player may be connected more than once). */
+  clidsOf(userId: number): number[] {
+    return this.tracker.onlineClients.filter((c) => c.userId === userId).map((c) => c.clid);
+  }
+
   /** Who is online right now (live, not the buffered segments). */
   liveClients(): LiveClient[] {
     return this.tracker.onlineClients.map((client) => ({

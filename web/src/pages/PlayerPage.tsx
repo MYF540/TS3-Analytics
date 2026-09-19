@@ -5,6 +5,8 @@ import type { UserDetail } from '../api/types';
 import { EChart } from '../charts/EChart';
 import { playtimeChartOption, STATE_KEYS } from '../charts/options';
 import { CHART_PALETTES } from '../charts/palette';
+import { hasRole, useCurrentUser } from '../auth/context';
+import { ModerationCard } from '../components/ModerationCard';
 import { PlayerAccounts } from '../components/PlayerAccounts';
 import { PlayerFlagsNotice } from '../components/PlayerFlagsNotice';
 import { PlayerNotes } from '../components/PlayerNotes';
@@ -205,6 +207,7 @@ function Countries({ countries }: { countries: UserDetail['countries'] }) {
 export function PlayerPage() {
   const params = useParams();
   const id = Number(params.id);
+  const user = useCurrentUser();
   const [range, setRange] = useState<DaysRange>('30d');
   const days = DAYS[range];
   // Bumped after linking accounts, because totals and charts then change.
@@ -268,6 +271,17 @@ export function PlayerPage() {
           <Countries countries={data.countries} />
         </section>
       </div>
+      {hasRole(user, 'admin') && (
+        <section className="card">
+          <h2>{t('mod.title')}</h2>
+          <ModerationCard
+            key={id}
+            userId={id}
+            name={data.user.nickname ?? data.user.uid}
+            online={data.online !== null}
+          />
+        </section>
+      )}
       <section className="card">
         <h2>{t('accounts.title')}</h2>
         <PlayerAccounts

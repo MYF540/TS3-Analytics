@@ -24,6 +24,18 @@ export interface Ts3Transport extends EventEmitter<Ts3TransportEvents> {
   clientIps(): Promise<Map<number, string>>;
   /** The whole ban list (empty when there are no bans). Same rules apply to `ip`. */
   banList(): Promise<Ts3Ban[]>;
+
+  // Moderation (T5.6). Callers check permissions, the global switch and write the audit log.
+  /** Kicks from the server or back to the default channel. `reason` max. 40 characters. */
+  kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void>;
+  poke(clid: number, message: string): Promise<void>;
+  /** Private text message to the client. */
+  sendMessage(clid: number, message: string): Promise<void>;
+  move(clid: number, channelId: number): Promise<void>;
+  /** Adds a ban rule for this UID (`banadd uid=`). `durationS` 0 = permanent. */
+  banUid(uid: string, durationS: number, reason: string): Promise<void>;
+  /** `banclient`: bans UID and current IP of an online client and disconnects it. */
+  banClient(clid: number, durationS: number, reason: string): Promise<void>;
 }
 
 /** Creates a fresh transport for every connection attempt. */

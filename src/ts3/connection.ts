@@ -166,6 +166,30 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
     return this.command((t) => t.banList());
   }
 
+  kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {
+    return this.command((t) => t.kick(clid, from, reason));
+  }
+
+  poke(clid: number, message: string): Promise<void> {
+    return this.command((t) => t.poke(clid, message));
+  }
+
+  sendMessage(clid: number, message: string): Promise<void> {
+    return this.command((t) => t.sendMessage(clid, message));
+  }
+
+  move(clid: number, channelId: number): Promise<void> {
+    return this.command((t) => t.move(clid, channelId));
+  }
+
+  banUid(uid: string, durationS: number, reason: string): Promise<void> {
+    return this.command((t) => t.banUid(uid, durationS, reason));
+  }
+
+  banClient(clid: number, durationS: number, reason: string): Promise<void> {
+    return this.command((t) => t.banClient(clid, durationS, reason));
+  }
+
   async channelList(): Promise<Ts3Channel[]> {
     return this.command((t) => t.channelList());
   }

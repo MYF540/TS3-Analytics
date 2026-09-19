@@ -15,6 +15,8 @@ import type { activitySettings, activitySettingsResponse } from './routes/settin
 import type { statusResponse } from './routes/status.js';
 import type { flagsResponse } from './routes/flags.js';
 import type { alertSettingsResponse } from './routes/alerts.js';
+import type { moderationSettingsResponse } from './routes/moderation.js';
+import type { moderationAction } from '../moderation/actions.js';
 import type { onlineResponse } from './routes/online.js';
 import type { heatmapResponse, overviewResponse, seriesResponse } from './routes/stats.js';
 import type { userDetailResponse, userListItem } from './routes/users.js';
@@ -46,6 +48,8 @@ export type Contract = [
   Assert<Equals<z.output<typeof statusResponse>, Web.BotStatus>>,
   Assert<Equals<z.output<typeof flagsResponse>, Web.FlagsResponse>>,
   Assert<Equals<z.output<typeof alertSettingsResponse>, Web.AlertSettings>>,
+  Assert<Equals<z.output<typeof moderationSettingsResponse>, Web.ModerationSettings>>,
+  Assert<Equals<z.input<typeof moderationAction>, Web.ModerationAction>>,
   Assert<Equals<ApiErrorBody, Web.ApiErrorBody>>,
 ];
 

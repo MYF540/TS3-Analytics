@@ -2,8 +2,10 @@ import type { EventEmitter as NodeEventEmitter } from 'node:events';
 import { EventEmitter } from 'node:events';
 import {
   QueryProtocol,
+  ReasonIdentifier,
   ResponseError,
   TeamSpeak,
+  TextMessageTargetMode,
   type TeamSpeakChannel,
   type TeamSpeakClient,
 } from 'ts3-nodejs-library';
@@ -260,6 +262,43 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
   async banList(): Promise<Ts3Ban[]> {
     const query = this.connected();
     return fetchAllBans((start, count) => query.banList(start, count));
+  }
+
+  async kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {
+    await this.connected().clientKick(
+      String(clid),
+      from === 'server' ? ReasonIdentifier.KICK_SERVER : ReasonIdentifier.KICK_CHANNEL,
+      reason,
+    );
+  }
+
+  async poke(clid: number, message: string): Promise<void> {
+    await this.connected().clientPoke(String(clid), message);
+  }
+
+  async sendMessage(clid: number, message: string): Promise<void> {
+    await this.connected().sendTextMessage(String(clid), TextMessageTargetMode.CLIENT, message);
+  }
+
+  async move(clid: number, channelId: number): Promise<void> {
+    await this.connected().clientMove(String(clid), String(channelId));
+  }
+
+  async banUid(uid: string, durationS: number, reason: string): Promise<void> {
+    await this.connected().ban({
+      // The ServerQuery manual documents uid={clientUID} (not a regex, unlike ip/name).
+      uid,
+      banreason: reason,
+      ...(durationS > 0 ? { time: durationS } : {}),
+    });
+  }
+
+  async banClient(clid: number, durationS: number, reason: string): Promise<void> {
+    await this.connected().banClient({
+      clid: String(clid),
+      banreason: reason,
+      ...(durationS > 0 ? { time: durationS } : {}),
+    });
   }
 
   async clientIp(clid: number): Promise<string | undefined> {
