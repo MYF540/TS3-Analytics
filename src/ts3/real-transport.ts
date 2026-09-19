@@ -1,3 +1,4 @@
+import type { EventEmitter as NodeEventEmitter } from 'node:events';
 import { EventEmitter } from 'node:events';
 import {
   QueryProtocol,
@@ -46,6 +47,68 @@ export function toTs3Client(client: ClientLike): Ts3Client {
     version: client.version,
     country: client.country ?? undefined,
   };
+}
+
+/** Raw `notifycliententerview` as parsed by the library (camelCase keys). */
+export interface RawEnterView {
+  clid: string;
+  ctid: string;
+  clientDatabaseId: string;
+  clientUniqueIdentifier: string;
+  clientNickname: string;
+  clientType: number;
+  clientAway?: boolean;
+  clientInputMuted?: boolean;
+  clientOutputMuted?: boolean;
+  clientServergroups?: string[];
+  clientPlatform?: string;
+  clientVersion?: string;
+  clientCountry?: string;
+}
+
+/** Builds a client from the join notification itself, without an extra `clientlist`. */
+export function enterViewToClient(event: RawEnterView): Ts3Client {
+  return {
+    clid: Number(event.clid),
+    dbid: Number(event.clientDatabaseId),
+    uid: event.clientUniqueIdentifier,
+    nickname: event.clientNickname,
+    type: event.clientType,
+    channelId: Number(event.ctid),
+    idleMs: 0,
+    away: event.clientAway ?? false,
+    inputMuted: event.clientInputMuted ?? false,
+    outputMuted: event.clientOutputMuted ?? false,
+    serverGroups: (event.clientServergroups ?? []).map(Number),
+    platform: event.clientPlatform ?? '',
+    version: event.clientVersion ?? '',
+    country: event.clientCountry || undefined,
+  };
+}
+
+/**
+ * The library's own handlers for these notifications run extra `clientlist`/`channellist`
+ * commands for every join and move, bypassing our rate-limited queue (rule 5). We replace them
+ * with handlers that only use the notification payload.
+ */
+const REPLACED_NOTIFICATIONS = ['cliententerview', 'clientleftview', 'clientmoved'] as const;
+
+/** Routes raw join/leave/move notifications of `teamspeak` to `target` (see above). */
+export function attachNotificationHandlers(
+  teamspeak: TeamSpeak,
+  target: EventEmitter<Ts3TransportEvents>,
+): void {
+  const query = (teamspeak as unknown as { query: NodeEventEmitter }).query;
+  for (const name of REPLACED_NOTIFICATIONS) query.removeAllListeners(name);
+  query.on('cliententerview', (event: RawEnterView) => {
+    target.emit('clientConnect', enterViewToClient(event));
+  });
+  query.on('clientleftview', (event: { clid: string; reasonid: string }) => {
+    target.emit('clientDisconnect', { clid: Number(event.clid), reasonId: Number(event.reasonid) });
+  });
+  query.on('clientmoved', (event: { clid: string; ctid: string }) => {
+    target.emit('clientMoved', { clid: Number(event.clid), channelId: Number(event.ctid) });
+  });
 }
 
 function toTs3Channel(channel: Pick<TeamSpeakChannel, 'cid' | 'pid' | 'name'>): Ts3Channel {
@@ -98,15 +161,7 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
     }
 
     teamspeak.on('close', (error) => this.emit('close', error));
-    teamspeak.on('clientconnect', ({ client }) => {
-      this.emit('clientConnect', toTs3Client(client));
-    });
-    teamspeak.on('clientdisconnect', ({ event }) => {
-      this.emit('clientDisconnect', { clid: Number(event.clid), reasonId: Number(event.reasonid) });
-    });
-    teamspeak.on('clientmoved', ({ client, channel }) => {
-      this.emit('clientMoved', { clid: Number(client.clid), channelId: Number(channel.cid) });
-    });
+    attachNotificationHandlers(teamspeak, this);
   }
 
   async disconnect(): Promise<void> {
