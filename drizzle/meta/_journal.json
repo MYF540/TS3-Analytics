@@ -15,6 +15,13 @@
       "when": 1789817622116,
       "tag": "0001_server_hourly_online_seconds",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789835203066,
+      "tag": "0002_admin_users_and_sessions",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router';
+import { useAuth } from '../auth/context';
 import { t } from '../i18n';
 import { useTheme } from '../theme/theme';
 import { StatusIndicator } from './StatusIndicator';
@@ -11,6 +12,8 @@ const NAV = [
 
 export function Layout() {
   const { theme, toggle } = useTheme();
+  const { state, logout } = useAuth();
+  const user = state.status === 'authenticated' ? state.user : undefined;
   return (
     <div className="app">
       <a className="skip-link" href="#main">
@@ -27,6 +30,23 @@ export function Layout() {
         </nav>
         <div className="header__tools">
           <StatusIndicator />
+          {user && (
+            <span
+              className="header__user muted"
+              title={t('auth.signedInAs', { name: user.username, role: t(`role.${user.role}`) })}
+            >
+              {user.username}
+            </span>
+          )}
+          <button
+            type="button"
+            className="button button--small"
+            onClick={() => {
+              void logout();
+            }}
+          >
+            {t('auth.logout')}
+          </button>
           <button
             type="button"
             className="icon-button"

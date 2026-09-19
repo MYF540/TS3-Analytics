@@ -171,10 +171,11 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 ## Phase 4 – Auth & Admin-Basis
 
-- [ ] **T4.1 Login & Rollen** · `Backend` `Security` · braucht: T3.1
+- [x] **T4.1 Login & Rollen** · `Backend` `Security` · braucht: T3.1
   - Tabelle `admin_users`, argon2-Hashes, Session-Cookie (httpOnly, sameSite=strict), Rollen `admin` / `moderator` / `viewer`
   - CLI-Befehl zum Anlegen des ersten Admins; Login-Seite im Frontend; Rechteprüfung pro Route
   - Fertig wenn: Tests prüfen Rollenrechte je Route; Login-Versuche sind gedrosselt
+  - Notiz: Entscheidung (2026-09-19): gesamtes Webinterface nur mit Login; öffentlich sind nur `POST /api/auth/login`, `POST /api/auth/logout` und `GET /api/health` (Betriebsstatus ohne personenbezogene Daten, für Monitoring). Migration 0002: `admin_users` (Benutzername klein geschrieben, argon2id, Rolle viewer/moderator/admin, gesperrt), `admin_sessions` (nur SHA-256 des 256-bit-Tokens, gleitende Gültigkeit `SESSION_TTL_HOURS`, Standard 12 h). Plugin `src/api/auth/plugin.ts`: jede `/api`-Route ist standardmäßig viewer-geschützt, `config: { auth: 'public' | Rolle }` pro Route; unbekannte API-Routen liefern ohne Login 401 statt 404; Cookie `ts3a_session` HttpOnly + SameSite=Strict (+ Secure per `WEB_COOKIE_SECURE`); Origin-Prüfung für nicht-GET (CSRF). `app.apiRoutes` listet alle Routen mit Schutzstufe – der Test prüft jede Route anonym und als viewer, neue Routen sind automatisch abgedeckt. Drosselung (`src/domain/login-throttle.ts`): 5 Fehlversuche/15 min pro Name → 15 min Sperre, global max. 30 Fehlversuche/min; unbekannte Namen kosten gleich viel Rechenzeit. Passwort ändern/Konto sperren beendet alle Sitzungen. CLI `pnpm admin:user create|password|disable|enable|list` (Passwort verdeckt oder per stdin). Abgelaufene Sitzungen löscht ein stündlicher Job. Frontend: Login-Seite mit Rücksprung (`?weiter=`, nur interne Pfade), Umleitung bei 401, Nutzer + Abmelden im Kopf. Ende-zu-Ende mit curl geprüft.
 
 - [ ] **T4.2 Audit-Log** · `Backend` · braucht: T4.1
   - Tabelle `audit_log` (wer, was, Ziel, Details, wann), Middleware für alle schreibenden Routen, Seite mit Filter

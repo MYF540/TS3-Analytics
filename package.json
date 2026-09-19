@@ -23,7 +23,8 @@
     "db:check": "drizzle-kit check",
     "stats:rebuild": "tsx src/cli/stats-rebuild.ts",
     "seed:synthetic": "tsx src/cli/seed-synthetic.ts",
-    "bench": "tsx src/cli/bench.ts"
+    "bench": "tsx src/cli/bench.ts",
+    "admin:user": "tsx src/cli/admin-user.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -42,7 +43,9 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.2",
     "@fastify/static": "^10.1.4",
+    "argon2": "^0.45.1",
     "better-sqlite3": "^12.11.1",
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.12.5",

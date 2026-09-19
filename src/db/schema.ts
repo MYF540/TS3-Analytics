@@ -203,3 +203,44 @@ export const settings = sqliteTable('settings', {
   value: text('value').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
+
+export const ADMIN_ROLES = ['viewer', 'moderator', 'admin'] as const;
+export type AdminRole = (typeof ADMIN_ROLES)[number];
+
+/** Accounts of the web interface (not TS3 users). Usernames are stored lower-case. */
+export const adminUsers = sqliteTable(
+  'admin_users',
+  {
+    id: integer('id').primaryKey(),
+    username: text('username').notNull(),
+    /** argon2id hash; the plain password is never stored. */
+    passwordHash: text('password_hash').notNull(),
+    role: text('role', { enum: ADMIN_ROLES }).notNull(),
+    disabled: integer('disabled', { mode: 'boolean' }).notNull().default(false),
+    createdAt: integer('created_at').notNull(),
+    lastLoginAt: integer('last_login_at'),
+  },
+  (t) => [
+    uniqueIndex('admin_users_username_unique').on(t.username),
+    check('admin_users_role_check', sql`${t.role} IN ('viewer', 'moderator', 'admin')`),
+    check('admin_users_disabled_check', sql`${t.disabled} IN (0, 1)`),
+  ],
+);
+
+/** Login sessions. Only a SHA-256 hash of the session token is stored. */
+export const adminSessions = sqliteTable(
+  'admin_sessions',
+  {
+    tokenHash: blob('token_hash', { mode: 'buffer' }).primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => adminUsers.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull(),
+    expiresAt: integer('expires_at').notNull(),
+    lastSeenAt: integer('last_seen_at').notNull(),
+  },
+  (t) => [
+    index('admin_sessions_user_idx').on(t.userId),
+    index('admin_sessions_expires_idx').on(t.expiresAt),
+  ],
+);

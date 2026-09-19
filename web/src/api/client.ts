@@ -1,6 +1,7 @@
 import { errorMessage } from '../i18n';
 import type {
   ApiErrorBody,
+  AuthResponse,
   Health,
   Heatmap,
   Leaderboard,
@@ -22,11 +23,16 @@ export class ApiRequestError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    /** Seconds until a rate limit ends (RATE_LIMITED). */
+    readonly retryAfterS?: number,
   ) {
     super(message);
     this.name = 'ApiRequestError';
   }
 }
+
+/** Dispatched on `window` whenever the API answers 401 (session missing or expired). */
+export const UNAUTHORIZED_EVENT = 'ts3a:unauthorized';
 
 type Query = Record<string, string | number | boolean | undefined>;
 
@@ -48,29 +54,61 @@ function isErrorBody(value: unknown): value is ApiErrorBody {
   );
 }
 
-export async function apiGet<T>(path: string, query?: Query, signal?: AbortSignal): Promise<T> {
+async function request<T>(
+  method: 'GET' | 'POST',
+  path: string,
+  query?: Query,
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(buildUrl(path, query), {
-      headers: { accept: 'application/json' },
+      method,
+      headers:
+        body === undefined
+          ? { accept: 'application/json' }
+          : { accept: 'application/json', 'content-type': 'application/json' },
       credentials: 'same-origin',
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       ...(signal ? { signal } : {}),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
     throw new ApiRequestError(0, 'NETWORK', errorMessage('NETWORK'));
   }
-  const body: unknown = await response.json().catch(() => undefined);
+  if (response.status === 204) return undefined as T;
+  const payload: unknown = await response.json().catch(() => undefined);
   if (!response.ok) {
-    const code = isErrorBody(body) ? body.error.code : 'UNKNOWN';
-    throw new ApiRequestError(response.status, code, errorMessage(code));
+    const code = isErrorBody(payload) ? payload.error.code : 'UNKNOWN';
+    if (response.status === 401 && path !== '/auth/login') {
+      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+    }
+    const details = isErrorBody(payload) ? payload.error.details : undefined;
+    const retryAfterS =
+      typeof details === 'object' && details !== null && 'retryAfterS' in details
+        ? Number(details.retryAfterS)
+        : undefined;
+    throw new ApiRequestError(response.status, code, errorMessage(code), retryAfterS);
   }
-  return body as T;
+  return payload as T;
+}
+
+export function apiGet<T>(path: string, query?: Query, signal?: AbortSignal): Promise<T> {
+  return request<T>('GET', path, query, undefined, signal);
+}
+
+export function apiPost<T>(path: string, body: unknown = {}): Promise<T> {
+  return request<T>('POST', path, undefined, body);
 }
 
 /** Typed endpoint functions. */
 export const api = {
   health: (signal?: AbortSignal) => apiGet<Health>('/health', {}, signal),
+  me: (signal?: AbortSignal) => apiGet<AuthResponse>('/auth/me', {}, signal),
+  login: (username: string, password: string) =>
+    apiPost<AuthResponse>('/auth/login', { username, password }),
+  logout: () => apiPost<undefined>('/auth/logout'),
   onlineNow: (signal?: AbortSignal) => apiGet<OnlineNow>('/online', {}, signal),
   overview: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Overview>('/stats/overview', { range }, signal),

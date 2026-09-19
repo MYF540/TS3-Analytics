@@ -117,7 +117,7 @@ export const sampleUser: UserDetail = {
   countries: [{ country: 'DE', lastSeen: 1_789_790_000, connections: 12 }],
 };
 
-type Responder = (url: URL) => { status?: number; body: unknown } | undefined;
+type Responder = (url: URL, init?: RequestInit) => { status?: number; body: unknown } | undefined;
 
 function toUrl(input: RequestInfo | URL): URL {
   const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -131,6 +131,8 @@ function toUrl(input: RequestInfo | URL): URL {
 export function mockApi(overrides: Record<string, unknown> = {}) {
   const defaults: Record<string, unknown> = {
     '/api/health': sampleHealth,
+    '/api/auth/me': { user: { id: 1, username: 'admin', role: 'admin' } },
+    '/api/auth/logout': () => ({ status: 204, body: null }),
     '/api/stats/overview': sampleOverview,
     '/api/stats/online': sampleSeries,
     '/api/stats/heatmap': sampleHeatmap,
@@ -159,12 +161,12 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/users/1': sampleUser,
   };
   const table = { ...defaults, ...overrides };
-  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+  const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = toUrl(input);
     const entry = table[url.pathname];
     const result =
       typeof entry === 'function'
-        ? (entry as Responder)(url)
+        ? (entry as Responder)(url, init)
         : entry === undefined
           ? undefined
           : { body: entry };

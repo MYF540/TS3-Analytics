@@ -2,6 +2,7 @@ import { startServer } from './api/server.js';
 import { loadConfigOrExit } from './config/config.js';
 import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
+import { deleteExpiredSessions } from './api/auth/service.js';
 import { runMaintenance, runRetention } from './jobs/retention.js';
 import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
@@ -54,6 +55,11 @@ async function main(): Promise<void> {
           ),
       },
       {
+        name: 'expired-sessions',
+        intervalS: 3600,
+        run: (now) => deleteExpiredSessions(database.db, now),
+      },
+      {
         name: 'maintenance',
         intervalS: 7 * 86_400,
         run: () => {
@@ -73,6 +79,7 @@ async function main(): Promise<void> {
       live: watcher,
       now: () => Math.floor(Date.now() / 1000),
       startedAt: Math.floor(Date.now() / 1000),
+      auth: { sessionTtlS: config.web.sessionTtlS, cookieSecure: config.web.cookieSecure },
     },
     config.web,
   );

@@ -13,8 +13,8 @@ import {
 import { generateSyntheticData } from '../../db/synthetic.js';
 import { createTestDatabase } from '../../db/testing.js';
 import { berlinDayStart } from '../../domain/time.js';
-import { createSilentLogger } from '../../logging/logger.js';
 import { buildServer } from '../server.js';
+import { createTestContext, sessionCookie } from '../testing.js';
 
 const H = 3600;
 const DAY1 = berlinDayStart(20260914); // Monday
@@ -22,9 +22,10 @@ const NOW = DAY1 + 3 * 86_400 + 12 * H; // Thursday noon
 
 let database: AppDatabase;
 let app: FastifyInstance;
+let cookie: string;
 
 async function get(url: string) {
-  const res = await app.inject({ method: 'GET', url });
+  const res = await app.inject({ method: 'GET', url, headers: { cookie } });
   return {
     status: res.statusCode,
     body: res.json<Record<string, unknown> & { items?: unknown[] }>(),
@@ -63,14 +64,13 @@ function session(userId: number, joinAt: number, seconds: number, active = secon
 }
 
 async function start(): Promise<void> {
-  app = await buildServer({
-    database,
-    logger: createSilentLogger(),
+  const context = createTestContext(database, {
     ts3: { state: 'connected' },
-    live: undefined,
     now: () => NOW,
     startedAt: NOW - 100,
   });
+  cookie = sessionCookie(context);
+  app = await buildServer(context);
 }
 
 afterEach(async () => {

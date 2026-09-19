@@ -8,27 +8,25 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import type { AppDatabase } from '../db/client.js';
 import { createTestDatabase } from '../db/testing.js';
-import { createSilentLogger } from '../logging/logger.js';
 import type { ConnectionState } from '../ts3/connection.js';
 import type { ApiContext } from './context.js';
 import { ApiError } from './errors.js';
 import { buildServer, startServer } from './server.js';
+import { createTestContext, sessionCookie } from './testing.js';
 
 let database: AppDatabase;
 let context: ApiContext & { ts3: { state: ConnectionState } };
 let app: FastifyInstance | undefined;
 let webRoot: string | undefined;
+let cookie: string;
 
 beforeEach(() => {
   database = createTestDatabase();
   context = {
-    database,
-    logger: createSilentLogger(),
+    ...createTestContext(database, { now: () => 1_000_100, startedAt: 1_000_000 }),
     ts3: { state: 'connected' },
-    live: undefined,
-    now: () => 1_000_100,
-    startedAt: 1_000_000,
   };
+  cookie = sessionCookie(context);
 });
 
 afterEach(async () => {
@@ -91,7 +89,11 @@ describe('error format', () => {
   });
 
   it('returns validation errors with details', async () => {
-    const res = await app?.inject({ method: 'GET', url: '/api/test/validate?page=0' });
+    const res = await app?.inject({
+      method: 'GET',
+      url: '/api/test/validate?page=0',
+      headers: { cookie },
+    });
     expect(res?.statusCode).toBe(400);
     expect(res?.json()).toEqual({
       error: {
@@ -103,13 +105,17 @@ describe('error format', () => {
   });
 
   it('passes expected errors through', async () => {
-    const res = await app?.inject({ method: 'GET', url: '/api/test/forbidden' });
+    const res = await app?.inject({
+      method: 'GET',
+      url: '/api/test/forbidden',
+      headers: { cookie },
+    });
     expect(res?.statusCode).toBe(403);
     expect(res?.json()).toEqual({ error: { code: 'FORBIDDEN', message: 'Not allowed' } });
   });
 
   it('hides internals of unexpected errors', async () => {
-    const res = await app?.inject({ method: 'GET', url: '/api/test/crash' });
+    const res = await app?.inject({ method: 'GET', url: '/api/test/crash', headers: { cookie } });
     expect(res?.statusCode).toBe(500);
     expect(res?.json()).toEqual({
       error: { code: 'INTERNAL_ERROR', message: 'Internal server error' },
@@ -118,9 +124,18 @@ describe('error format', () => {
   });
 
   it('answers unknown API routes with a JSON 404', async () => {
-    const res = await app?.inject({ method: 'GET', url: '/api/does-not-exist' });
+    const res = await app?.inject({
+      method: 'GET',
+      url: '/api/does-not-exist',
+      headers: { cookie },
+    });
     expect(res?.statusCode).toBe(404);
     expect(res?.json()).toEqual({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
+  });
+
+  it('does not reveal API routes to anonymous visitors', async () => {
+    const res = await app?.inject({ method: 'GET', url: '/api/does-not-exist' });
+    expect(res?.statusCode).toBe(401);
   });
 
   it('sets security headers', async () => {
@@ -153,7 +168,8 @@ describe('frontend', () => {
     expect(page?.statusCode).toBe(200);
     expect(page?.headers['content-type']).toContain('text/html');
     const api = await app?.inject({ method: 'GET', url: '/api/nope' });
-    expect(api?.statusCode).toBe(404);
+    expect(api?.statusCode).toBe(401); // JSON error, not the SPA
+    expect(api?.headers['content-type']).toContain('application/json');
   });
 
   it('does not serve files outside the web root', async () => {
@@ -164,7 +180,11 @@ describe('frontend', () => {
 
 describe('startServer', () => {
   it('listens on the loopback address', async () => {
-    app = await startServer(context, { host: '127.0.0.1', port: 0 }, { webRoot: undefined });
+    app = await startServer(
+      context,
+      { host: '127.0.0.1', port: 0, sessionTtlS: 3600, cookieSecure: false },
+      { webRoot: undefined },
+    );
     const address = app.server.address() as AddressInfo;
     expect(address.address).toBe('127.0.0.1');
     const res = await fetch(`http://127.0.0.1:${String(address.port)}/api/health`);

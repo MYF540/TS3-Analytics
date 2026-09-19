@@ -8,6 +8,18 @@ export type LeaderboardPeriod = 'all' | 'week' | 'month' | 'year' | 'custom';
 export type LeaderboardMetric = 'online' | 'active' | 'longestSession';
 export type UserSort = 'online' | 'active' | 'sessions' | 'lastSeen' | 'firstSeen' | 'nickname';
 
+export type AdminRole = 'viewer' | 'moderator' | 'admin';
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  role: AdminRole;
+}
+
+export interface AuthResponse {
+  user: AuthUser;
+}
+
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown };
 }

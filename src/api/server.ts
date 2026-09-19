@@ -11,6 +11,8 @@ import {
 import type { Config } from '../config/config.js';
 import type { ApiContext } from './context.js';
 import { errorBody, registerErrorHandler } from './errors.js';
+import { registerAuth, type RouteAuth } from './auth/plugin.js';
+import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
 import { onlineRoutes } from './routes/online.js';
@@ -19,6 +21,19 @@ import { userRoutes } from './routes/users.js';
 
 /** Built frontend (`web/dist`), same relative location from `src/api` and `dist/api`. */
 export const DEFAULT_WEB_ROOT = fileURLToPath(new URL('../../web/dist', import.meta.url));
+
+/** A registered API route and its access level (used to test every route's protection). */
+export interface RouteInfo {
+  method: string;
+  url: string;
+  auth: RouteAuth;
+}
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    apiRoutes: RouteInfo[];
+  }
+}
 
 export interface ServerOptions {
   /** Directory with the built frontend; not served when missing. */
@@ -47,6 +62,16 @@ export async function buildServer(
     bodyLimit: 1024 * 1024,
   }).withTypeProvider<ZodTypeProvider>();
 
+  const apiRoutes: RouteInfo[] = [];
+  app.decorate('apiRoutes', apiRoutes);
+  app.addHook('onRoute', (route) => {
+    if (!route.url.startsWith('/api')) return;
+    for (const method of [route.method].flat()) {
+      if (method === 'HEAD') continue;
+      apiRoutes.push({ method, url: route.url, auth: route.config?.auth ?? 'viewer' });
+    }
+  });
+
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   registerErrorHandler(app);
@@ -63,8 +88,12 @@ export async function buildServer(
     done();
   });
 
+  // Protects every /api route by default (see auth/plugin.ts).
+  await registerAuth(app, context);
+
   await app.register(
     async (api) => {
+      await api.register(authRoutes(context));
       await api.register(healthRoutes(context));
       await api.register(statsRoutes(context));
       await api.register(userRoutes(context));

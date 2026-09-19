@@ -36,7 +36,7 @@ describe('parseConfig', () => {
         queryRateLimit: 5,
       },
       security: { hmacSecret: VALID_SECRET },
-      web: { host: '127.0.0.1', port: 8080 },
+      web: { host: '127.0.0.1', port: 8080, sessionTtlS: 43_200, cookieSecure: false },
       paths: { geoipDb: './data/GeoLite2-Country.mmdb' },
       database: { path: './data/ts3-analytics.sqlite', cacheSizeMb: 64, mmapSizeMb: 256 },
       retention: { ipDays: 90, segmentMonths: 0 },
@@ -72,7 +72,7 @@ describe('parseConfig', () => {
       botNickname: 'Stats',
       queryRateLimit: 2.5,
     });
-    expect(config.web).toEqual({ host: '::1', port: 3000 });
+    expect(config.web).toMatchObject({ host: '::1', port: 3000 });
     expect(config.paths).toEqual({ geoipDb: 'geo.mmdb' });
     expect(config.database).toEqual({ path: 'db.sqlite', cacheSizeMb: 128, mmapSizeMb: 0 });
     expect(config.retention.ipDays).toBe(30);

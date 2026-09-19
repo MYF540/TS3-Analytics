@@ -27,7 +27,7 @@ describe('routing', () => {
 
   it('navigates via the main navigation and marks the active link', async () => {
     const router = renderAt('/');
-    const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
+    const nav = await screen.findByRole('navigation', { name: 'Hauptnavigation' });
     await userEvent.click(within(nav).getByRole('link', { name: 'Leaderboards' }));
     expect(router.state.location.pathname).toBe('/leaderboards');
     expect(within(nav).getByRole('link', { name: 'Leaderboards' })).toHaveClass('active');
@@ -40,10 +40,7 @@ describe('routing', () => {
   });
 
   it('shows when the service is unreachable', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))),
-    );
+    mockApi({ '/api/health': () => ({ status: 502, body: {} }) });
     renderAt('/');
     expect(await screen.findByText('Dienst nicht erreichbar')).toBeInTheDocument();
   });
@@ -53,7 +50,7 @@ describe('theme', () => {
   it('toggles between light and dark and remembers the choice', async () => {
     renderAt('/');
     const initial = document.documentElement.dataset.theme;
-    await userEvent.click(screen.getByRole('button', { name: 'Farbschema wechseln' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Farbschema wechseln' }));
     const toggled = document.documentElement.dataset.theme;
     expect(toggled).not.toBe(initial);
     expect(localStorage.getItem('ts3-analytics.theme')).toBe(toggled);

@@ -37,6 +37,8 @@ const envSchema = z.object({
       .default('127.0.0.1'),
   ),
   WEB_PORT: optional(port.default(8080)),
+  SESSION_TTL_HOURS: optional(z.coerce.number().int().min(1).max(720).default(12)),
+  WEB_COOKIE_SECURE: optional(z.stringbool().default(false)),
   GEOIP_DB_PATH: optional(z.string().default('./data/GeoLite2-Country.mmdb')),
   SQLITE_PATH: optional(z.string().default('./data/ts3-analytics.sqlite')),
   SQLITE_CACHE_SIZE_MB: optional(z.coerce.number().int().min(1).default(64)),
@@ -70,6 +72,10 @@ export interface Config {
   readonly web: {
     readonly host: string;
     readonly port: number;
+    /** Idle timeout of a login session (sliding). */
+    readonly sessionTtlS: number;
+    /** Send the session cookie only over HTTPS (enable behind a TLS proxy). */
+    readonly cookieSecure: boolean;
   };
   readonly paths: {
     readonly geoipDb: string;
@@ -133,7 +139,12 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
       queryRateLimit: e.TS3_QUERY_RATE_LIMIT,
     }),
     security: Object.freeze({ hmacSecret: e.HMAC_SECRET }),
-    web: Object.freeze({ host: e.WEB_HOST, port: e.WEB_PORT }),
+    web: Object.freeze({
+      host: e.WEB_HOST,
+      port: e.WEB_PORT,
+      sessionTtlS: e.SESSION_TTL_HOURS * 3600,
+      cookieSecure: e.WEB_COOKIE_SECURE,
+    }),
     paths: Object.freeze({ geoipDb: e.GEOIP_DB_PATH }),
     database: Object.freeze({
       path: e.SQLITE_PATH,

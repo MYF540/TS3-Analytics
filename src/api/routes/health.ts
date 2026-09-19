@@ -16,7 +16,11 @@ export function healthRoutes(context: ApiContext): FastifyPluginAsyncZod {
   return (app) => {
     app.get(
       '/health',
-      { schema: { response: { 200: healthResponse, 503: healthResponse } } },
+      {
+        // Operational status only (no personal data), so monitoring works without a login.
+        config: { auth: 'public' },
+        schema: { response: { 200: healthResponse, 503: healthResponse } },
+      },
       async (_request, reply) => {
         const started = performance.now();
         let dbOk = true;

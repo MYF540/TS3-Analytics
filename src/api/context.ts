@@ -15,4 +15,6 @@ export interface ApiContext {
   now: () => number;
   /** Process start (UTC seconds), for the uptime. */
   startedAt: number;
+  /** Session settings of the web login. */
+  auth: { sessionTtlS: number; cookieSecure: boolean };
 }

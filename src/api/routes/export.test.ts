@@ -5,8 +5,8 @@ import type { AppDatabase } from '../../db/client.js';
 import { openSession, recordNickname, upsertUser } from '../../db/repositories/index.js';
 import { createTestDatabase } from '../../db/testing.js';
 import { berlinDayStart } from '../../domain/time.js';
-import { createSilentLogger } from '../../logging/logger.js';
 import { buildServer } from '../server.js';
+import { createTestContext, sessionCookie } from '../testing.js';
 
 const H = 3600;
 const DAY1 = berlinDayStart(20260914);
@@ -17,6 +17,7 @@ const CRLF = String.fromCharCode(13, 10);
 
 let database: AppDatabase;
 let app: FastifyInstance;
+let cookie: string;
 
 function player(uid: string, nick: string, seconds: number): void {
   const id = upsertUser(database.db, { uid, seenAt: DAY1 });
@@ -25,7 +26,7 @@ function player(uid: string, nick: string, seconds: number): void {
 }
 
 async function csv(url: string) {
-  const res = await app.inject({ method: 'GET', url });
+  const res = await app.inject({ method: 'GET', url, headers: { cookie } });
   const lines = res.body.replace(BOM, '').split(CRLF);
   return { res, lines };
 }
@@ -35,14 +36,9 @@ beforeEach(async () => {
   player('uid-a', 'Alice', 5400);
   player('uid-b', '=cmd|"/c calc"!A1', 7200);
   player('uid-c', 'Carol; the "Great"', 600);
-  app = await buildServer({
-    database,
-    logger: createSilentLogger(),
-    ts3: undefined,
-    live: undefined,
-    now: () => NOW,
-    startedAt: 0,
-  });
+  const context = createTestContext(database, { now: () => NOW });
+  cookie = sessionCookie(context);
+  app = await buildServer(context);
 });
 
 afterEach(async () => {
@@ -56,7 +52,7 @@ describe('GET /api/users/export.csv', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toBe('text/csv; charset=utf-8');
     expect(res.headers['content-disposition']).toBe('attachment; filename="spieler.csv"');
-    expect(res.body.startsWith('﻿')).toBe(true);
+    expect(res.body.startsWith(BOM)).toBe(true);
     expect(lines[0]).toBe(
       'Spieler-ID;UID;Nickname;Spielzeit (h);Spielzeit (s);Aktivzeit (h);Aktivzeit (s);Sessions;Erstmals gesehen;Zuletzt gesehen;Land;Online',
     );
@@ -92,6 +88,7 @@ describe('GET /api/leaderboards/export.csv', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/leaderboards/export.csv?period=custom',
+      headers: { cookie },
     });
     expect(res.statusCode).toBe(400);
     expect(res.json()).toMatchObject({ error: { code: 'INVALID_RANGE' } });
