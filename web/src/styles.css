@@ -527,6 +527,35 @@ td:first-child {
   border-radius: 3px;
 }
 
+.state::before {
+  content: '';
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+  background: var(--muted);
+}
+
+.state--active::before {
+  background: var(--ok);
+}
+
+.state--idle::before {
+  background: var(--warn);
+}
+
+.state--afk::before {
+  background: var(--muted);
+}
+
+.online-table td:nth-child(2),
+.online-table th:nth-child(2),
+.online-table td:nth-child(3),
+.online-table th:nth-child(3) {
+  text-align: left;
+}
+
 @media (max-width: 720px) {
   .leaderboard__track {
     width: 60px;

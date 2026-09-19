@@ -82,6 +82,18 @@ describe('Watcher', () => {
     expect(watcher.tracker.onlineClients).toEqual([]);
   });
 
+  it('exposes the live list of online clients with their state', async () => {
+    now = T0 + 5;
+    const clid = server.join({ uid: UID_A, nickname: 'Alice' });
+    server.move(clid, 2);
+    await watcher.sync();
+    expect(watcher.liveClients()).toEqual([
+      { userId: 1, nickname: 'Alice', channelId: 2, state: 'active', since: T0 + 5 },
+    ]);
+    server.leave(clid);
+    expect(watcher.liveClients()).toEqual([]);
+  });
+
   it('stores channel names on connect', () => {
     expect(rows('SELECT id, name FROM channels ORDER BY id')).toEqual([
       { id: 1, name: 'Lobby' },

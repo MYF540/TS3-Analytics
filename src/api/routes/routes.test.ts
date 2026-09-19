@@ -67,6 +67,7 @@ async function start(): Promise<void> {
     database,
     logger: createSilentLogger(),
     ts3: { state: 'connected' },
+    live: undefined,
     now: () => NOW,
     startedAt: NOW - 100,
   });

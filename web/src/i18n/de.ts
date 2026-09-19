@@ -177,6 +177,14 @@ export const de = {
   'lb.activeHint': 'Aktivzeiten gibt es erst ab Beginn der Live-Erfassung.',
   'lb.chooseRange': 'Bitte Start- und Enddatum wählen.',
 
+  'online.title': 'Gerade online',
+  'online.count': '{count} verbunden',
+  'online.empty': 'Gerade ist niemand online.',
+  'online.disconnected':
+    'Keine Verbindung zum TeamSpeak-Server – die Liste wird angezeigt, sobald die Verbindung wieder steht.',
+  'online.state': 'Zustand',
+  'online.since': 'Online seit',
+
   'unit.clock': 'Uhr',
   'unit.hours': '{value} h',
   'unit.minutes': '{value} min',

@@ -70,6 +70,7 @@ async function main(): Promise<void> {
       database,
       logger,
       ts3: connection,
+      live: watcher,
       now: () => Math.floor(Date.now() / 1000),
       startedAt: Math.floor(Date.now() / 1000),
     },

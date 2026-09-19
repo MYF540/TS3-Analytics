@@ -157,6 +157,17 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Tabs für alle Leaderboard-Arten, Link zur Spielerseite
   - Notiz: `web/src/pages/LeaderboardsPage.tsx`: Reiter Gesamt, Aktiv, Woche, Monat, Jahr, Längste Session, Zeitraum (Datumsfelder) als ARIA-Tablist; bei Woche/Monat/Jahr/Zeitraum Umschalter Spielzeit/Aktivzeit; Rang (Podium hervorgehoben), Spieler-Link, Wert + Balken relativ zu Platz 1, ausgewerteter Zeitraum, Paginierung (25). Zustand in der URL mit deutschen Parametern (`art`, `wertung`, `von`, `bis`, `page`). Hinweis bei Aktivzeit, dass diese erst ab Live-Erfassung existiert (T8.7 präzisiert das für Importe). Per Screenshot geprüft.
 
+- [x] **T3.7 „Wer ist gerade online“** · `Backend` `Frontend` · braucht: T3.4, T2.3
+  - Liste der aktuell verbundenen Spieler auf dem Dashboard: Nickname (Link zur Spielerseite), Channel, Zustand (aktiv/idle/AFK), online seit
+  - Daten live aus dem Watcher (nicht aus den gepufferten Segmenten), Endpunkt `GET /api/online`
+  - Fertig wenn: Tests für Endpunkt und Anzeige; ohne Query-Verbindung klarer Hinweis statt veralteter Liste
+  - Notiz: `Watcher.liveClients()` (Tracker + aktueller Zustand aus `ActivityTracker.stateOf`), im `ApiContext` als `live`. `GET /api/online` liefert `{ connected, items }` sortiert nach Channel und Nickname; ohne Verbindung `connected: false` und leere Liste. Dashboard-Karte `web/src/components/OnlineNow.tsx`, aktualisiert alle 30 s, Zustand mit Text + Punkt (nicht nur Farbe).
+
+- [ ] **T3.8 CSV-Export** · `Backend` `Frontend` · braucht: T3.5, T3.6
+  - Export der Spielerliste (mit aktueller Suche/Sortierung/Filter) und der Leaderboards (aktuelle Auswahl) als CSV
+  - Excel-freundlich für deutsche Systeme: UTF-8 mit BOM, Semikolon als Trenner, Dauern in Stunden mit Dezimalkomma sowie in Sekunden
+  - Fertig wenn: Tests prüfen Inhalt, Escaping (Semikolon, Anführungszeichen, Zeilenumbrüche in Nicknames) und Schutz vor CSV-Formel-Injection
+
 ## Phase 4 – Auth & Admin-Basis
 
 - [ ] **T4.1 Login & Rollen** · `Backend` `Security` · braucht: T3.1
@@ -244,6 +255,12 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 - [ ] **T7.4 Channel-Statistik** · `Backend` `Frontend` · braucht: T3.2
   - Nutzung pro Channel, ungenutzte Channels der letzten X Tage
+
+- [ ] **T7.5 Öffentliche Leaderboard-Seite (optional)** · `Backend` `Frontend` `Security` · braucht: T4.1, T3.6
+  - Eigener, getrennter HTTP-Listener (eigener Host/Port in der Config, Standard: aus), der ausschließlich eine schreibgeschützte Leaderboard-Ansicht ausliefert – ohne Login, ohne UIDs, ohne Links auf Spielerdetails
+  - Bewusste Ausnahme von Regel 8, nur für diesen Listener; das Admin-Webinterface bleibt auf 127.0.0.1
+  - Konfigurierbar, welche Leaderboards öffentlich sind; Spieler können per Override ausgeblendet werden (T6.5)
+  - Fertig wenn: Test belegt, dass über den öffentlichen Listener keine andere API-Route erreichbar ist
 
 ## Phase 8 – Import historischer Daten
 

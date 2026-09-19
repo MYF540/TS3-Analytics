@@ -102,6 +102,18 @@ export interface UserDetail {
   countries: { country: string; lastSeen: number; connections: number }[];
 }
 
+export interface OnlineNow {
+  connected: boolean;
+  items: {
+    userId: number;
+    nickname: string;
+    channelId: number;
+    channelName: string | null;
+    state: 'active' | 'idle' | 'afk' | null;
+    since: number;
+  }[];
+}
+
 export interface LeaderboardEntry {
   rank: number;
   userId: number;

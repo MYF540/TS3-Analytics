@@ -134,6 +134,27 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/stats/overview': sampleOverview,
     '/api/stats/online': sampleSeries,
     '/api/stats/heatmap': sampleHeatmap,
+    '/api/online': {
+      connected: true,
+      items: [
+        {
+          userId: 1,
+          nickname: 'Alice',
+          channelId: 3,
+          channelName: 'Gaming',
+          state: 'active',
+          since: 1_789_790_000,
+        },
+        {
+          userId: 2,
+          nickname: 'Bob',
+          channelId: 9,
+          channelName: 'AFK',
+          state: 'afk',
+          since: 1_789_780_000,
+        },
+      ],
+    },
     '/api/users': sampleUsers,
     '/api/users/1': sampleUser,
   };

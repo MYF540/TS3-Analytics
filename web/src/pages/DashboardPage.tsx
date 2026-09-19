@@ -10,6 +10,7 @@ import {
   WEEKDAY_KEYS,
 } from '../charts/options';
 import { CHART_PALETTES } from '../charts/palette';
+import { OnlineNow } from '../components/OnlineNow';
 import { RangePicker } from '../components/RangePicker';
 import { useApi } from '../hooks/useApi';
 import { formatNumber, t, type MessageKey } from '../i18n';
@@ -158,6 +159,7 @@ export function DashboardPage() {
         <RangePicker value={range} options={SERIES_RANGES} onChange={setRange} />
       </header>
       <Kpis range={range} />
+      <OnlineNow />
       <OnlineHistory range={range} />
       <ActivityHeatmap />
     </section>

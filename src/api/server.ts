@@ -13,6 +13,7 @@ import type { ApiContext } from './context.js';
 import { errorBody, registerErrorHandler } from './errors.js';
 import { healthRoutes } from './routes/health.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
+import { onlineRoutes } from './routes/online.js';
 import { statsRoutes } from './routes/stats.js';
 import { userRoutes } from './routes/users.js';
 
@@ -68,6 +69,7 @@ export async function buildServer(
       await api.register(statsRoutes(context));
       await api.register(userRoutes(context));
       await api.register(leaderboardRoutes(context));
+      await api.register(onlineRoutes(context));
     },
     { prefix: '/api' },
   );

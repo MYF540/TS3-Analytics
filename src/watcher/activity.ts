@@ -47,6 +47,11 @@ export class ActivityTracker implements TrackerListener {
     private readonly settings: () => ActivitySettings,
   ) {}
 
+  /** Current activity state of an online client (undefined if unknown). */
+  stateOf(clid: number): LiveState | undefined {
+    return this.open.get(clid)?.state;
+  }
+
   get openSegments(): number {
     return this.open.size;
   }

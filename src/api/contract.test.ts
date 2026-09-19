@@ -8,6 +8,7 @@ import type * as Web from '../../web/src/api/types.js';
 import type { ApiErrorBody } from './errors.js';
 import type { healthResponse } from './routes/health.js';
 import type { leaderboardResponse } from './routes/leaderboards.js';
+import type { onlineResponse } from './routes/online.js';
 import type { heatmapResponse, overviewResponse, seriesResponse } from './routes/stats.js';
 import type { userDetailResponse, userListItem } from './routes/users.js';
 
@@ -26,6 +27,7 @@ export type Contract = [
   Assert<Equals<z.output<typeof userListItem>, Web.UserListItem>>,
   Assert<Equals<z.output<typeof userDetailResponse>, Web.UserDetail>>,
   Assert<Equals<z.output<typeof leaderboardResponse>, Web.Leaderboard>>,
+  Assert<Equals<z.output<typeof onlineResponse>, Web.OnlineNow>>,
   Assert<Equals<ApiErrorBody, Web.ApiErrorBody>>,
 ];
 

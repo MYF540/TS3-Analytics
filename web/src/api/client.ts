@@ -6,6 +6,7 @@ import type {
   Leaderboard,
   LeaderboardMetric,
   LeaderboardPeriod,
+  OnlineNow,
   OnlineSeries,
   Overview,
   Paged,
@@ -70,6 +71,7 @@ export async function apiGet<T>(path: string, query?: Query, signal?: AbortSigna
 /** Typed endpoint functions. */
 export const api = {
   health: (signal?: AbortSignal) => apiGet<Health>('/health', {}, signal),
+  onlineNow: (signal?: AbortSignal) => apiGet<OnlineNow>('/online', {}, signal),
   overview: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Overview>('/stats/overview', { range }, signal),
   online: (

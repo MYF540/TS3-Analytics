@@ -25,6 +25,7 @@ beforeEach(() => {
     database,
     logger: createSilentLogger(),
     ts3: { state: 'connected' },
+    live: undefined,
     now: () => 1_000_100,
     startedAt: 1_000_000,
   };

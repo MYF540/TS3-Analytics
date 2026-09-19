@@ -14,6 +14,17 @@ import {
 } from './recovery.js';
 import { loadActivitySettings } from './settings.js';
 import { SessionTracker } from './tracker.js';
+import type { LiveState } from '../domain/activity.js';
+
+/** A client that is online right now, as known to the watcher. */
+export interface LiveClient {
+  userId: number;
+  nickname: string;
+  channelId: number;
+  state: LiveState | undefined;
+  /** Session start (UTC seconds). */
+  since: number;
+}
 
 export interface WatcherDeps {
   database: AppDatabase;
@@ -182,6 +193,17 @@ export class Watcher {
     } finally {
       if (this.touchedDuringSync === touched) this.touchedDuringSync = undefined;
     }
+  }
+
+  /** Who is online right now (live, not the buffered segments). */
+  liveClients(): LiveClient[] {
+    return this.tracker.onlineClients.map((client) => ({
+      userId: client.userId,
+      nickname: client.nickname,
+      channelId: client.channelId,
+      state: this.activity.stateOf(client.clid),
+      since: client.joinedAt,
+    }));
   }
 
   /** Writes pending activity segments. */
