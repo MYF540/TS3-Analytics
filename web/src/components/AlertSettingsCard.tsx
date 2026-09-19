@@ -4,21 +4,39 @@ import type { AlertEvent, AlertSettings } from '../api/types';
 import { useApi } from '../hooks/useApi';
 import { t } from '../i18n';
 
-const EVENTS: readonly AlertEvent[] = ['flag.high', 'flag.medium', 'ban.added', 'bot.connection'];
+const EVENTS: readonly AlertEvent[] = [
+  'flag.high',
+  'flag.medium',
+  'ban.added',
+  'join.spike',
+  'bot.connection',
+];
+
+function intIn(value: string, min: number, max: number): number | undefined {
+  if (!/^\d+$/.test(value.trim())) return undefined;
+  const n = Number(value);
+  return n >= min && n <= max ? n : undefined;
+}
 
 function AlertForm({ initial }: { initial: AlertSettings }) {
   const [saved, setSaved] = useState(initial);
   const [webhook, setWebhook] = useState('');
   const [events, setEvents] = useState<ReadonlySet<AlertEvent>>(new Set(initial.events));
   const [rate, setRate] = useState(String(initial.ratePerMinute));
+  const [spikeWindow, setSpikeWindow] = useState(String(initial.joinSpike.windowMinutes));
+  const [spikeThreshold, setSpikeThreshold] = useState(String(initial.joinSpike.threshold));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
 
-  const rateValue = /^\d+$/.test(rate) ? Number(rate) : NaN;
-  const rateValid = rateValue >= 1 && rateValue <= 30;
+  const rateValue = intIn(rate, 1, 30);
+  const windowValue = intIn(spikeWindow, 1, 240);
+  const thresholdValue = intIn(spikeThreshold, 2, 1000);
+  const valid =
+    rateValue !== undefined && windowValue !== undefined && thresholdValue !== undefined;
 
   const save = (webhookUrl: string | null | undefined) => {
+    if (!valid) return;
     setBusy(true);
     setError(undefined);
     setMessage(undefined);
@@ -27,6 +45,7 @@ function AlertForm({ initial }: { initial: AlertSettings }) {
         ...(webhookUrl === undefined ? {} : { webhookUrl }),
         events: EVENTS.filter((e) => events.has(e)),
         ratePerMinute: rateValue,
+        joinSpike: { windowMinutes: windowValue, threshold: thresholdValue },
       })
       .then(
         (result) => {
@@ -44,7 +63,6 @@ function AlertForm({ initial }: { initial: AlertSettings }) {
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!rateValid) return;
     save(webhook.trim() === '' ? undefined : webhook.trim());
   };
 
@@ -127,13 +145,51 @@ function AlertForm({ initial }: { initial: AlertSettings }) {
           min={1}
           max={30}
           value={rate}
-          aria-invalid={!rateValid}
+          aria-invalid={rateValue === undefined}
           onChange={(event) => {
             setRate(event.target.value);
           }}
         />
       </label>
-      <p className={rateValid ? 'muted small' : 'alert'}>{t('alerts.rateHint')}</p>
+      <p className={rateValue === undefined ? 'alert' : 'muted small'}>{t('alerts.rateHint')}</p>
+
+      <fieldset className="settings-form__channels">
+        <legend>{t('alerts.spike.title')}</legend>
+        <p className="muted small">{t('alerts.spike.hint')}</p>
+        <div className="field-row">
+          <label className="field field--narrow">
+            <span>{t('alerts.spike.threshold')}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={2}
+              max={1000}
+              value={spikeThreshold}
+              aria-invalid={thresholdValue === undefined}
+              onChange={(event) => {
+                setSpikeThreshold(event.target.value);
+              }}
+            />
+          </label>
+          <label className="field field--narrow">
+            <span>{t('alerts.spike.window')}</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={240}
+              value={spikeWindow}
+              aria-invalid={windowValue === undefined}
+              onChange={(event) => {
+                setSpikeWindow(event.target.value);
+              }}
+            />
+          </label>
+        </div>
+        {(thresholdValue === undefined || windowValue === undefined) && (
+          <p className="alert">{t('alerts.spike.invalid')}</p>
+        )}
+      </fieldset>
 
       {error && (
         <p className="alert" role="alert">
@@ -141,7 +197,7 @@ function AlertForm({ initial }: { initial: AlertSettings }) {
         </p>
       )}
       <div className="button-row">
-        <button type="submit" className="button button--primary" disabled={busy || !rateValid}>
+        <button type="submit" className="button button--primary" disabled={busy || !valid}>
           {t('alerts.save')}
         </button>
         <button
@@ -156,7 +212,7 @@ function AlertForm({ initial }: { initial: AlertSettings }) {
           <button
             type="button"
             className="button"
-            disabled={busy || !rateValid}
+            disabled={busy || !valid}
             onClick={() => {
               save(null);
             }}

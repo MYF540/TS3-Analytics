@@ -9,6 +9,7 @@ const configured: AlertSettings = {
   webhookHint: '…Ab3x',
   events: ['flag.high', 'bot.connection'],
   ratePerMinute: 10,
+  joinSpike: { windowMinutes: 10, threshold: 10 },
 };
 
 function card() {
@@ -39,6 +40,7 @@ function setup(initial: AlertSettings, test: object = { ok: true, status: null }
           webhookHint: removed ? null : '…Zz99',
           events: body.events,
           ratePerMinute: body.ratePerMinute,
+          joinSpike: initial.joinSpike,
         },
       };
     },
@@ -71,7 +73,11 @@ describe('AlertSettingsCard', () => {
     await userEvent.click(card().getByRole('button', { name: 'Benachrichtigungen speichern' }));
     await waitFor(() => {
       expect(puts(fetchMock)).toEqual([
-        { events: ['flag.high', 'ban.added', 'bot.connection'], ratePerMinute: 10 },
+        {
+          events: ['flag.high', 'ban.added', 'bot.connection'],
+          ratePerMinute: 10,
+          joinSpike: { windowMinutes: 10, threshold: 10 },
+        },
       ]);
     });
     expect(await card().findByText('Gespeichert.')).toBeInTheDocument();

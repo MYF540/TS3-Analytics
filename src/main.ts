@@ -11,6 +11,7 @@ import { Ts3Connection } from './ts3/connection.js';
 import { RealTs3Transport } from './ts3/real-transport.js';
 import { ConnectionAlerts } from './alerts/connection.js';
 import { alertNewBans, alertNewFlags } from './alerts/dispatch.js';
+import { JoinSpikeDetector } from './alerts/join-spike.js';
 import { AlertNotifier } from './alerts/notifier.js';
 import { BanSync } from './watcher/bans.js';
 import { Watcher } from './watcher/watcher.js';
@@ -43,6 +44,7 @@ async function main(): Promise<void> {
   });
   watcher.start();
   const alerts = new AlertNotifier({ db: database.db, logger });
+  watcher.tracker.addListener(new JoinSpikeDetector(database, alerts, logger));
   const connectionAlerts = new ConnectionAlerts(connection, alerts);
   connectionAlerts.start();
   /** Flag detection plus alerts for new hints; returns the counts for the job log. */

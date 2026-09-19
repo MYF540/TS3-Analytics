@@ -263,13 +263,15 @@ export interface BotStatus {
   }[];
 }
 
-export type AlertEvent = 'flag.high' | 'flag.medium' | 'ban.added' | 'bot.connection';
+export type AlertEvent =
+  'flag.high' | 'flag.medium' | 'ban.added' | 'bot.connection' | 'join.spike';
 
 export interface AlertSettings {
   configured: boolean;
   webhookHint: string | null;
   events: AlertEvent[];
   ratePerMinute: number;
+  joinSpike: { windowMinutes: number; threshold: number };
 }
 
 export interface ActivitySettings {

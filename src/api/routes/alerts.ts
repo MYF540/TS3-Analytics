@@ -18,6 +18,7 @@ export const alertSettingsResponse = z.object({
   webhookHint: z.string().nullable(),
   events: z.array(z.enum(ALERT_EVENTS)),
   ratePerMinute: z.number().int(),
+  joinSpike: z.object({ windowMinutes: z.number().int(), threshold: z.number().int() }),
 });
 
 const alertSettingsBody = z.object({
@@ -25,6 +26,10 @@ const alertSettingsBody = z.object({
   webhookUrl: z.string().trim().nullable().optional(),
   events: z.array(z.enum(ALERT_EVENTS)).max(ALERT_EVENTS.length),
   ratePerMinute: z.number().int().min(1).max(30),
+  joinSpike: z.object({
+    windowMinutes: z.number().int().min(1).max(240),
+    threshold: z.number().int().min(2).max(1000),
+  }),
 });
 
 /**
@@ -41,6 +46,7 @@ export function alertRoutes(context: ApiContext): FastifyPluginAsyncZod {
         webhookHint: maskWebhook(settings.webhookUrl),
         events: settings.events,
         ratePerMinute: settings.ratePerMinute,
+        joinSpike: settings.joinSpike,
       };
     };
 
@@ -58,7 +64,7 @@ export function alertRoutes(context: ApiContext): FastifyPluginAsyncZod {
       },
       (request) => {
         const before = loadAlertSettings(db);
-        const { webhookUrl, events, ratePerMinute } = request.body;
+        const { webhookUrl, events, ratePerMinute, joinSpike } = request.body;
         const nextUrl = webhookUrl === undefined ? before.webhookUrl : webhookUrl || null;
         const webhook =
           nextUrl === before.webhookUrl ? 'unchanged' : nextUrl === null ? 'removed' : 'set';
@@ -66,14 +72,14 @@ export function alertRoutes(context: ApiContext): FastifyPluginAsyncZod {
           action: 'settings.alerts',
           targetType: 'settings',
           targetId: 'alerts',
-          details: { webhook, events: [...new Set(events)], ratePerMinute },
+          details: { webhook, events: [...new Set(events)], ratePerMinute, joinSpike },
         });
         if (nextUrl !== null && !WEBHOOK_URL_PATTERN.test(nextUrl)) {
           throw new ApiError(400, 'INVALID_WEBHOOK', 'Not a Discord webhook URL');
         }
         saveAlertSettings(
           db,
-          { webhookUrl: nextUrl, events: [...new Set(events)], ratePerMinute },
+          { webhookUrl: nextUrl, events: [...new Set(events)], ratePerMinute, joinSpike },
           context.now(),
         );
         return response();

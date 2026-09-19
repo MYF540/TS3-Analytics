@@ -206,6 +206,7 @@ export const api = {
     webhookUrl?: string | null;
     events: AlertEvent[];
     ratePerMinute: number;
+    joinSpike: { windowMinutes: number; threshold: number };
   }) => apiSend<AlertSettings>('PUT', '/settings/alerts', settings),
   testAlert: () => apiPost<{ ok: boolean; status: number | null }>('/settings/alerts/test'),
   activitySettings: (signal?: AbortSignal) =>

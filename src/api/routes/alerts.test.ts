@@ -8,6 +8,7 @@ import { buildServer } from '../server.js';
 import { createTestContext, sessionCookie } from '../testing.js';
 
 const WEBHOOK = 'https://discord.com/api/webhooks/987654/Very-Secret_Token1234';
+const SPIKE = { windowMinutes: 10, threshold: 10 };
 
 let database: AppDatabase;
 let context: ApiContext;
@@ -37,6 +38,7 @@ describe('alert settings API', () => {
       webhookUrl: WEBHOOK,
       events: ['flag.high', 'ban.added'],
       ratePerMinute: 5,
+      joinSpike: SPIKE,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({
@@ -44,6 +46,7 @@ describe('alert settings API', () => {
       webhookHint: '…1234',
       events: ['flag.high', 'ban.added'],
       ratePerMinute: 5,
+      joinSpike: SPIKE,
     });
     expect(loadAlertSettings(database.db).webhookUrl).toBe(WEBHOOK);
 
@@ -59,10 +62,15 @@ describe('alert settings API', () => {
   });
 
   it('keeps the webhook when omitted and removes it with null', async () => {
-    await put({ webhookUrl: WEBHOOK, events: [], ratePerMinute: 10 });
-    const kept = await put({ events: ['bot.connection'], ratePerMinute: 10 });
+    await put({ webhookUrl: WEBHOOK, events: [], ratePerMinute: 10, joinSpike: SPIKE });
+    const kept = await put({ events: ['bot.connection'], ratePerMinute: 10, joinSpike: SPIKE });
     expect(kept.json()).toMatchObject({ configured: true, events: ['bot.connection'] });
-    const removed = await put({ webhookUrl: null, events: [], ratePerMinute: 10 });
+    const removed = await put({
+      webhookUrl: null,
+      events: [],
+      ratePerMinute: 10,
+      joinSpike: SPIKE,
+    });
     expect(removed.json()).toMatchObject({ configured: false, webhookHint: null });
   });
 
@@ -72,7 +80,7 @@ describe('alert settings API', () => {
       'http://discord.com/api/webhooks/1/x',
       'https://discord.com/api/webhooks/abc/x',
     ]) {
-      const res = await put({ webhookUrl, events: [], ratePerMinute: 10 });
+      const res = await put({ webhookUrl, events: [], ratePerMinute: 10, joinSpike: SPIKE });
       expect(res.statusCode).toBe(400);
       expect(res.json()).toMatchObject({ error: { code: 'INVALID_WEBHOOK' } });
     }
@@ -88,7 +96,7 @@ describe('alert settings API', () => {
       headers: { cookie: admin },
     });
     expect(none.statusCode).toBe(409);
-    await put({ webhookUrl: WEBHOOK, events: [], ratePerMinute: 10 });
+    await put({ webhookUrl: WEBHOOK, events: [], ratePerMinute: 10, joinSpike: SPIKE });
     const res = await app.inject({
       method: 'POST',
       url: '/api/settings/alerts/test',
@@ -100,6 +108,8 @@ describe('alert settings API', () => {
 
   it('is admin-only', async () => {
     const moderator = sessionCookie(context, 'moderator');
-    expect((await put({ events: [], ratePerMinute: 10 }, moderator)).statusCode).toBe(403);
+    expect(
+      (await put({ events: [], ratePerMinute: 10, joinSpike: SPIKE }, moderator)).statusCode,
+    ).toBe(403);
   });
 });

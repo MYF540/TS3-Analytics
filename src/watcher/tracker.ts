@@ -26,6 +26,12 @@ export interface TrackerListener {
   onMoved?(client: OnlineClient, previousChannelId: number, at: number): void;
   /** Called before the session is closed. */
   onLeaving?(client: OnlineClient, at: number): void;
+  /**
+   * Around a client-list sync: joins in between were discovered by the sync (start-up, missed
+   * events), not reported by a join event.
+   */
+  onSyncStart?(): void;
+  onSyncEnd?(): void;
 }
 
 /**
@@ -151,22 +157,27 @@ export class SessionTracker {
       clients.filter((c) => c.type !== CLIENT_TYPE_QUERY).map((c) => [c.clid, c]),
     );
     for (const clid of skip) present.delete(clid);
-    for (const tracked of [...this.online.values()]) {
-      if (skip.has(tracked.clid)) continue;
-      const current = present.get(tracked.clid);
-      if (!current || current.uid !== tracked.uid) this.leave(tracked.clid, goneAt);
-    }
-    for (const client of present.values()) {
-      const tracked = this.online.get(client.clid);
-      if (!tracked) {
-        this.join(client, at);
-        continue;
+    for (const l of this.listeners) l.onSyncStart?.();
+    try {
+      for (const tracked of [...this.online.values()]) {
+        if (skip.has(tracked.clid)) continue;
+        const current = present.get(tracked.clid);
+        if (!current || current.uid !== tracked.uid) this.leave(tracked.clid, goneAt);
       }
-      if (client.nickname !== tracked.nickname) {
-        recordNickname(this.database.db, tracked.userId, client.nickname, at);
-        tracked.nickname = client.nickname;
+      for (const client of present.values()) {
+        const tracked = this.online.get(client.clid);
+        if (!tracked) {
+          this.join(client, at);
+          continue;
+        }
+        if (client.nickname !== tracked.nickname) {
+          recordNickname(this.database.db, tracked.userId, client.nickname, at);
+          tracked.nickname = client.nickname;
+        }
+        this.move(client.clid, client.channelId, at);
       }
-      this.move(client.clid, client.channelId, at);
+    } finally {
+      for (const l of this.listeners) l.onSyncEnd?.();
     }
   }
 
