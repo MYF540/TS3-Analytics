@@ -4,6 +4,9 @@ import { z } from 'zod';
 
 export const HMAC_SECRET_MIN_LENGTH = 32;
 
+export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
+export type LogLevel = (typeof LOG_LEVELS)[number];
+
 // Until a task explicitly allows remote access, the web server stays on loopback (AGENTS.md rule 8).
 const LOOPBACK_HOSTS = ['127.0.0.1', '::1', 'localhost'] as const;
 
@@ -37,6 +40,11 @@ const envSchema = z.object({
   GEOIP_DB_PATH: optional(z.string().default('./data/GeoLite2-Country.mmdb')),
   SQLITE_PATH: optional(z.string().default('./data/ts3-analytics.sqlite')),
   IP_RETENTION_DAYS: optional(z.coerce.number().int().min(1).default(90)),
+  LOG_LEVEL: optional(z.enum(LOG_LEVELS).default('info')),
+  LOG_DIR: optional(z.string().default('./data/logs')),
+  LOG_RETENTION_DAYS: optional(z.coerce.number().int().min(1).default(14)),
+  // Unset = pretty console output only when attached to a terminal.
+  LOG_PRETTY: optional(z.stringbool().optional()),
 });
 
 export interface Config {
@@ -63,6 +71,14 @@ export interface Config {
   };
   readonly retention: {
     readonly ipDays: number;
+  };
+  readonly logging: {
+    readonly level: LogLevel;
+    readonly dir: string;
+    /** Number of daily log files kept in addition to the current one. */
+    readonly retentionDays: number;
+    /** `undefined` = decide automatically (pretty output when stdout is a TTY). */
+    readonly pretty: boolean | undefined;
   };
 }
 
@@ -99,6 +115,12 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
     web: Object.freeze({ host: e.WEB_HOST, port: e.WEB_PORT }),
     paths: Object.freeze({ geoipDb: e.GEOIP_DB_PATH, sqlite: e.SQLITE_PATH }),
     retention: Object.freeze({ ipDays: e.IP_RETENTION_DAYS }),
+    logging: Object.freeze({
+      level: e.LOG_LEVEL,
+      dir: e.LOG_DIR,
+      retentionDays: e.LOG_RETENTION_DAYS,
+      pretty: e.LOG_PRETTY,
+    }),
   });
 }
 

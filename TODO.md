@@ -22,10 +22,11 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Fertig wenn: fehlendes oder zu kurzes HMAC-Secret (< 32 Zeichen) bricht den Start mit klarer Meldung ab; Tests für gültige und ungültige Config
   - Notiz: `src/config/config.ts` – `parseConfig(env)` (rein, zod 4) und `loadConfig()` (liest `.env` per `node:util.parseEnv`, kein dotenv; echte Umgebungsvariablen haben Vorrang, fehlende `.env` ist ok). Ergebnis ist ein verschachteltes, eingefrorenes `Config`-Objekt (`ts3`, `security`, `web`, `paths`, `retention`). Leere Werte (`KEY=`) gelten als nicht gesetzt. `ConfigError` listet alle Probleme auf einmal und nennt nur Variablennamen, nie Werte (keine Secret-Leaks). `WEB_HOST` akzeptiert nur Loopback (`127.0.0.1`, `::1`, `localhost`) gemäß Regel 8 – muss gelockert werden, sobald eine Aufgabe Fernzugriff vorsieht. Pflicht: `TS3_QUERY_USER`, `TS3_QUERY_PASSWORD`, `HMAC_SECRET`. `pnpm start` braucht damit eine gültige `.env`. Log-Level folgt in T0.3, SQLite-`cache_size`/`mmap_size` in T1.1.
 
-- [ ] **T0.3 Logging** · `Setup` · braucht: T0.2
+- [x] **T0.3 Logging** · `Setup` · braucht: T0.2
   - pino mit Konsolen- und Dateiausgabe, tägliche Rotation, Log-Level aus Config
   - Redaction für Passwörter, Secrets und IP-Felder
   - Fertig wenn: ein Test belegt, dass ein Feld `ip` oder `password` im Log redacted erscheint
+  - Notiz: `src/logging/logger.ts` (neuer Ordner `/src/logging`). `createLogger(config.logging)` schreibt über pino-Transports (Worker-Thread) auf die Konsole (pino-pretty bei TTY bzw. `LOG_PRETTY=true`, sonst JSON) und in `LOG_DIR/ts3-analytics.<yyyy-MM-dd>.<n>.log` (pino-roll, täglich, `LOG_RETENTION_DAYS` Dateien, `removeOtherLogFiles` damit auch nach Neustarts aufgeräumt wird). Zeitstempel ISO/UTC. Doppelte Absicherung für Regel 1/2: (a) pino-`redact` für Schlüssel wie `password`, `secret`, `hmacSecret`, `token`, `cookie`, `ip`, `connection_client_ip`, `remoteAddress` bis 3 Ebenen tief (`REDACTED_KEYS`); (b) `scrubIps()` ersetzt IPv4/IPv6-Adressen in Meldungstexten, Format-Argumenten, String-Feldern und Error-Message/-Stack durch `[IP]` (Kandidaten per Regex, Prüfung mit `net.isIP`). Einschränkung: vierteilige Versionsnummern wie `1.2.3.4` werden ebenfalls maskiert. `createStreamLogger()` für Tests/Tools. Neue Config: `LOG_LEVEL`, `LOG_DIR`, `LOG_RETENTION_DAYS`, `LOG_PRETTY`.
 
 ## Phase 1 – Datenbank
 

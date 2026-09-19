@@ -42,6 +42,7 @@ describe('parseConfig', () => {
         sqlite: './data/ts3-analytics.sqlite',
       },
       retention: { ipDays: 90 },
+      logging: { level: 'info', dir: './data/logs', retentionDays: 14, pretty: undefined },
     });
   });
 
@@ -58,6 +59,10 @@ describe('parseConfig', () => {
       GEOIP_DB_PATH: 'geo.mmdb',
       SQLITE_PATH: 'db.sqlite',
       IP_RETENTION_DAYS: '30',
+      LOG_LEVEL: 'debug',
+      LOG_DIR: 'logs',
+      LOG_RETENTION_DAYS: '7',
+      LOG_PRETTY: 'false',
     });
     expect(config.ts3).toMatchObject({
       host: '10.0.0.5',
@@ -69,6 +74,12 @@ describe('parseConfig', () => {
     expect(config.web).toEqual({ host: '::1', port: 3000 });
     expect(config.paths).toEqual({ geoipDb: 'geo.mmdb', sqlite: 'db.sqlite' });
     expect(config.retention.ipDays).toBe(30);
+    expect(config.logging).toEqual({
+      level: 'debug',
+      dir: 'logs',
+      retentionDays: 7,
+      pretty: false,
+    });
   });
 
   it('treats empty values as unset', () => {
@@ -121,6 +132,8 @@ describe('parseConfig', () => {
     ['TS3_SERVER_ID', '0'],
     ['TS3_QUERY_RATE_LIMIT', '-1'],
     ['IP_RETENTION_DAYS', '1.5'],
+    ['LOG_LEVEL', 'verbose'],
+    ['LOG_PRETTY', 'maybe'],
   ])('rejects invalid %s=%s', (key, value) => {
     const error = configError({ ...minimalEnv, [key]: value });
     expect(error.problems).toHaveLength(1);
