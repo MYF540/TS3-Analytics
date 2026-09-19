@@ -41,6 +41,8 @@ const envSchema = z.object({
   WEB_COOKIE_SECURE: optional(z.stringbool().default(false)),
   GEOIP_DB_PATH: optional(z.string().default('./data/GeoLite2-Country.mmdb')),
   SQLITE_PATH: optional(z.string().default('./data/ts3-analytics.sqlite')),
+  BACKUP_DIR: optional(z.string().default('./data/backups')),
+  BACKUP_KEEP: optional(z.coerce.number().int().min(1).max(365).default(14)),
   SQLITE_CACHE_SIZE_MB: optional(z.coerce.number().int().min(1).default(64)),
   SQLITE_MMAP_SIZE_MB: optional(z.coerce.number().int().min(0).default(256)),
   IP_RETENTION_DAYS: optional(z.coerce.number().int().min(1).default(90)),
@@ -78,6 +80,12 @@ export interface Config {
     readonly sessionTtlS: number;
     /** Send the session cookie only over HTTPS (enable behind a TLS proxy). */
     readonly cookieSecure: boolean;
+  };
+  readonly backup: {
+    /** Daily online backups of the database (T7.1). */
+    readonly dir: string;
+    /** Number of backups kept; older ones are deleted. */
+    readonly keep: number;
   };
   readonly paths: {
     readonly geoipDb: string;
@@ -151,6 +159,7 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
       sessionTtlS: e.SESSION_TTL_HOURS * 3600,
       cookieSecure: e.WEB_COOKIE_SECURE,
     }),
+    backup: Object.freeze({ dir: e.BACKUP_DIR, keep: e.BACKUP_KEEP }),
     paths: Object.freeze({ geoipDb: e.GEOIP_DB_PATH }),
     database: Object.freeze({
       path: e.SQLITE_PATH,

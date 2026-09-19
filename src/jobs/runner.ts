@@ -37,6 +37,8 @@ export class JobRunner {
   private timer: NodeJS.Timeout | undefined;
   private readonly now: () => number;
   private readonly errors = new Map<string, { at: number; message: string }>();
+  private readonly running = new Set<string>();
+  private readonly pending = new Set<Promise<void>>();
 
   constructor(
     private readonly jobs: readonly PeriodicJob[],
@@ -64,6 +66,22 @@ export class JobRunner {
     return getSetting(this.deps.db, lastRunKey(name), z.number().int());
   }
 
+  /** Resolves when running asynchronous jobs are done (tests, shutdown). */
+  async idle(): Promise<void> {
+    await Promise.all([...this.pending]);
+  }
+
+  private succeeded(name: string, result: unknown): void {
+    this.errors.delete(name);
+    this.deps.logger.info({ job: name, result }, 'Job finished');
+  }
+
+  private failed(name: string, at: number, error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error);
+    this.errors.set(name, { at, message: scrubIps(message).slice(0, 300) });
+    this.deps.logger.error({ err: error, job: name }, 'Job failed');
+  }
+
   status(): JobStatus[] {
     return this.jobs.map((job) => {
       const lastRun = this.lastRun(job.name);
@@ -84,14 +102,30 @@ export class JobRunner {
       const now = this.now();
       const last = this.lastRun(job.name);
       if (last !== undefined && now - last < job.intervalS) continue;
+      if (this.running.has(job.name)) continue;
       try {
         const result = job.run(now);
-        this.errors.delete(job.name);
-        this.deps.logger.info({ job: job.name, result }, 'Job finished');
+        if (result instanceof Promise) {
+          // Asynchronous job (e.g. backup): report when it is done, never run it twice at once.
+          this.running.add(job.name);
+          const tracked = result.then(
+            (value: unknown) => {
+              this.succeeded(job.name, value);
+            },
+            (error: unknown) => {
+              this.failed(job.name, now, error);
+            },
+          );
+          this.pending.add(tracked);
+          void tracked.finally(() => {
+            this.running.delete(job.name);
+            this.pending.delete(tracked);
+          });
+        } else {
+          this.succeeded(job.name, result);
+        }
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        this.errors.set(job.name, { at: now, message: scrubIps(message).slice(0, 300) });
-        this.deps.logger.error({ err: error, job: job.name }, 'Job failed');
+        this.failed(job.name, now, error);
       }
       // Also recorded after a failure, so a broken job does not run every ten minutes.
       setSetting(this.deps.db, lastRunKey(job.name), now, now);

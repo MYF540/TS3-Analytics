@@ -4,6 +4,7 @@ import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
 import { deleteExpiredSessions } from './api/auth/service.js';
 import { runMaintenance, runRetention } from './jobs/retention.js';
+import { runBackup } from './jobs/backup.js';
 import { runFlagDetection } from './jobs/flag-detection.js';
 import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
@@ -104,6 +105,12 @@ async function main(): Promise<void> {
         name: 'expired-sessions',
         intervalS: 3600,
         run: (now) => deleteExpiredSessions(database.db, now),
+      },
+      {
+        name: 'backup',
+        intervalS: 86_400,
+        run: (now) =>
+          runBackup(database, { dir: config.backup.dir, keep: config.backup.keep, now }),
       },
       {
         name: 'flag-detection',

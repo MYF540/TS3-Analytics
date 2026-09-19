@@ -575,6 +575,7 @@ export const de = {
   'botstatus.job.retention': 'Aufbewahrung (IP-Daten, alte Segmente)',
   'botstatus.job.expired-sessions': 'Abgelaufene Logins löschen',
   'botstatus.job.maintenance': 'Datenbank-Wartung',
+  'botstatus.job.backup': 'Datenbank-Sicherung',
   'botstatus.job.flag-detection': 'Alt-/Evasion-Erkennung',
   'botstatus.problems.title': 'Letzte Warnungen und Fehler',
   'botstatus.problems.hint': 'Aus den Logdateien der letzten Tage, neueste zuerst.',

@@ -206,6 +206,42 @@ describe('JobRunner', () => {
     expect(restarted.lastRun('daily')).toBe(now);
   });
 
+  it('runs asynchronous jobs once at a time and reports their failures', async () => {
+    let now = NOW;
+    let release: () => void = () => undefined;
+    let calls = 0;
+    const runner = new JobRunner(
+      [
+        {
+          name: 'slow',
+          intervalS: 60,
+          run: () => {
+            calls++;
+            return new Promise<void>((resolve) => {
+              release = resolve;
+            });
+          },
+        },
+        { name: 'broken', intervalS: DAY, run: () => Promise.reject(new Error('disk full')) },
+      ],
+      { db: database.db, logger: createSilentLogger(), now: () => now },
+    );
+    expect(runner.runDue()).toEqual(['slow', 'broken']);
+    now += 120;
+    // Still running: not started again.
+    expect(runner.runDue()).toEqual([]);
+    release();
+    await runner.idle();
+    expect(calls).toBe(1);
+    expect(runner.status().find((j) => j.name === 'broken')?.lastError).toEqual({
+      at: NOW,
+      message: 'disk full',
+    });
+    expect(runner.runDue()).toEqual(['slow']);
+    release();
+    await runner.idle();
+  });
+
   it('reports last and next runs and the last failure', () => {
     const runner = new JobRunner(
       [

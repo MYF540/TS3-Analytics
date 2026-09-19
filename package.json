@@ -22,6 +22,7 @@
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
     "stats:rebuild": "tsx src/cli/stats-rebuild.ts",
+    "backup": "tsx src/cli/backup.ts",
     "seed:synthetic": "tsx src/cli/seed-synthetic.ts",
     "bench": "tsx src/cli/bench.ts",
     "admin:user": "tsx src/cli/admin-user.ts"

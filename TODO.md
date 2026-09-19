@@ -278,8 +278,9 @@ Entscheidungen (20.09.2026):
 - Export und Anonymisierung **nur für Admins**, Anonymisierung mit Bestätigung durch Eintippen der UID.
 - T7.5 (öffentliches Leaderboard) und T6.6 (Saisons) **später / nach Bedarf**.
 
-- [ ] **T7.1 Backups** · `Ops` · braucht: T1.1
+- [x] **T7.1 Backups** · `Ops` · braucht: T1.1
   - Tägliches SQLite-Online-Backup nach `/data/backups`, Rotation (z. B. 14 Stück)
+  - Notiz: Job „backup“ (täglich) und `pnpm backup` (manuell), `src/jobs/backup.ts`. SQLite-Online-Backup in eine `.partial`-Datei, Umstellung auf `journal_mode=DELETE` (eine eigenständige Datei), `quick_check`, erst dann Umbenennen; Rotation behält die neuesten `BACKUP_KEEP` (Standard 14) in `BACKUP_DIR` (Standard `./data/backups`). Der JobRunner kann jetzt asynchrone Jobs (nie doppelt parallel, Fehler auf der Bot-Status-Seite). 240-MB-Datenbank: ca. 2 s. Wiederherstellung in `docs/backup.md`.
 
 - [ ] **T7.2 DSGVO-Funktionen** · `Backend` · braucht: T4.2
   - Alle Daten einer UID exportieren (JSON) oder löschen
