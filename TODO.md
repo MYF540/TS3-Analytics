@@ -240,9 +240,10 @@ Entscheidungen (19.09.2026):
 - Verknüpfte Accounts: Rang aus der **zusammengerechneten Zeit der Person**, gesetzt auf **allen UIDs** der Person.
 - Aufstieg: **private TS3-Textnachricht** an den Spieler (Text anpassbar, abschaltbar), optional zusätzlich Discord.
 
-- [ ] **T6.1 Rang-Schema** · `DB` · braucht: T1.1
+- [x] **T6.1 Rang-Schema** · `DB` · braucht: T1.1
   - Tabellen `ranks` (Name, Reihenfolge, benötigte Stunden, Servergruppen-ID), `rank_history`, `rank_overrides`
   - Settings: Zählmodus (online / nur aktiv), ausgeschlossene Servergruppen, Dry-Run an/aus (Standard: an)
+  - Notiz: Migration 0009 mit `ranks` (benötigte Zeit in Sekunden, Servergruppe und Reihenfolge eindeutig), `rank_overrides`, `rank_history` (Ergebnis `applied`/`pending`/`dry_run`/`failed`) und zusätzlich `rank_state` (Soll-Rang je Nutzer, `pending` bis zum nächsten Join). `replaceRanks` ersetzt die Leiter als Ganzes, behält IDs bestehender Ränge und verlangt streng steigende Zeiten. Einstellungen in `settings["ranks"]`: Zählmodus (Standard online), ausgeschlossene Gruppen, Dry-Run (Standard an), Intervall, Aufstiegsnachricht, Discord. Rangzeit laut Regel 12: Modus „online“ = `online_s − unknown_s` (importierte Zeit zählt nicht), Modus „aktiv“ = `active_s`, plus Legacy-Zeit ab Phase 8.
 
 - [ ] **T6.2 Rang-Engine** · `Backend` · braucht: T6.1, T2.3
   - Reine Funktion: aus Spielzeit, Overrides und Rangliste den Soll-Rang bestimmen

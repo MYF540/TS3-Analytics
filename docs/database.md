@@ -53,6 +53,10 @@ Beim Start führt der Dienst alle ausstehenden Migrationen aus (`runMigrations()
 | `flags`                     | Hinweise auf Zweitaccounts/Ban-Umgehung, ein Eintrag pro Paar (`pair_key`) |
 | `persons`, `person_members` | Verknüpfte UIDs einer Person mit Haupt-Account                             |
 | `group_changes`             | Servergruppen-Änderungen aus dem Server-Log (nur geparste Felder)          |
+| `ranks`                     | Rangleiter (Reihenfolge, benötigte Zeit, Servergruppe)                     |
+| `rank_overrides`            | Eingefroren, Bonuszeit, ausgeschlossen pro Nutzer                          |
+| `rank_state`                | Vom Rang-Job bestimmter Rang pro Nutzer, `pending` bis zum nächsten Join   |
+| `rank_history`              | Jede Rangänderung (auch im Dry-Run)                                        |
 
 Das maßgebliche Schema steht in `src/db/schema.ts`.
 

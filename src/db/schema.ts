@@ -474,3 +474,73 @@ export const groupChanges = sqliteTable(
     index('group_changes_user_idx').on(t.userId),
   ],
 );
+
+/** Rank ladder (T6.1). Only server groups listed here are ever touched by the rank job. */
+export const ranks = sqliteTable(
+  'ranks',
+  {
+    id: integer('id').primaryKey(),
+    name: text('name').notNull(),
+    /** Ascending: 1 = lowest rank. */
+    sortOrder: integer('sort_order').notNull(),
+    /** Ranking time needed for this rank, in seconds. */
+    requiredS: integer('required_s').notNull(),
+    serverGroupId: integer('server_group_id').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (t) => [
+    uniqueIndex('ranks_server_group_idx').on(t.serverGroupId),
+    uniqueIndex('ranks_sort_order_idx').on(t.sortOrder),
+  ],
+);
+
+/** Manual rank decisions per user (T6.5); for linked accounts they apply to the whole person. */
+export const rankOverrides = sqliteTable('rank_overrides', {
+  userId: integer('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  /** Keep this rank regardless of time. */
+  frozenRankId: integer('frozen_rank_id').references(() => ranks.id, { onDelete: 'set null' }),
+  /** Added to the ranking time (may be negative). */
+  bonusS: integer('bonus_s').notNull().default(0),
+  /** Never rank this user (no rank group is set or removed). */
+  excluded: integer('excluded', { mode: 'boolean' }).notNull().default(false),
+  note: text('note'),
+  updatedAt: integer('updated_at').notNull(),
+  updatedBy: text('updated_by').notNull(),
+});
+
+/**
+ * What the rank job decided per user: the target rank and whether the server groups were set.
+ * Offline users keep `pending = 1` until their next join (decision 19.09.2026).
+ */
+export const rankState = sqliteTable('rank_state', {
+  userId: integer('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  rankId: integer('rank_id').references(() => ranks.id, { onDelete: 'set null' }),
+  pending: integer('pending', { mode: 'boolean' }).notNull().default(false),
+  decidedAt: integer('decided_at').notNull(),
+  appliedAt: integer('applied_at'),
+});
+
+/** Every rank change (and every would-be change in dry-run mode). */
+export const rankHistory = sqliteTable(
+  'rank_history',
+  {
+    id: integer('id').primaryKey(),
+    at: integer('at').notNull(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    fromRankId: integer('from_rank_id').references(() => ranks.id, { onDelete: 'set null' }),
+    toRankId: integer('to_rank_id').references(() => ranks.id, { onDelete: 'set null' }),
+    /** Ranking time at the decision, seconds. */
+    rankingS: integer('ranking_s').notNull(),
+    dryRun: integer('dry_run', { mode: 'boolean' }).notNull(),
+    /** `applied`, `pending` (offline), `dry_run` or `failed`. */
+    outcome: text('outcome', { enum: ['applied', 'pending', 'dry_run', 'failed'] }).notNull(),
+  },
+  (t) => [index('rank_history_user_idx').on(t.userId, t.at), index('rank_history_at_idx').on(t.at)],
+);

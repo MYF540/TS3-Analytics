@@ -64,6 +64,13 @@
       "when": 1789853611189,
       "tag": "0008_group_changes",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789854258964,
+      "tag": "0009_ranks",
+      "breakpoints": true
     }
   ]
 }
