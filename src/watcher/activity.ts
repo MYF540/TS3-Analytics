@@ -3,6 +3,7 @@ import type { AppDatabase } from '../db/client.js';
 import { extendSegments, openSegment } from '../db/repositories/index.js';
 import {
   determineState,
+  transitionTime,
   type ActivitySettings,
   type ClientActivity,
   type LiveState,
@@ -92,7 +93,7 @@ export class ActivityTracker implements TrackerListener {
       const tracked = online(client.clid);
       if (!tracked) continue;
       this.lastActivity.set(client.clid, activityOf(client));
-      this.update(tracked, at, settings);
+      this.update(tracked, at, settings, true);
     }
   }
 
@@ -135,7 +136,16 @@ export class ActivityTracker implements TrackerListener {
     })();
   }
 
-  private update(client: OnlineClient, at: number, settings: ActivitySettings): void {
+  /**
+   * Applies the current state. For poll observations (`fromPoll`) an idle/active change without a
+   * channel change is dated back using the reported idle time (T2.8); events use their own time.
+   */
+  private update(
+    client: OnlineClient,
+    at: number,
+    settings: ActivitySettings,
+    fromPoll = false,
+  ): void {
     const activity = this.lastActivity.get(client.clid);
     const state = activity
       ? determineState({ ...activity, channelId: client.channelId }, settings)
@@ -145,13 +155,17 @@ export class ActivityTracker implements TrackerListener {
       current.endAt = Math.max(current.endAt, at);
       return;
     }
-    if (current) this.close(client.clid, at);
+    let startAt = at;
+    if (current && activity && fromPoll && current.channelId === client.channelId) {
+      startAt = transitionTime(current.state, state, activity, at, settings, current.endAt);
+    }
+    if (current) this.close(client.clid, startAt);
     this.open.set(client.clid, {
       userId: client.userId,
       sessionId: client.sessionId,
       channelId: client.channelId,
       state,
-      startAt: at,
+      startAt,
       endAt: at,
       dbId: undefined,
     });

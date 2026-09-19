@@ -108,9 +108,10 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Fertig wenn: Tests für kurzen Neustart, langen Neustart und verspätet erreichbaren TS3-Server
   - Notiz: `recoverOpenSessions` liefert bei kurzem Neustart Kandidaten, `resolveResume` entscheidet beim ersten Sync (kommt der erst nach Ablauf der Frist, wird nichts fortgesetzt). Alte offene Segmente fortgesetzter Sessions enden beim Resume (Zustand während der Downtime wird als unverändert angenommen), danach beginnt ein neues Segment (`onResumed`). Gilt auch nach Absturz (Heartbeat ≤ 60 s alt). `SESSION_RESUME_GRACE_S=0` = altes Verhalten (Stop schließt alles). Nebenbei: `users.last_seen` wird jetzt auch beim Leave aktualisiert (vorher nur beim Join). Verlässt jemand während der Downtime den Server, endet seine Session am letzten Heartbeat.
 
-- [ ] **T2.8 Idle-Beginn zurückdatieren** · `Watcher` · braucht: T2.3
+- [x] **T2.8 Idle-Beginn zurückdatieren** · `Watcher` · braucht: T2.3
   - Wechsel aktiv → idle nicht auf den Poll-Zeitpunkt legen, sondern auf `jetzt − client_idle_time + Idle-Schwelle` (nie vor Segmentbeginn/letztem Poll); idle → aktiv analog auf `jetzt − client_idle_time`
   - Fertig wenn: Tests zeigen minutengenaue statt poll-genaue Übergänge; Segmente decken die Session weiterhin lückenlos ab
+  - Notiz: Reine Funktion `transitionTime()` in `src/domain/activity.ts`; nur bei Poll-Beobachtungen ohne Channelwechsel angewendet, begrenzt auf `[letzte Beobachtung, Poll]`. Übergänge von/zu AFK bleiben am Poll-Zeitpunkt (kein Zeitstempel verfügbar). Ergebnis sekundengenau (Test).
 
 - [ ] **T2.9 IPs beim Start gebündelt holen** · `Watcher` `Security` · braucht: T2.5
   - Beim (Re-)Connect-Sync die IPs aller Clients mit einem `clientlist -ip` holen statt N × `clientinfo`; Einzel-Joins weiter per `clientinfo`

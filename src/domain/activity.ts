@@ -36,3 +36,23 @@ export function determineState(client: ClientActivity, settings: ActivitySetting
   if (client.idleMs >= settings.idleThresholdS * 1000) return 'idle';
   return 'active';
 }
+
+/**
+ * When a state change seen at poll time `at` actually happened. TS3 reports the idle time, so
+ * active→idle and idle→active can be dated back; other changes (away, muted, channel) are only
+ * known to have happened since the last observation. The result lies in `[notBefore, at]`.
+ */
+export function transitionTime(
+  from: LiveState,
+  to: LiveState,
+  client: Pick<ClientActivity, 'idleMs'>,
+  at: number,
+  settings: Pick<ActivitySettings, 'idleThresholdS'>,
+  notBefore: number,
+): number {
+  const idleS = Math.floor(client.idleMs / 1000);
+  let t = at;
+  if (from === 'active' && to === 'idle') t = at - idleS + settings.idleThresholdS;
+  else if (from === 'idle' && to === 'active') t = at - idleS;
+  return Math.min(at, Math.max(notBefore, t));
+}

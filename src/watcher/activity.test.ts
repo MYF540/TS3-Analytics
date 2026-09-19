@@ -85,14 +85,35 @@ describe('activity tracking', () => {
     now = T0 + 4 * MIN + 30;
     watcher.flush();
 
+    // Idle for 700 s at minute 3 with a 600 s threshold → idle since 100 s before the poll,
+    // but not before the previous observation at minute 2.
     expect(segments()).toEqual([
-      { ch: 1, state: 'active', s: 0, e: 3 * MIN, open: 0 },
-      { ch: 1, state: 'idle', s: 3 * MIN, e: 4 * MIN, open: 0 },
+      { ch: 1, state: 'active', s: 0, e: 2 * MIN, open: 0 },
+      { ch: 1, state: 'idle', s: 2 * MIN, e: 4 * MIN, open: 0 },
     ]);
     expect(rows('SELECT online_s, active_s, idle_s, afk_s FROM user_daily_stats')).toEqual([
-      { online_s: 4 * MIN, active_s: 3 * MIN, idle_s: MIN, afk_s: 0 },
+      { online_s: 4 * MIN, active_s: 2 * MIN, idle_s: 2 * MIN, afk_s: 0 },
     ]);
-    expect(rows('SELECT active_s FROM user_totals')).toEqual([{ active_s: 3 * MIN }]);
+    expect(rows('SELECT active_s FROM user_totals')).toEqual([{ active_s: 2 * MIN }]);
+  });
+
+  it('dates idle transitions back to the second (T2.8)', async () => {
+    const clid = server.join({ uid: UID, nickname: 'Alice' });
+    for (let m = 1; m <= 12; m++) {
+      server.update(clid, { idleMs: m * MIN * 1000 }); // no activity since joining
+      await pollAt(m * MIN);
+    }
+    // Crossed the 600 s threshold exactly at minute 10.
+    server.update(clid, { idleMs: 25_000 }); // spoke 25 s before the next poll
+    await pollAt(15 * MIN);
+    now = T0 + 16 * MIN;
+    server.leave(clid);
+    watcher.flush();
+    expect(segments()).toEqual([
+      { ch: 1, state: 'active', s: 0, e: 10 * MIN, open: 0 },
+      { ch: 1, state: 'idle', s: 10 * MIN, e: 15 * MIN - 25, open: 0 },
+      { ch: 1, state: 'active', s: 15 * MIN - 25, e: 16 * MIN, open: 0 },
+    ]);
   });
 
   it('splits segments at channel moves and treats the AFK channel as afk', async () => {
