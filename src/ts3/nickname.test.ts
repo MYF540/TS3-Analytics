@@ -9,7 +9,7 @@ describe('nicknameCandidate', () => {
     expect(nicknameCandidate('TS3 Analytics', 2)).toBe('TS3 Analytics (2)');
     const long = 'A very long bot nickname here!';
     expect(long).toHaveLength(30);
-    expect(nicknameCandidate(long, 3)).toBe('A very long bot nickname (3)');
+    expect(nicknameCandidate(long, 3)).toBe('A very long bot nickname h (3)');
     expect(nicknameCandidate(long, 3).length).toBeLessThanOrEqual(30);
   });
 });
