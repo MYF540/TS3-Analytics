@@ -1,0 +1,7 @@
+dist/
+data/
+coverage/
+pnpm-lock.yaml
+AGENTS.md
+TODO.md
+example data/

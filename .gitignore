@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+/data/
+.env
+.env.*
+!.env.example
+*.log
+
+# Lokale Kopien echter Daten (DBs, Logs) mit personenbezogenen Daten – niemals committen
+/example data/
