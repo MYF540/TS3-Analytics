@@ -16,10 +16,11 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Fertig wenn: alle Scripts laufen fehlerfrei auf einem leeren Projekt, `.gitignore` schließt `/data` und `.env` aus
   - Notiz: ESM (`"type": "module"`, `NodeNext`), strict + `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`; ESLint 10 Flat-Config mit `strictTypeChecked` + `eslint-config-prettier`; `lint` prüft ESLint und Prettier. TypeScript bewusst auf `~6.0` gepinnt, da typescript-eslint 8.x TS 7 noch nicht unterstützt. `build` nutzt `tsconfig.build.json` (nur `src`, ohne Tests) → `dist/`. `/web` ist aus der Backend-Config ausgeschlossen und wird in T3.3 eigenständig aufgesetzt. Tests: `src/**/*.test.ts` und `test/**/*.test.ts`. esbuild-Build-Skript in `pnpm-workspace.yaml` freigegeben. AGENTS.md/TODO.md sind von Prettier ausgenommen.
 
-- [ ] **T0.2 Config-Modul** · `Setup` · braucht: T0.1
+- [x] **T0.2 Config-Modul** · `Setup` · braucht: T0.1
   - `.env` laden und mit zod validieren; `.env.example` anlegen
   - Werte: TS3-Host, SSH-Query-Port, Query-User/-Passwort, virtuelle Server-ID, Bot-Nickname, HMAC-Secret, Web-Host/-Port, Pfad GeoIP-DB, Pfad SQLite, IP-Aufbewahrung (Tage, Standard 90), Query-Rate-Limit
   - Fertig wenn: fehlendes oder zu kurzes HMAC-Secret (< 32 Zeichen) bricht den Start mit klarer Meldung ab; Tests für gültige und ungültige Config
+  - Notiz: `src/config/config.ts` – `parseConfig(env)` (rein, zod 4) und `loadConfig()` (liest `.env` per `node:util.parseEnv`, kein dotenv; echte Umgebungsvariablen haben Vorrang, fehlende `.env` ist ok). Ergebnis ist ein verschachteltes, eingefrorenes `Config`-Objekt (`ts3`, `security`, `web`, `paths`, `retention`). Leere Werte (`KEY=`) gelten als nicht gesetzt. `ConfigError` listet alle Probleme auf einmal und nennt nur Variablennamen, nie Werte (keine Secret-Leaks). `WEB_HOST` akzeptiert nur Loopback (`127.0.0.1`, `::1`, `localhost`) gemäß Regel 8 – muss gelockert werden, sobald eine Aufgabe Fernzugriff vorsieht. Pflicht: `TS3_QUERY_USER`, `TS3_QUERY_PASSWORD`, `HMAC_SECRET`. `pnpm start` braucht damit eine gültige `.env`. Log-Level folgt in T0.3, SQLite-`cache_size`/`mmap_size` in T1.1.
 
 - [ ] **T0.3 Logging** · `Setup` · braucht: T0.2
   - pino mit Konsolen- und Dateiausgabe, tägliche Rotation, Log-Level aus Config
