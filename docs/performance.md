@@ -51,6 +51,19 @@ System: Intel Core i9-14900K, 64 GB RAM, Windows 11, Node 24.18, SQLite 3.53, 30
 
 Weitere Messwerte: Datengenerierung 11 s, `rebuildAggregates` über alle 6 Jahre 15,5 s.
 
+### Nachmessung T3.2 (2026-09-19)
+
+Neue Abfragen für die API, gleicher Datensatz und Rechner (alle anderen Werte unverändert im Rahmen der Messschwankung, Maximum jetzt 34 ms bei „Online-Verlauf gesamt“):
+
+| Abfrage                                      | Median (ms) | p95 (ms) | Max (ms) | Budget |
+| -------------------------------------------- | ----------: | -------: | -------: | :----: |
+| Leaderboard Jahr, Anzahl (Paginierung)       |         7.5 |      8.2 |      8.5 |   ✅   |
+| Nutzerliste (Standardfilter, nach Spielzeit) |         3.9 |      4.4 |      4.8 |   ✅   |
+| Nutzerliste (alle, nach Nickname, Seite 20)  |        14.2 |     21.7 |     22.8 |   ✅   |
+| Nutzerliste mit Suche                        |         2.9 |      4.2 |      4.3 |   ✅   |
+
+Eine Leaderboard-Seite „Jahr“ besteht aus Einträgen + Anzahl (zusammen ca. 16 ms).
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

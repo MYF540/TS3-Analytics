@@ -115,6 +115,34 @@ export function leaderboardForDays(
   return toEntries(rows, page.offset);
 }
 
+/** Number of ranked users for `leaderboardAllTime` (for pagination). */
+export function countLeaderboardAllTime(
+  sqlite: Database.Database,
+  metric: LeaderboardMetric,
+): number {
+  const column = TOTALS_COLUMN[metric];
+  return prepared(sqlite, `SELECT count(*) FROM user_totals WHERE ${column} > 0`)
+    .pluck()
+    .get() as number;
+}
+
+/** Number of ranked users for `leaderboardForDays` (for pagination). */
+export function countLeaderboardForDays(
+  sqlite: Database.Database,
+  metric: LeaderboardMetric,
+  fromDay: number,
+  toDay: number,
+): number {
+  return prepared(
+    sqlite,
+    `SELECT count(*) FROM (
+       SELECT user_id FROM user_daily_stats WHERE day BETWEEN ? AND ?
+       GROUP BY user_id HAVING ${DAILY_EXPRESSION[metric]} > 0)`,
+  )
+    .pluck()
+    .get(fromDay, toDay) as number;
+}
+
 export interface UserDetail {
   user: Row;
   totals: Row | undefined;
@@ -122,6 +150,10 @@ export interface UserDetail {
   recentSessions: Row[];
   daily: Row[];
   topChannels: Row[];
+  /** Countries seen for this user (from IP data within the retention period). */
+  countries: Row[];
+  /** The currently open session, if the user is online. */
+  openSession: Row | undefined;
 }
 
 /** Everything the player page needs; `days` limits the daily series (most recent first cut). */
@@ -159,25 +191,53 @@ export function userDetail(
        WHERE s.user_id = ? AND s.is_open = 0
        GROUP BY s.channel_id ORDER BY seconds DESC LIMIT 10`,
     ).all(userId) as Row[],
+    countries: prepared(
+      sqlite,
+      `SELECT country, max(last_seen) AS lastSeen, sum(seen_count) AS connections
+       FROM ip_seen WHERE user_id = ? AND country IS NOT NULL
+       GROUP BY country ORDER BY lastSeen DESC`,
+    ).all(userId) as Row[],
+    openSession: prepared(
+      sqlite,
+      `SELECT id, join_at AS joinAt FROM sessions
+       WHERE user_id = ? AND leave_at IS NULL ORDER BY join_at LIMIT 1`,
+    ).get(userId) as Row | undefined,
   };
 }
 
 export interface Overview {
   onlineNow: number;
+  /** Highest concurrent count today (Berlin day), including live minute values. */
+  peakToday: number;
   peakInRange: number;
   peakAllTime: number;
   usersTotal: number;
   usersNew: number;
 }
 
-/** Key figures for the dashboard; `[from, to)` in UTC seconds selects the "range" figures. */
-export function overview(sqlite: Database.Database, from: number, to: number): Overview {
+/**
+ * Key figures for the dashboard; `[from, to)` in UTC seconds selects the "range" figures,
+ * `todayStart` is the start of the current Berlin day. Hourly aggregates only contain closed
+ * sessions, so live values (open sessions, minute samples) are included for "now" and "today".
+ */
+export function overview(
+  sqlite: Database.Database,
+  from: number,
+  to: number,
+  todayStart: number,
+): Overview {
   const one = (sql: string, ...params: unknown[]) =>
     (prepared(sqlite, sql)
       .pluck()
       .get(...params) as number | null) ?? 0;
+  const onlineNow = one(`SELECT count(*) FROM sessions WHERE leave_at IS NULL`);
   return {
-    onlineNow: one(`SELECT count(*) FROM sessions WHERE leave_at IS NULL`),
+    onlineNow,
+    peakToday: Math.max(
+      onlineNow,
+      one(`SELECT max(max_online) FROM server_hourly WHERE hour >= ?`, todayStart),
+      one(`SELECT max(online) FROM server_minutely WHERE ts >= ?`, todayStart),
+    ),
     peakInRange: one(
       `SELECT max(max_online) FROM server_hourly WHERE hour >= ? AND hour < ?`,
       from,
@@ -216,14 +276,26 @@ function weekOf(day: number): number {
  * `server_minutely`, everything coarser from `server_hourly`; day and week buckets follow Berlin
  * calendar days.
  */
-export function onlineSeries(sqlite: Database.Database, from: number, to: number): SeriesPoint[] {
-  const bucket = pickBucket(from, to);
+export function onlineSeries(
+  sqlite: Database.Database,
+  from: number,
+  to: number,
+): { resolution: number; points: SeriesPoint[] } {
+  let bucket = pickBucket(from, to);
   if (bucket < HOUR_S) {
-    return prepared(
-      sqlite,
-      `SELECT (ts / ?) * ? AS t, avg(online) AS avgOnline, max(online) AS maxOnline
-       FROM server_minutely WHERE ts >= ? AND ts < ? GROUP BY ts / ? ORDER BY t`,
-    ).all(bucket, bucket, from, to, bucket) as SeriesPoint[];
+    // Minute samples only exist for the last 14 days (and since the watcher runs); for older or
+    // not fully covered ranges fall back to hourly data.
+    const firstMinute = prepared(sqlite, 'SELECT min(ts) FROM server_minutely').pluck().get() as
+      number | null;
+    if (firstMinute !== null && firstMinute <= from + bucket) {
+      const points = prepared(
+        sqlite,
+        `SELECT (ts / ?) * ? AS t, avg(online) AS avgOnline, max(online) AS maxOnline
+         FROM server_minutely WHERE ts >= ? AND ts < ? GROUP BY ts / ? ORDER BY t`,
+      ).all(bucket, bucket, from, to, bucket) as SeriesPoint[];
+      return { resolution: bucket, points };
+    }
+    bucket = HOUR_S;
   }
   const rows = prepared(
     sqlite,
@@ -269,7 +341,7 @@ export function onlineSeries(sqlite: Database.Database, from: number, to: number
       maxOnline: current.max,
     });
   }
-  return points;
+  return { resolution: bucket, points };
 }
 
 /**
@@ -313,28 +385,105 @@ export interface SearchHit {
  * Finds users by (part of a) nickname or UID prefix. Terms of three or more characters use the
  * trigram FTS index; shorter terms fall back to a prefix match.
  */
-export function searchUsers(sqlite: Database.Database, term: string, limit = 20): SearchHit[] {
+/** SQL condition on `u` (users) matching a search term, with its named parameters. */
+function searchCondition(term: string): { sql: string; params: Record<string, string> } {
   const trimmed = term.trim();
-  if (trimmed === '') return [];
   const escapedLike = trimmed.replace(/[\\%_]/g, (c) => `\\${c}`);
   const nickMatch =
     trimmed.length >= 3
       ? `SELECT user_id FROM nicknames WHERE id IN (
            SELECT rowid FROM nicknames_fts WHERE nicknames_fts MATCH @fts)`
       : `SELECT user_id FROM nicknames WHERE nick LIKE @prefix ESCAPE '\\'`;
+  return {
+    sql: `(u.id IN (${nickMatch}) OR (u.uid >= @uid AND u.uid < @uidEnd))`,
+    params: {
+      fts: `"${trimmed.replace(/"/g, '""')}"`,
+      prefix: `${escapedLike}%`,
+      uid: trimmed,
+      uidEnd: `${trimmed}\uffff`,
+    },
+  };
+}
+
+export function searchUsers(sqlite: Database.Database, term: string, limit = 20): SearchHit[] {
+  if (term.trim() === '') return [];
+  const condition = searchCondition(term);
   return prepared(
     sqlite,
     `SELECT u.id AS userId, u.uid, ${NICKNAME_SUBQUERY} AS nickname, u.last_seen AS lastSeen
      FROM users u
-     WHERE u.id IN (${nickMatch})
-        OR (u.uid >= @uid AND u.uid < @uidEnd)
+     WHERE ${condition.sql}
      ORDER BY u.last_seen DESC
      LIMIT @limit`,
-  ).all({
-    fts: `"${trimmed.replace(/"/g, '""')}"`,
-    prefix: `${escapedLike}%`,
-    uid: trimmed,
-    uidEnd: `${trimmed}￿`,
-    limit,
-  }) as SearchHit[];
+  ).all({ ...condition.params, limit }) as SearchHit[];
+}
+
+export const USER_SORTS = [
+  'online',
+  'active',
+  'sessions',
+  'lastSeen',
+  'firstSeen',
+  'nickname',
+] as const;
+export type UserSort = (typeof USER_SORTS)[number];
+
+const USER_SORT_SQL: Record<UserSort, string> = {
+  online: 'coalesce(t.online_s, 0)',
+  active: 'coalesce(t.active_s, 0)',
+  sessions: 'coalesce(t.sessions, 0)',
+  lastSeen: 'u.last_seen',
+  firstSeen: 'u.first_seen',
+  nickname: `${NICKNAME_SUBQUERY} COLLATE NOCASE`,
+};
+
+export interface UserListOptions {
+  search?: string | undefined;
+  sort: UserSort;
+  order: 'asc' | 'desc';
+  limit: number;
+  offset: number;
+  /** Hide users with less online time (casual users); 0 shows everyone. */
+  minOnlineS: number;
+}
+
+export interface UserListItem {
+  userId: number;
+  uid: string;
+  nickname: string | null;
+  onlineS: number;
+  activeS: number;
+  sessions: number;
+  firstSeen: number;
+  lastSeen: number;
+  country: string | null;
+  online: boolean;
+}
+
+/** Paginated, sortable, searchable user list with the total number of matches. */
+export function listUsers(
+  sqlite: Database.Database,
+  options: UserListOptions,
+): { items: UserListItem[]; total: number } {
+  const search = options.search?.trim() ? searchCondition(options.search) : undefined;
+  const where = `coalesce(t.online_s, 0) >= @minOnlineS${search ? ` AND ${search.sql}` : ''}`;
+  const params = { ...search?.params, minOnlineS: options.minOnlineS };
+  const from = `FROM users u LEFT JOIN user_totals t ON t.user_id = u.id WHERE ${where}`;
+  const direction = options.order === 'asc' ? 'ASC' : 'DESC';
+  const rows = prepared(
+    sqlite,
+    `SELECT u.id AS userId, u.uid, ${NICKNAME_SUBQUERY} AS nickname,
+            coalesce(t.online_s, 0) AS onlineS, coalesce(t.active_s, 0) AS activeS,
+            coalesce(t.sessions, 0) AS sessions, u.first_seen AS firstSeen,
+            u.last_seen AS lastSeen, u.country,
+            EXISTS (SELECT 1 FROM sessions s WHERE s.user_id = u.id AND s.leave_at IS NULL) AS online
+     ${from}
+     ORDER BY ${USER_SORT_SQL[options.sort]} ${direction}, u.id ${direction}
+     LIMIT @limit OFFSET @offset`,
+  ).all({ ...params, limit: options.limit, offset: options.offset }) as (Omit<
+    UserListItem,
+    'online'
+  > & { online: number })[];
+  const total = prepared(sqlite, `SELECT count(*) ${from}`).pluck().get(params) as number;
+  return { items: rows.map((r) => ({ ...r, online: r.online === 1 })), total };
 }

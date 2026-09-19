@@ -12,7 +12,10 @@ import {
 } from '../repositories/index.js';
 import { createTestDatabase } from '../testing.js';
 import {
+  countLeaderboardAllTime,
+  countLeaderboardForDays,
   leaderboardAllTime,
+  listUsers,
   leaderboardForDays,
   onlineSeries,
   overview,
@@ -127,6 +130,12 @@ describe('leaderboards', () => {
     ).toEqual([bob]);
   });
 
+  it('counts ranked users for pagination', () => {
+    expect(countLeaderboardAllTime(database.sqlite, 'online')).toBe(3);
+    expect(countLeaderboardAllTime(database.sqlite, 'active')).toBe(2);
+    expect(countLeaderboardForDays(database.sqlite, 'online', 20260915, 20260916)).toBe(2);
+  });
+
   it('paginates with continuous ranks', () => {
     const second = leaderboardAllTime(database.sqlite, 'online', { limit: 1, offset: 1 });
     expect(second).toMatchObject([{ rank: 2, userId: bob }]);
@@ -138,6 +147,64 @@ describe('leaderboards', () => {
       [2, bob],
       [3, alice],
     ]);
+  });
+});
+
+describe('listUsers', () => {
+  let ids: Record<string, number>;
+  beforeEach(() => {
+    ids = {
+      alice: user('uid-alice', 'Alice', DAY1),
+      bob: user('uid-bob', 'bob', DAY1 + H),
+      carol: user('uid-carol', 'Carol', DAY1 + 2 * H),
+      casual: user('uid-casual', 'Casual', DAY1 + 3 * H),
+    };
+    session(ids.alice ?? 0, DAY1 + 10 * H, 5 * H, 2 * H);
+    session(ids.bob ?? 0, DAY1 + 10 * H, 3 * H);
+    session(ids.carol ?? 0, DAY1 + 10 * H, 2 * H, 0);
+    session(ids.casual ?? 0, DAY1 + 10 * H, 600);
+    openSession(database.db, ids.bob ?? 0, DAY1 + 20 * H);
+  });
+  const base = { sort: 'online', order: 'desc', limit: 10, offset: 0, minOnlineS: 3600 } as const;
+
+  it('hides casual users by default and sorts by online time', () => {
+    const { items, total } = listUsers(database.sqlite, base);
+    expect(total).toBe(3);
+    expect(items.map((i) => [i.nickname, i.onlineS, i.online])).toEqual([
+      ['Alice', 5 * H, false],
+      ['bob', 3 * H, true],
+      ['Carol', 2 * H, false],
+    ]);
+  });
+
+  it('shows casual users on request', () => {
+    expect(listUsers(database.sqlite, { ...base, minOnlineS: 0 }).total).toBe(4);
+  });
+
+  it('sorts by other columns in both directions', () => {
+    const names = (
+      sort: (typeof base)['sort'] | 'nickname' | 'active' | 'firstSeen',
+      order: 'asc' | 'desc',
+    ) => listUsers(database.sqlite, { ...base, sort, order }).items.map((i) => i.nickname);
+    expect(names('nickname', 'asc')).toEqual(['Alice', 'bob', 'Carol']);
+    expect(names('active', 'desc')).toEqual(['bob', 'Alice', 'Carol']);
+    expect(names('firstSeen', 'asc')).toEqual(['Alice', 'bob', 'Carol']);
+  });
+
+  it('paginates and reports the total', () => {
+    const page = listUsers(database.sqlite, { ...base, limit: 2, offset: 2 });
+    expect(page.total).toBe(3);
+    expect(page.items.map((i) => i.nickname)).toEqual(['Carol']);
+  });
+
+  it('searches nicknames and UIDs', () => {
+    expect(
+      listUsers(database.sqlite, { ...base, search: 'aro' }).items.map((i) => i.nickname),
+    ).toEqual(['Carol']);
+    expect(
+      listUsers(database.sqlite, { ...base, search: 'uid-b' }).items.map((i) => i.nickname),
+    ).toEqual(['bob']);
+    expect(listUsers(database.sqlite, { ...base, search: 'cas' }).total).toBe(0); // casual hidden
   });
 });
 
@@ -156,6 +223,8 @@ describe('userDetail', () => {
     expect(detail?.daily).toEqual([
       { day: 20260915, onlineS: H, activeS: H, idleS: 0, afkS: 0, unknownS: 0, sessions: 1 },
     ]);
+    expect(detail?.openSession).toBeUndefined();
+    expect(detail?.countries).toEqual([]);
     expect(detail?.topChannels).toEqual([
       { channelId: 1, name: 'Lobby', seconds: 3 * H },
       { channelId: 2, name: 'AFK', seconds: H },
@@ -175,8 +244,10 @@ describe('overview', () => {
     session(b, DAY1 + 10 * H + 600, 600);
     openSession(database.db, a, DAY1 + 20 * H); // still online
 
-    expect(overview(database.sqlite, DAY1, DAY1 + 86_400)).toEqual({
+    recordServerMinute(database.db, DAY1 + 21 * H, 3); // live sample, higher than any closed hour
+    expect(overview(database.sqlite, DAY1, DAY1 + 86_400, DAY1)).toEqual({
       onlineNow: 1,
+      peakToday: 3,
       peakInRange: 2,
       peakAllTime: 2,
       usersTotal: 2,
@@ -195,16 +266,32 @@ describe('onlineSeries', () => {
 
   it('uses minute data for short ranges', () => {
     for (let i = 0; i < 10; i++) recordServerMinute(database.db, DAY1 + i * 60, i);
-    expect(onlineSeries(database.sqlite, DAY1, DAY1 + 600)).toEqual(
-      Array.from({ length: 10 }, (_, i) => ({ t: DAY1 + i * 60, avgOnline: i, maxOnline: i })),
-    );
+    expect(onlineSeries(database.sqlite, DAY1, DAY1 + 600)).toEqual({
+      resolution: 60,
+      points: Array.from({ length: 10 }, (_, i) => ({
+        t: DAY1 + i * 60,
+        avgOnline: i,
+        maxOnline: i,
+      })),
+    });
+  });
+
+  it('falls back to hourly data where no minute samples exist', () => {
+    const a = user('a', 'A');
+    session(a, DAY1 + 10 * H, H);
+    recordServerMinute(database.db, DAY1 + 5 * 86_400, 1); // minute data starts later
+    expect(onlineSeries(database.sqlite, DAY1, DAY1 + 86_400)).toEqual({
+      resolution: H,
+      points: [{ t: DAY1 + 10 * H, avgOnline: 1, maxOnline: 1 }],
+    });
   });
 
   it('aggregates hours into Berlin days for long ranges', () => {
     const a = user('a', 'A');
     session(a, DAY1 + 10 * H, 12 * H); // 12h on day 1
     session(a, DAY1 + 86_400 + 10 * H, 6 * H); // 6h on day 2
-    const points = onlineSeries(database.sqlite, DAY1, DAY1 + 400 * 86_400);
+    const { points, resolution } = onlineSeries(database.sqlite, DAY1, DAY1 + 400 * 86_400);
+    expect(resolution).toBe(86_400);
     expect(points).toEqual([
       { t: DAY1, avgOnline: 0.5, maxOnline: 1 },
       { t: DAY1 + 86_400, avgOnline: 0.25, maxOnline: 1 },

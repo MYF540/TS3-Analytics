@@ -129,7 +129,7 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Fertig wenn: `/api/health` antwortet mit Status von DB und Query-Verbindung
   - Notiz: `src/api/server.ts` (`buildServer` für Tests via `inject`, `startServer` bindet an `WEB_HOST`, das per Config nur Loopback erlaubt), Routen unter `/api` als Plugins mit `ApiContext` (`src/api/context.ts`). zod über `fastify-type-provider-zod` (Validierung + Response-Serialisierung). Einheitliches Fehlerformat `{ error: { code, message, details? } }` (`src/api/errors.ts`, `ApiError` für erwartete Fehler; 500 ohne Interna). `GET /api/health`: `ok` / `degraded` (TS3 nicht verbunden) mit 200, `down` (DB) mit 503. Frontend aus `web/dist` (wenn vorhanden) mit SPA-Fallback, API-404 bleibt JSON. Sicherheits-Header (nosniff, DENY, no-referrer). Request-Logs nur auf debug. Codes statt deutscher Texte in der API; Übersetzung im Frontend.
 
-- [ ] **T3.2 Statistik-Endpunkte** · `Backend` · braucht: T3.1, T2.3
+- [x] **T3.2 Statistik-Endpunkte** · `Backend` · braucht: T3.1, T2.3
   - Übersicht (online jetzt, Peak heute/Allzeit, Nutzer gesamt/neu), Online-Verlauf, Heatmap Wochentag × Stunde
   - Nutzerliste (Suche, Paginierung, Sortierung), Nutzerdetail (Spielzeit gesamt/aktiv, Sessions, Top-Channels, Nickverlauf, Länder)
   - Leaderboards: gesamt, aktiv, Woche, Monat, Jahr, frei wählbarer Zeitraum, längste Session
@@ -137,6 +137,7 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Zeitreihen werden serverseitig passend zum Zeitraum aufgelöst (Minute / Stunde / Tag / Woche), max. ca. 1.000 Punkte pro Antwort
   - Nutzerliste standardmäßig gefiltert auf Nutzer mit Mindestspielzeit (Gelegenheitsnutzer per Schalter einblendbar); Suche über FTS5 auf Nicknames und UID
   - Fertig wenn: Tests mit Seed-Daten prüfen die Berechnungen; Benchmark aus T1.4 bleibt im Budget
+  - Notiz: Routen in `src/api/routes/` (`stats.ts`, `users.ts`, `leaderboards.ts`), gemeinsame Schemas in `src/api/schemas.ts`, Zeiträume als reine Funktionen in `src/domain/periods.ts`. Endpunkte: `GET /api/stats/overview|online|heatmap?range=24h|7d|30d|1y|all` (online auch mit `from`/`to` in Unix-Sekunden), `GET /api/users?search&sort=online|active|sessions|lastSeen|firstSeen|nickname&order&page&pageSize&includeCasual`, `GET /api/users/:id?days=`, `GET /api/leaderboards?period=all|week|month|year|custom&metric=online|active|longestSession&from&to&page&pageSize` (from/to als YYYY-MM-DD). Entscheidungen: Woche/Monat/Jahr rollierend (7/30/365 Tage inkl. heute); „Gelegenheitsnutzer“ = < 1 h Gesamtzeit (`CASUAL_THRESHOLD_S`); „Peak heute“ und „online jetzt“ berücksichtigen Live-Werte (offene Sessions, `server_minutely`), da Stundenaggregate erst beim Leave entstehen. `onlineSeries` fällt auf Stundenwerte zurück, wenn Minutenwerte den Zeitraum nicht abdecken (älter als 14 Tage), und liefert die tatsächliche Auflösung. Response-Schemas werden beim Serialisieren validiert. Benchmark erneut gelaufen, alles < 35 ms (docs/performance.md).
 
 - [ ] **T3.3 Frontend-Grundgerüst** · `Frontend` · braucht: T0.1
   - Vite + React + TS, Router, Layout mit Navigation, Hell/Dunkel-Modus, API-Client, Übersetzungsdatei (de)

@@ -10,7 +10,9 @@ import { cpus, totalmem } from 'node:os';
 import { parseArgs } from 'node:util';
 import { openDatabase } from '../db/client.js';
 import {
+  countLeaderboardForDays,
   leaderboardAllTime,
+  listUsers,
   leaderboardForDays,
   onlineSeries,
   overview,
@@ -111,7 +113,9 @@ function main(): void {
       measure('Nutzerdetail (aktivster Nutzer, 1 Jahr Verlauf)', runs, () =>
         userDetail(sqlite, heavyUser, daysBack(365)),
       ),
-      measure('Dashboard Kennzahlen (30 Tage)', runs, () => overview(sqlite, since(30), now)),
+      measure('Dashboard Kennzahlen (30 Tage)', runs, () =>
+        overview(sqlite, since(30), now, since(0)),
+      ),
       measure('Online-Verlauf 24 h', runs, () => onlineSeries(sqlite, now - 86_400, now)),
       measure('Online-Verlauf 30 Tage', runs, () => onlineSeries(sqlite, since(30), now)),
       measure('Online-Verlauf 1 Jahr', runs, () => onlineSeries(sqlite, since(365), now)),
@@ -119,6 +123,37 @@ function main(): void {
       measure('Heatmap 30 Tage', runs, () => weekdayHourHeatmap(sqlite, since(30), now)),
       measure('Heatmap 1 Jahr', runs, () => weekdayHourHeatmap(sqlite, since(365), now)),
       measure('Heatmap gesamt', runs, () => weekdayHourHeatmap(sqlite, firstHour, now)),
+      measure('Leaderboard Jahr, Anzahl (Paginierung)', runs, () =>
+        countLeaderboardForDays(sqlite, 'online', daysBack(364), today),
+      ),
+      measure('Nutzerliste (Standardfilter, nach Spielzeit)', runs, () =>
+        listUsers(sqlite, {
+          sort: 'online',
+          order: 'desc',
+          limit: 50,
+          offset: 0,
+          minOnlineS: 3600,
+        }),
+      ),
+      measure('Nutzerliste (alle, nach Nickname, Seite 20)', runs, () =>
+        listUsers(sqlite, {
+          sort: 'nickname',
+          order: 'asc',
+          limit: 50,
+          offset: 950,
+          minOnlineS: 0,
+        }),
+      ),
+      measure('Nutzerliste mit Suche', runs, () =>
+        listUsers(sqlite, {
+          search: 'wolf',
+          sort: 'lastSeen',
+          order: 'desc',
+          limit: 50,
+          offset: 0,
+          minOnlineS: 0,
+        }),
+      ),
       measure('Suche Nick (Teilstring, 4 Zeichen)', runs, () => searchUsers(sqlite, 'hunt')),
       measure('Suche Nick (2 Zeichen, Präfix)', runs, () => searchUsers(sqlite, 'Sh')),
       measure('Suche UID-Präfix', runs, () => searchUsers(sqlite, 'aB')),

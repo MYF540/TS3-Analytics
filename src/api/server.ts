@@ -12,6 +12,9 @@ import type { Config } from '../config/config.js';
 import type { ApiContext } from './context.js';
 import { errorBody, registerErrorHandler } from './errors.js';
 import { healthRoutes } from './routes/health.js';
+import { leaderboardRoutes } from './routes/leaderboards.js';
+import { statsRoutes } from './routes/stats.js';
+import { userRoutes } from './routes/users.js';
 
 /** Built frontend (`web/dist`), same relative location from `src/api` and `dist/api`. */
 export const DEFAULT_WEB_ROOT = fileURLToPath(new URL('../../web/dist', import.meta.url));
@@ -62,6 +65,9 @@ export async function buildServer(
   await app.register(
     async (api) => {
       await api.register(healthRoutes(context));
+      await api.register(statsRoutes(context));
+      await api.register(userRoutes(context));
+      await api.register(leaderboardRoutes(context));
     },
     { prefix: '/api' },
   );
