@@ -13,6 +13,7 @@ import { ConnectionAlerts } from './alerts/connection.js';
 import { alertNewBans, alertNewFlags } from './alerts/dispatch.js';
 import { JoinSpikeDetector } from './alerts/join-spike.js';
 import { AlertNotifier } from './alerts/notifier.js';
+import { RankJob } from './ranks/job.js';
 import { BanSync } from './watcher/bans.js';
 import { GroupWatch } from './watcher/group-watch.js';
 import { Watcher } from './watcher/watcher.js';
@@ -79,6 +80,9 @@ async function main(): Promise<void> {
     intervalS: config.watcher.groupLogIntervalS,
   });
   groupWatch.start();
+  const rankJob = new RankJob({ database, connection, notifier: alerts, logger });
+  watcher.tracker.addListener(rankJob);
+  rankJob.start();
   connection.start();
 
   const jobs = new JobRunner(
@@ -145,6 +149,7 @@ async function main(): Promise<void> {
     jobs.stop();
     banSync.stop();
     groupWatch.stop();
+    rankJob.stop();
     connectionAlerts.stop();
     alerts.stop();
     void api.close();

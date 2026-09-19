@@ -32,6 +32,10 @@ export interface Ts3Transport extends EventEmitter<Ts3TransportEvents> {
    */
   logLines(lines: number): Promise<string[]>;
 
+  /** Adds a client (by database id) to a server group (rank job, T6.3). */
+  addToServerGroup(dbid: number, groupId: number): Promise<void>;
+  removeFromServerGroup(dbid: number, groupId: number): Promise<void>;
+
   // Moderation (T5.6). Callers check permissions, the global switch and write the audit log.
   /** Kicks from the server or back to the default channel. `reason` max. 40 characters. */
   kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void>;

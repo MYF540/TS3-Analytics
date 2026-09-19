@@ -29,6 +29,8 @@ export class FakeTs3Server {
   ];
   /** Server log lines, oldest first (`logview` returns the newest). */
   readonly serverLog: string[] = [];
+  /** Server-group commands received (rank job, T6.3), for assertions. */
+  readonly groupCommands: { command: 'add' | 'remove'; dbid: number; groupId: number }[] = [];
   /** Moderation commands received (T5.6), for assertions. */
   readonly moderation: {
     command: string;
@@ -188,6 +190,27 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
   logLines(lines: number): Promise<string[]> {
     this.assertOpen('logview');
     return Promise.resolve(this.server.serverLog.slice(-Math.min(100, lines)).reverse());
+  }
+
+  addToServerGroup(dbid: number, groupId: number): Promise<void> {
+    this.assertOpen('servergroupaddclient');
+    this.server.groupCommands.push({ command: 'add', dbid, groupId });
+    for (const client of this.server.clients.values()) {
+      if (client.dbid === dbid && !client.serverGroups.includes(groupId)) {
+        client.serverGroups = [...client.serverGroups, groupId];
+      }
+    }
+    return Promise.resolve();
+  }
+
+  removeFromServerGroup(dbid: number, groupId: number): Promise<void> {
+    this.assertOpen('servergroupdelclient');
+    this.server.groupCommands.push({ command: 'remove', dbid, groupId });
+    for (const client of this.server.clients.values()) {
+      if (client.dbid === dbid)
+        client.serverGroups = client.serverGroups.filter((g) => g !== groupId);
+    }
+    return Promise.resolve();
   }
 
   kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {

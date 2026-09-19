@@ -279,6 +279,14 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
     return (Array.isArray(rows) ? rows : [rows]).flatMap((r) => (r.l ? [r.l] : []));
   }
 
+  async addToServerGroup(dbid: number, groupId: number): Promise<void> {
+    await this.connected().serverGroupAddClient(String(dbid), String(groupId));
+  }
+
+  async removeFromServerGroup(dbid: number, groupId: number): Promise<void> {
+    await this.connected().serverGroupDelClient(String(dbid), String(groupId));
+  }
+
   async kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {
     await this.connected().clientKick(
       String(clid),

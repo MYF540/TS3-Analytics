@@ -410,6 +410,7 @@ export const de = {
   'alerts.event.ban.added': 'Neuer Ban auf dem Server',
   'alerts.event.join.spike': 'Join-Spike: ungewöhnlich viele neue Accounts in kurzer Zeit',
   'alerts.event.group.protected': 'Änderung an einer geschützten Servergruppe',
+  'alerts.event.rank.promoted': 'Rang-Aufstieg eines Spielers',
   'alerts.event.bot.connection': 'Bot länger als 2 Minuten ohne Verbindung und wieder verbunden',
   'alerts.rate': 'Höchstens Meldungen pro Minute',
   'alerts.rateHint': 'Weitere Meldungen werden zusammengefasst. 1 bis 30.',

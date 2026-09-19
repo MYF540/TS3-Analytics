@@ -175,6 +175,14 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
     return this.command((t) => t.logLines(lines));
   }
 
+  addToServerGroup(dbid: number, groupId: number): Promise<void> {
+    return this.command((t) => t.addToServerGroup(dbid, groupId));
+  }
+
+  removeFromServerGroup(dbid: number, groupId: number): Promise<void> {
+    return this.command((t) => t.removeFromServerGroup(dbid, groupId));
+  }
+
   kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {
     return this.command((t) => t.kick(clid, from, reason));
   }

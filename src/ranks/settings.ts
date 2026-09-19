@@ -19,8 +19,6 @@ export const rankSettingsSchema = z.object({
       text: z.string().trim().min(1).max(1024),
     })
     .default({ enabled: true, text: 'Glückwunsch! Du hast den Rang „{rank}“ erreicht.' }),
-  /** Also report promotions to Discord (event `rank.promoted`). */
-  discord: z.boolean().default(false),
 });
 
 export type RankSettings = z.infer<typeof rankSettingsSchema>;

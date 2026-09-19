@@ -307,7 +307,13 @@ export type ModerationAction =
     };
 
 export type AlertEvent =
-  'flag.high' | 'flag.medium' | 'ban.added' | 'bot.connection' | 'join.spike' | 'group.protected';
+  | 'flag.high'
+  | 'flag.medium'
+  | 'ban.added'
+  | 'bot.connection'
+  | 'join.spike'
+  | 'group.protected'
+  | 'rank.promoted';
 
 export interface AlertSettings {
   configured: boolean;
