@@ -263,8 +263,9 @@ Entscheidungen (19.09.2026):
   - Ränge anlegen, sortieren, bearbeiten; Servergruppen-Auswahl aus `servergrouplist`; Vorschau vor dem Speichern; Dry-Run-Schalter (nur Admin)
   - Notiz: Seite „Ränge“ (`/raenge`, nur Admin). Die Reihenfolge ergibt sich automatisch aus der benötigten Zeit (Stunden, auch mit Komma); Servergruppen aus der gespeicherten Gruppenliste der Servergruppen-Überwachung. `PUT /api/ranks` speichert Leiter und Einstellungen zusammen. `POST /api/ranks/preview` rechnet einen Entwurf in einer Transaktion und rollt sie danach zurück (nichts wird gespeichert); die Vorschau liefert Rangnamen mit, auch für neue Entwurfsränge. `POST /api/ranks/run` startet einen Voll-Lauf (bei ausgeschaltetem Dry-Run mit Rückfrage), `GET /api/ranks/history` zeigt den Verlauf. Audit: `ranks.update` (inkl. Dry-Run-Wechsel), `ranks.run`. Vorschau über 8.500 Spieler: ca. 100 ms.
 
-- [ ] **T6.5 Overrides** · `Backend` `Frontend` · braucht: T6.4
+- [x] **T6.5 Overrides** · `Backend` `Frontend` · braucht: T6.4
   - Rang einfrieren, Bonusstunden vergeben, vom Ranking ausschließen – auf der Spielerseite
+  - Notiz: Karte „Rang“ auf der Spielerseite für alle Rollen (Soll-Rang laut Spielzeit, Rangzeit, Zeit bis zum nächsten Rang, Hinweise „eingefroren“, „wird beim nächsten Beitritt gesetzt“, „Dry-Run“). Admins bearbeiten dort die Ausnahme: Rang einfrieren, Bonusstunden (auch negativ, mit Komma), ausschließen, interner Grund (`PUT /api/users/:id/rank-override`, Audit `rank.override`). Die Ausnahme wird am angezeigten Account gespeichert und gilt für die ganze Person. `GET /api/users/:id/rank` liefert Override-Details nur an Admins. `planRanks` rechnet bei eingeschränktem Umfang nur die Rangzeiten der betroffenen Personen (Spielerseite, Teil-Läufe des Jobs).
 
 - [ ] **T6.6 Saisons & Inaktivität (optional)** · `Backend` · braucht: T6.5
   - Saison-Leaderboards mit Reset; optionaler Abstieg nach X Wochen Inaktivität

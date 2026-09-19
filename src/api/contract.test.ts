@@ -23,6 +23,7 @@ import type {
   rankPreviewResponse,
   rankRunResponse,
 } from './routes/ranks.js';
+import type { playerRankResponse } from './routes/player-rank.js';
 import type { moderationAction } from '../moderation/actions.js';
 import type { onlineResponse } from './routes/online.js';
 import type { heatmapResponse, overviewResponse, seriesResponse } from './routes/stats.js';
@@ -63,6 +64,7 @@ export type Contract = [
   Assert<Equals<z.output<typeof rankPreviewResponse>, Web.RankPreview>>,
   Assert<Equals<z.output<typeof rankHistoryItem>, Web.RankHistoryItem>>,
   Assert<Equals<z.output<typeof rankRunResponse>, Web.RankRunResult>>,
+  Assert<Equals<z.output<typeof playerRankResponse>, Web.PlayerRank>>,
   Assert<Equals<ApiErrorBody, Web.ApiErrorBody>>,
 ];
 

@@ -33,14 +33,19 @@ export function rankingTimes(
   sqlite: Database.Database,
   mode: RankSettings['countMode'],
   options: RankPlanOptions,
+  /** Limit to these users (all when omitted). */
+  userIds?: readonly number[],
 ): Map<number, number> {
   const expression = mode === 'active' ? 'sum(active_s)' : 'sum(online_s - unknown_s)';
+  const filter = userIds ? 'AND user_id IN (SELECT value FROM json_each(?))' : '';
+  const params: (number | string)[] = [options.cutoffDay];
+  if (userIds) params.push(JSON.stringify(userIds));
   const rows = sqlite
     .prepare(
       `SELECT user_id AS userId, ${expression} AS seconds FROM user_daily_stats
-       WHERE day >= ? GROUP BY user_id`,
+       WHERE day >= ? ${filter} GROUP BY user_id`,
     )
-    .all(options.cutoffDay) as { userId: number; seconds: number }[];
+    .all(...params) as { userId: number; seconds: number }[];
   const times = new Map(rows.map((r) => [r.userId, Math.max(0, r.seconds)]));
   for (const [userId, seconds] of options.legacyS ?? []) {
     times.set(userId, (times.get(userId) ?? 0) + seconds);
@@ -69,7 +74,6 @@ export function planRanks(
   userIds?: readonly number[],
 ): { ladder: Rank[]; entries: RankPlanEntry[] } {
   const ladder = listRanks(sqlite);
-  const times = rankingTimes(sqlite, settings.countMode, options);
   const overrides = sqlite
     .prepare(
       'SELECT user_id AS userId, frozen_rank_id AS frozenRankId, bonus_s AS bonusS, excluded FROM rank_overrides',
@@ -90,6 +94,19 @@ export function planRanks(
     )
     .all() as { userId: number; primaryUserId: number }[];
   const primaryOf = new Map(members.map((m) => [m.userId, m.primaryUserId]));
+  // With a scope, only the time of the persons concerned is needed (all their accounts).
+  let scopeIds: number[] | undefined;
+  if (userIds) {
+    const primaries = new Set(userIds.map((id) => primaryOf.get(id) ?? id));
+    scopeIds = [
+      ...new Set([
+        ...userIds,
+        ...primaries,
+        ...members.filter((m) => primaries.has(m.primaryUserId)).map((m) => m.userId),
+      ]),
+    ];
+  }
+  const times = rankingTimes(sqlite, settings.countMode, options, scopeIds);
   const excludedGroups = new Set(settings.excludedGroupIds);
   // Only needed with excluded groups; one query instead of one per user.
   const groupsById = new Map(

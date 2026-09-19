@@ -31,6 +31,7 @@ import type {
   RankPreview,
   RankRunResult,
   Person,
+  PlayerRank,
   Overview,
   Paged,
   Tag,
@@ -210,6 +211,17 @@ export const api = {
   ) => apiGet<FlagsResponse>('/flags', query, signal),
   setFlagStatus: (id: number, status: FlagStatus) =>
     apiPost<{ id: number; status: FlagStatus }>(`/flags/${String(id)}/status`, { status }),
+  playerRank: (userId: number, signal?: AbortSignal) =>
+    apiGet<PlayerRank>(`/users/${String(userId)}/rank`, {}, signal),
+  setRankOverride: (
+    userId: number,
+    override: {
+      frozenRankId: number | null;
+      bonusHours: number;
+      excluded: boolean;
+      note: string | null;
+    },
+  ) => apiSend<PlayerRank>('PUT', `/users/${String(userId)}/rank-override`, override),
   ranks: (signal?: AbortSignal) => apiGet<RankConfig>('/ranks', {}, signal),
   saveRanks: (draft: RankDraft) => apiSend<RankConfig>('PUT', '/ranks', draft),
   previewRanks: (draft: RankDraft) => apiPost<RankPreview>('/ranks/preview', draft),

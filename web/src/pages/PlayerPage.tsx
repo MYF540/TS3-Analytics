@@ -10,6 +10,7 @@ import { ModerationCard } from '../components/ModerationCard';
 import { PlayerAccounts } from '../components/PlayerAccounts';
 import { PlayerFlagsNotice } from '../components/PlayerFlagsNotice';
 import { PlayerNotes } from '../components/PlayerNotes';
+import { PlayerRankCard } from '../components/PlayerRankCard';
 import { PlayerTags } from '../components/PlayerTags';
 import { RangePicker } from '../components/RangePicker';
 import { useApi } from '../hooks/useApi';
@@ -282,6 +283,10 @@ export function PlayerPage() {
           />
         </section>
       )}
+      <section className="card">
+        <h2>{t('prank.title')}</h2>
+        <PlayerRankCard key={`${String(id)}-${String(version)}`} userId={id} />
+      </section>
       <section className="card">
         <h2>{t('accounts.title')}</h2>
         <PlayerAccounts

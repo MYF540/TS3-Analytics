@@ -271,6 +271,26 @@ export interface Rank {
   serverGroupId: number;
 }
 
+export interface PlayerRank {
+  enabled: boolean;
+  dryRun: boolean;
+  rankingS: number;
+  target: { id: number; name: string } | null;
+  next: { id: number; name: string; remainingS: number } | null;
+  pending: boolean;
+  skipped: 'excluded' | 'excluded_group' | null;
+  frozen: boolean;
+  override: {
+    frozenRankId: number | null;
+    bonusS: number;
+    excluded: boolean;
+    note: string | null;
+    updatedAt: number;
+    updatedBy: string;
+  } | null;
+  ranks: { id: number; name: string }[];
+}
+
 export interface RankSettings {
   countMode: 'online' | 'active';
   excludedGroupIds: number[];
