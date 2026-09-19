@@ -233,6 +233,13 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 ## Phase 6 – Rangsystem
 
+Entscheidungen (19.09.2026):
+
+- Zählmodus standardmäßig **Online-Zeit** (wie das bisherige Ranking, damit Legacy-Zeiten vergleichbar bleiben); im Webinterface auf „nur aktiv“ umschaltbar.
+- Offline-Spieler: Rangänderungen werden **vorgemerkt und beim nächsten Join gesetzt** (keine Änderungen an Offline-Accounts per DB-ID).
+- Verknüpfte Accounts: Rang aus der **zusammengerechneten Zeit der Person**, gesetzt auf **allen UIDs** der Person.
+- Aufstieg: **private TS3-Textnachricht** an den Spieler (Text anpassbar, abschaltbar), optional zusätzlich Discord.
+
 - [ ] **T6.1 Rang-Schema** · `DB` · braucht: T1.1
   - Tabellen `ranks` (Name, Reihenfolge, benötigte Stunden, Servergruppen-ID), `rank_history`, `rank_overrides`
   - Settings: Zählmodus (online / nur aktiv), ausgeschlossene Servergruppen, Dry-Run an/aus (Standard: an)
