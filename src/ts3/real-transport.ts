@@ -8,6 +8,7 @@ import {
 } from 'ts3-nodejs-library';
 import type { Config } from '../config/config.js';
 import type { Logger } from '../logging/logger.js';
+import { useWithFreeNickname } from './nickname.js';
 import type { Ts3Transport } from './transport.js';
 import type { Ts3Channel, Ts3Client, Ts3TransportEvents } from './types.js';
 
@@ -151,7 +152,12 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
     await teamspeak.connect();
     this.teamspeak = teamspeak;
     try {
-      await teamspeak.useBySid(String(this.config.serverId), this.config.botNickname);
+      const nickname = await useWithFreeNickname(this.config.botNickname, (nick) =>
+        teamspeak.useBySid(String(this.config.serverId), nick),
+      );
+      if (nickname !== this.config.botNickname) {
+        this.logger.warn({ nickname }, 'Bot nickname in use, connected with an alternative');
+      }
       await teamspeak.registerEvent('server');
       await teamspeak.registerEvent('channel', '0');
     } catch (error) {
