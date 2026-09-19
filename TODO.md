@@ -272,6 +272,12 @@ Entscheidungen (19.09.2026):
 
 ## Phase 7 – Betrieb
 
+Entscheidungen (20.09.2026):
+
+- DSGVO: **Anonymisieren** statt Löschen – UID (ersetzt durch zufällige Kennung), Nicknames, IP-Hashes, Notizen, Tags, Hinweise, Verknüpfungen und Rang-Daten werden entfernt, Personenbezug in Ban-Spiegel und Gruppenverlauf gelöscht; Spielzeiten bleiben als anonymer Eintrag in den Statistiken. Anonymisierte Einträge erscheinen nicht in Leaderboards, Spielerliste, Suche und Rängen. Kommt dieselbe UID wieder, entsteht ein neuer Spieler.
+- Export und Anonymisierung **nur für Admins**, Anonymisierung mit Bestätigung durch Eintippen der UID.
+- T7.5 (öffentliches Leaderboard) und T6.6 (Saisons) **später / nach Bedarf**.
+
 - [ ] **T7.1 Backups** · `Ops` · braucht: T1.1
   - Tägliches SQLite-Online-Backup nach `/data/backups`, Rotation (z. B. 14 Stück)
 
