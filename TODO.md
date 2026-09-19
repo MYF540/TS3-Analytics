@@ -103,6 +103,22 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Fertig wenn: Tests belegen Löschung ohne Veränderung der Aggregate
   - Notiz: `src/jobs/runner.ts` (`JobRunner`: prüft alle 10 min, letzte Läufe in `settings['jobs.<name>.lastRun']`, übersteht Neustarts; fehlgeschlagene Jobs werden geloggt und erst im nächsten Intervall wiederholt) und `src/jobs/retention.ts`: täglich `ip_seen` (`last_seen` älter als `IP_RETENTION_DAYS`), `server_minutely` > 14 Tage (in 10k-Blöcken), optional abgeschlossene Segmente älter als `SEGMENT_RETENTION_MONTHS` (Standard 0 = behalten); wöchentlich `PRAGMA optimize` + `wal_checkpoint(TRUNCATE)`. Beim Segment-Löschen wird `retention.segmentsPrunedBefore` gesetzt; `rebuildAggregates` wirft dann `PrunedRangeError` für Zeiträume davor (sonst fiele `active_s` dort auf 0), `stats:rebuild` startet ohne `--from` automatisch danach, `--force` erzwingt. Beide Jobs laufen direkt beim Start, wenn fällig.
 
+- [x] **T2.7 Sessions über kurze Neustarts fortführen** · `Watcher` · braucht: T2.4
+  - Bei sauberem Stop bleiben Sessions offen (Segmente geschrieben, Heartbeat gesetzt). Liegt der letzte Heartbeat beim Start höchstens `SESSION_RESUME_GRACE_S` (Standard 300 s) zurück, werden offene Sessions beim ersten Sync per UID den noch verbundenen Clients zugeordnet und laufen weiter; alle anderen enden am Heartbeat
+  - Fertig wenn: Tests für kurzen Neustart, langen Neustart und verspätet erreichbaren TS3-Server
+  - Notiz: `recoverOpenSessions` liefert bei kurzem Neustart Kandidaten, `resolveResume` entscheidet beim ersten Sync (kommt der erst nach Ablauf der Frist, wird nichts fortgesetzt). Alte offene Segmente fortgesetzter Sessions enden beim Resume (Zustand während der Downtime wird als unverändert angenommen), danach beginnt ein neues Segment (`onResumed`). Gilt auch nach Absturz (Heartbeat ≤ 60 s alt). `SESSION_RESUME_GRACE_S=0` = altes Verhalten (Stop schließt alles). Nebenbei: `users.last_seen` wird jetzt auch beim Leave aktualisiert (vorher nur beim Join). Verlässt jemand während der Downtime den Server, endet seine Session am letzten Heartbeat.
+
+- [ ] **T2.8 Idle-Beginn zurückdatieren** · `Watcher` · braucht: T2.3
+  - Wechsel aktiv → idle nicht auf den Poll-Zeitpunkt legen, sondern auf `jetzt − client_idle_time + Idle-Schwelle` (nie vor Segmentbeginn/letztem Poll); idle → aktiv analog auf `jetzt − client_idle_time`
+  - Fertig wenn: Tests zeigen minutengenaue statt poll-genaue Übergänge; Segmente decken die Session weiterhin lückenlos ab
+
+- [ ] **T2.9 IPs beim Start gebündelt holen** · `Watcher` `Security` · braucht: T2.5
+  - Beim (Re-)Connect-Sync die IPs aller Clients mit einem `clientlist -ip` holen statt N × `clientinfo`; Einzel-Joins weiter per `clientinfo`
+  - Klar-IPs weiterhin nur lokal (Regel 1); Test zählt die Query-Befehle beim Start
+
+- [ ] **T2.10 Bot-Nickname-Kollision** · `Watcher` · braucht: T2.1
+  - Ist der Nickname belegt (Fehler 513), mit Suffix erneut versuchen (z. B. `TS3 Analytics (2)`), statt in den Backoff zu laufen
+
 ## Phase 3 – API & Webinterface (lokal)
 
 - [ ] **T3.1 Fastify-Server** · `Backend` · braucht: T1.2
@@ -145,6 +161,10 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 - [ ] **T4.3 Notizen & Tags** · `Backend` `Frontend` · braucht: T4.2
   - Notizen mit Verlauf und Autor, frei definierbare Tags, Anzeige auf der Spielerseite
+
+- [ ] **T4.5 Aktivitäts-Einstellungen im Webinterface** · `Backend` `Frontend` · braucht: T4.2, T2.3
+  - Idle-Schwelle, AFK-Channels (Auswahl aus Channelliste), „Away = AFK“, „Lautsprecher stumm = AFK“ bearbeiten (nur Admin); Speichern über `saveActivitySettings`, Eintrag im Audit-Log
+  - Hinweis im UI, dass Änderungen nur für künftige Zeiten gelten (bestehende Segmente bleiben)
 
 - [ ] **T4.4 Bot-Status-Seite** · `Backend` `Frontend` · braucht: T4.1
   - Query-Verbindung, letzter Heartbeat, Uptime, DB-Größe, letzte Fehler aus dem Log

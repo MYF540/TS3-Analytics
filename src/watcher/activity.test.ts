@@ -199,12 +199,12 @@ describe('activity tracking', () => {
     });
   });
 
-  it('writes pending segments on stop', async () => {
+  it('writes pending segments on stop and keeps them open for a quick restart', async () => {
     server.join({ uid: UID, nickname: 'Alice' });
     await pollAt(2 * MIN);
     now = T0 + 2 * MIN + 10;
     watcher.stop();
-    expect(segments()).toEqual([{ ch: 1, state: 'active', s: 0, e: 2 * MIN + 10, open: 0 }]);
+    expect(segments()).toEqual([{ ch: 1, state: 'active', s: 0, e: 2 * MIN + 10, open: 1 }]);
   });
 });
 

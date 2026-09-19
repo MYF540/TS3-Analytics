@@ -67,7 +67,7 @@ describe('Watcher', () => {
     server.leave(clid);
 
     expect(rows('SELECT uid, dbid, platform, first_seen, last_seen FROM users')).toEqual([
-      { uid: UID_A, dbid: 77, platform: 'Linux', first_seen: T0 + 10, last_seen: T0 + 10 },
+      { uid: UID_A, dbid: 77, platform: 'Linux', first_seen: T0 + 10, last_seen: T0 + 610 },
     ]);
     expect(rows('SELECT nick, first_seen, last_seen FROM nicknames ORDER BY first_seen')).toEqual([
       { nick: 'Alice', first_seen: T0 + 10, last_seen: T0 + 10 },
@@ -174,7 +174,33 @@ describe('Watcher', () => {
     ]);
   });
 
-  it('closes all sessions on stop', () => {
+  it('keeps sessions open on stop so a quick restart can continue them', () => {
+    server.join({ uid: UID_A, nickname: 'Alice' });
+    now = T0 + 300;
+    watcher.stop();
+    expect(rows('SELECT leave_at FROM sessions')).toEqual([{ leave_at: null }]);
+    expect(rows("SELECT value FROM settings WHERE key = 'watcher.heartbeat'")).toEqual([
+      { value: String(T0 + 300) },
+    ]);
+  });
+
+  it('closes all sessions on stop when resuming is disabled', async () => {
+    await connection.stop();
+    connection = new Ts3Connection(
+      server.createTransport,
+      { commandsPerSecond: 1000 },
+      { logger: createSilentLogger() },
+    );
+    watcher = new Watcher({
+      database,
+      connection,
+      logger: createSilentLogger(),
+      now: () => now,
+      resumeGraceS: 0,
+    });
+    watcher.start();
+    connection.start();
+    await settle();
     server.join({ uid: UID_A, nickname: 'Alice' });
     now = T0 + 300;
     watcher.stop();

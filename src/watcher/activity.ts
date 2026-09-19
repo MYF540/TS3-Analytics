@@ -59,6 +59,15 @@ export class ActivityTracker implements TrackerListener {
     this.update(client, at, this.settings());
   }
 
+  onResumed(client: OnlineClient, source: Ts3Client, at: number): void {
+    this.onJoined(client, source, at);
+  }
+
+  /** Extends all open segments to `at` (e.g. right before a clean shutdown). */
+  touchAll(at: number): void {
+    for (const segment of this.open.values()) segment.endAt = Math.max(segment.endAt, at);
+  }
+
   onMoved(client: OnlineClient, _previousChannelId: number, at: number): void {
     const activity = this.lastActivity.get(client.clid);
     if (activity) activity.channelId = client.channelId;

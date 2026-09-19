@@ -45,6 +45,7 @@ const envSchema = z.object({
   SEGMENT_RETENTION_MONTHS: optional(z.coerce.number().int().min(0).default(0)),
   POLL_INTERVAL_S: optional(z.coerce.number().int().min(10).max(600).default(60)),
   SEGMENT_FLUSH_INTERVAL_S: optional(z.coerce.number().int().min(30).max(3600).default(300)),
+  SESSION_RESUME_GRACE_S: optional(z.coerce.number().int().min(0).max(3600).default(300)),
   LOG_LEVEL: optional(z.enum(LOG_LEVELS).default('info')),
   LOG_DIR: optional(z.string().default('./data/logs')),
   LOG_RETENTION_DAYS: optional(z.coerce.number().int().min(1).default(14)),
@@ -89,6 +90,8 @@ export interface Config {
     readonly pollIntervalS: number;
     /** Seconds between batched writes of activity segments. */
     readonly flushIntervalS: number;
+    /** Restarts shorter than this continue running sessions; 0 = always close. */
+    readonly resumeGraceS: number;
   };
   readonly logging: {
     readonly level: LogLevel;
@@ -144,6 +147,7 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
     watcher: Object.freeze({
       pollIntervalS: e.POLL_INTERVAL_S,
       flushIntervalS: e.SEGMENT_FLUSH_INTERVAL_S,
+      resumeGraceS: e.SESSION_RESUME_GRACE_S,
     }),
     logging: Object.freeze({
       level: e.LOG_LEVEL,

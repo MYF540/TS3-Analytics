@@ -1,6 +1,8 @@
 import { finalizeSession } from '../db/aggregates.js';
 import type { AppDatabase } from '../db/client.js';
 import { openSession, recordNickname, upsertUser } from '../db/repositories/index.js';
+import { users } from '../db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 import type { Logger } from '../logging/logger.js';
 import { CLIENT_TYPE_QUERY, type Ts3Client } from '../ts3/types.js';
 
@@ -18,6 +20,8 @@ export interface OnlineClient {
 export interface TrackerListener {
   /** Called after a session was opened (client joined or discovered by a sync). */
   onJoined?(client: OnlineClient, source: Ts3Client, at: number): void;
+  /** Called after an existing session was resumed following a short restart (T2.7). */
+  onResumed?(client: OnlineClient, source: Ts3Client, at: number): void;
   /** Called after the client moved to another channel. */
   onMoved?(client: OnlineClient, previousChannelId: number, at: number): void;
   /** Called before the session is closed. */
@@ -49,9 +53,25 @@ export class SessionTracker {
     return this.online.get(clid);
   }
 
-  /** Adopts an already open session (crash recovery, T2.4) without writing to the database. */
-  adopt(client: OnlineClient): void {
-    this.online.set(client.clid, client);
+  /** Continues an open session of a client that stayed online during a short restart (T2.7). */
+  resume(
+    client: Ts3Client,
+    session: { sessionId: number; userId: number; joinAt: number },
+    at: number,
+  ): OnlineClient {
+    const tracked: OnlineClient = {
+      clid: client.clid,
+      uid: client.uid,
+      userId: session.userId,
+      sessionId: session.sessionId,
+      nickname: client.nickname,
+      channelId: client.channelId,
+      joinedAt: session.joinAt,
+    };
+    recordNickname(this.database.db, session.userId, client.nickname, at);
+    this.online.set(client.clid, tracked);
+    for (const l of this.listeners) l.onResumed?.(tracked, client, at);
+    return tracked;
   }
 
   join(client: Ts3Client, at: number): OnlineClient | undefined {
@@ -95,7 +115,14 @@ export class SessionTracker {
     if (!tracked) return; // unknown clid, e.g. a query client
     for (const l of this.listeners) l.onLeaving?.(tracked, at);
     this.online.delete(clid);
-    finalizeSession(this.database, tracked.sessionId, at);
+    this.database.sqlite.transaction(() => {
+      finalizeSession(this.database, tracked.sessionId, at);
+      this.database.db
+        .update(users)
+        .set({ lastSeen: sql`max(${users.lastSeen}, ${at})` })
+        .where(eq(users.id, tracked.userId))
+        .run();
+    })();
     this.logger.debug({ uid: tracked.uid, clid }, 'Client left');
   }
 

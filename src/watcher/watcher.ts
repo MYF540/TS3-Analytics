@@ -6,7 +6,12 @@ import type { Ts3Client, Ts3ClientLeft, Ts3ClientMoved } from '../ts3/types.js';
 import type { CountryLookup } from '../geoip/country-lookup.js';
 import { ActivityTracker } from './activity.js';
 import { IpProcessor } from './ip-processor.js';
-import { recoverOpenSessions, writeHeartbeat } from './recovery.js';
+import {
+  recoverOpenSessions,
+  resolveResume,
+  writeHeartbeat,
+  type RecoveryResult,
+} from './recovery.js';
 import { loadActivitySettings } from './settings.js';
 import { SessionTracker } from './tracker.js';
 
@@ -22,6 +27,11 @@ export interface WatcherDeps {
   flushIntervalS?: number;
   /** Poll on a timer (default true); tests call `sync()` themselves. */
   autoPoll?: boolean;
+  /**
+   * Restarts shorter than this keep the sessions of clients that stayed online (default 300 s,
+   * 0 disables resuming).
+   */
+  resumeGraceS?: number;
   /** IP pseudonymisation on join (T2.5); disabled when omitted. */
   ip?: { countries: CountryLookup; hmacSecret: string };
 }
@@ -43,6 +53,8 @@ export class Watcher {
   private readonly detach: (() => void)[] = [];
   /** Clients with events while a sync is fetching lists (see `SessionTracker.sync`). */
   private touchedDuringSync: Set<number> | undefined;
+  /** Outcome of the start-up recovery; resume candidates are decided by the first sync. */
+  private recovery: RecoveryResult | undefined;
 
   constructor(private readonly deps: WatcherDeps) {
     this.now = deps.now ?? (() => Math.floor(Date.now() / 1000));
@@ -64,8 +76,11 @@ export class Watcher {
 
   start(): void {
     const { connection } = this.deps;
-    // Close what an unclean shutdown left open before tracking anything new (T2.4).
-    recoverOpenSessions(this.deps.database, this.deps.logger);
+    // Handle what the previous run left open before tracking anything new (T2.4, T2.7).
+    this.recovery = recoverOpenSessions(this.deps.database, this.deps.logger, {
+      now: this.now(),
+      resumeGraceS: this.resumeGraceS,
+    });
     const onConnect = (client: Ts3Client) => {
       this.touchedDuringSync?.add(client.clid);
       this.safely(() => this.tracker.join(client, this.now()));
@@ -136,6 +151,19 @@ export class Watcher {
           channels.map((c) => ({ id: c.cid, name: c.name, seenAt: at })),
         );
       })();
+      const recovery = this.recovery;
+      if (recovery && recovery.candidates.length > 0) {
+        this.recovery = undefined;
+        const resumed = resolveResume(database, recovery.candidates, clients, at, {
+          heartbeat: recovery.heartbeat,
+          resumeGraceS: this.resumeGraceS,
+        });
+        for (const { client, candidate } of resumed) this.tracker.resume(client, candidate, at);
+        logger.info(
+          { resumed: resumed.length, closed: recovery.candidates.length - resumed.length },
+          'Sessions after restart resolved',
+        );
+      }
       this.tracker.sync(clients, at, this.lostAt ?? at, touched);
       this.lostAt = undefined;
       this.activity.observe(clients, (clid) => this.tracker.get(clid), at, touched);
@@ -157,13 +185,27 @@ export class Watcher {
     this.lastFlushAt = at;
   }
 
-  /** Detaches from the connection, closes all open sessions and writes pending segments. */
+  private get resumeGraceS(): number {
+    return this.deps.resumeGraceS ?? 300;
+  }
+
+  /**
+   * Detaches from the connection and writes pending segments. Sessions stay open so a quick
+   * restart can continue them (T2.7); with resuming disabled they are closed.
+   */
   stop(): void {
     if (this.pollTimer) clearInterval(this.pollTimer);
     this.pollTimer = undefined;
     for (const off of this.detach.splice(0)) off();
-    this.tracker.closeAll(this.now());
-    this.flush();
+    const now = this.now();
+    if (this.resumeGraceS === 0) {
+      this.tracker.closeAll(now);
+    } else if (this.deps.connection.isConnected && this.lostAt === undefined) {
+      // The view is current up to now: extend open segments and mark the moment.
+      this.activity.touchAll(now);
+      writeHeartbeat(this.deps.database.db, now);
+    }
+    this.flush(now);
   }
 
   private safely(fn: () => unknown): void {

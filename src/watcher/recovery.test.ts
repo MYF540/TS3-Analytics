@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { rebuildAggregates } from '../db/aggregates.js';
 import type { AppDatabase } from '../db/client.js';
 import { openSegment, openSession, upsertUser } from '../db/repositories/index.js';
@@ -140,6 +140,7 @@ describe('crash recovery', () => {
       sessions: 2,
       segments: 1,
       heartbeat: undefined,
+      candidates: [],
     });
     expect(rows('SELECT id, leave_at FROM sessions ORDER BY id')).toEqual([
       { id: withSegment, leave_at: T0 + 300 },
@@ -167,14 +168,93 @@ describe('crash recovery', () => {
     expect(rows('SELECT end_at FROM activity_segments')).toEqual([{ end_at: T0 + 900 }]);
     expect(rows('SELECT leave_at FROM sessions')).toEqual([{ leave_at: T0 + 900 }]);
   });
+});
 
-  it('does nothing after a clean shutdown', async () => {
+describe('resuming sessions after a restart (T2.7)', () => {
+  const sessionsView = () =>
+    rows(`SELECT s.id, u.uid, s.join_at - ${String(T0)} AS j, s.leave_at - ${String(T0)} AS l
+          FROM sessions s JOIN users u ON u.id = s.user_id ORDER BY s.id`);
+
+  it('continues sessions of clients that stayed online during a quick restart', async () => {
+    const first = await startWatcher();
+    const alice = server.join({ uid: 'alice', nickname: 'Alice' });
+    const bob = server.join({ uid: 'bob', nickname: 'Bob' });
+    now = T0 + MIN;
+    await first.sync();
+    now = T0 + 2 * MIN;
+    first.stop(); // clean shutdown, e.g. an update
+    await connections[0]?.stop();
+
+    server.leave(bob); // leaves while the service is down
+    now = T0 + 3 * MIN;
+    const second = await startWatcher();
+
+    expect(sessionsView()).toEqual([
+      { id: 1, uid: 'alice', j: 0, l: null }, // same session continues
+      { id: 2, uid: 'bob', j: 0, l: 2 * MIN }, // ended at the last heartbeat
+    ]);
+    expect(second.tracker.get(alice)?.sessionId).toBe(1);
+
+    now = T0 + 10 * MIN;
+    server.leave(alice);
+    second.flush();
+    expect(sessionsView()[0]).toEqual({ id: 1, uid: 'alice', j: 0, l: 10 * MIN });
+    const [covered] = rows(
+      `SELECT sum(end_at - start_at) AS total FROM activity_segments s
+       JOIN users u ON u.id = s.user_id WHERE u.uid = 'alice'`,
+    ) as { total: number }[];
+    expect(covered?.total).toBe(10 * MIN);
+    expect(rows('SELECT sessions, longest_session_s FROM user_totals WHERE user_id = 1')).toEqual([
+      { sessions: 1, longest_session_s: 10 * MIN },
+    ]);
+  });
+
+  it('closes everything at the heartbeat after a long downtime', async () => {
     const first = await startWatcher();
     server.join({ uid: 'alice', nickname: 'Alice' });
     now = T0 + MIN;
     await first.sync();
     first.stop();
-    expect(openCount()).toEqual({ sessions: 0, segments: 0 });
-    expect(recoverOpenSessions(database, logger)).toMatchObject({ sessions: 0, segments: 0 });
+    await connections[0]?.stop();
+
+    now = T0 + 30 * MIN;
+    await startWatcher();
+    expect(sessionsView()).toEqual([
+      { id: 1, uid: 'alice', j: 0, l: MIN },
+      { id: 2, uid: 'alice', j: 30 * MIN, l: null },
+    ]);
+  });
+
+  it('does not resume when the TS3 server only answers after the grace time', async () => {
+    const first = await startWatcher();
+    server.join({ uid: 'alice', nickname: 'Alice' });
+    now = T0 + MIN;
+    await first.sync();
+    first.stop();
+    await connections[0]?.stop();
+
+    now = T0 + 2 * MIN;
+    server.failConnects = 1_000_000; // TS3 server unreachable
+    const connection = new Ts3Connection(
+      server.createTransport,
+      { commandsPerSecond: 1000, initialBackoffMs: 1, maxBackoffMs: 1, jitter: 0 },
+      { logger },
+    );
+    connections.push(connection);
+    const watcher = new Watcher({ database, connection, logger, now: () => now, autoPoll: false });
+    watcher.start();
+    connection.start();
+    await settle();
+    expect(openCount()).toEqual({ sessions: 1, segments: 1 }); // still undecided
+
+    now = T0 + 20 * MIN;
+    server.failConnects = 0;
+    await vi.waitFor(() => {
+      expect(sessionsView()).toHaveLength(2);
+    });
+    expect(sessionsView()).toEqual([
+      { id: 1, uid: 'alice', j: 0, l: MIN },
+      { id: 2, uid: 'alice', j: 20 * MIN, l: null },
+    ]);
   });
 });

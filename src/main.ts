@@ -32,6 +32,7 @@ async function main(): Promise<void> {
     ip: { countries, hmacSecret: config.security.hmacSecret },
     pollIntervalS: config.watcher.pollIntervalS,
     flushIntervalS: config.watcher.flushIntervalS,
+    resumeGraceS: config.watcher.resumeGraceS,
   });
   watcher.start();
   connection.start();
