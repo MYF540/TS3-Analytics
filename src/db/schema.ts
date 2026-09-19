@@ -36,6 +36,8 @@ export const users = sqliteTable(
     version: text('version'),
     /** ISO 3166-1 alpha-2 code of the most recent connection. */
     country: text('country'),
+    /** Server group ids as JSON array, as last seen online (rank preview, excluded groups). */
+    serverGroups: text('server_groups'),
   },
   (t) => [
     uniqueIndex('users_uid_unique').on(t.uid),

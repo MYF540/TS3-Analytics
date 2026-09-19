@@ -71,6 +71,13 @@
       "when": 1789854258964,
       "tag": "0009_ranks",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789854394841,
+      "tag": "0010_user_server_groups",
+      "breakpoints": true
     }
   ]
 }

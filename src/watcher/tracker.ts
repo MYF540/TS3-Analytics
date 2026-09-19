@@ -97,6 +97,7 @@ export class SessionTracker {
         platform: client.platform || undefined,
         version: client.version || undefined,
         country: client.country,
+        serverGroups: client.serverGroups,
       });
       recordNickname(this.database.db, userId, client.nickname, at);
       const sessionId = openSession(this.database.db, userId, at);

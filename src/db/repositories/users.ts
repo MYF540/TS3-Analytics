@@ -12,6 +12,7 @@ export interface UserSighting {
   platform?: string | undefined;
   version?: string | undefined;
   country?: string | undefined;
+  serverGroups?: readonly number[] | undefined;
 }
 
 /**
@@ -30,6 +31,8 @@ export function upsertUser(db: DbExecutor, sighting: UserSighting): number {
       platform: sighting.platform ?? null,
       version: sighting.version ?? null,
       country: sighting.country ?? null,
+      serverGroups:
+        sighting.serverGroups === undefined ? null : JSON.stringify(sighting.serverGroups),
     })
     .onConflictDoUpdate({
       target: users.uid,
@@ -40,6 +43,7 @@ export function upsertUser(db: DbExecutor, sighting: UserSighting): number {
         platform: sql`coalesce(excluded.platform, ${users.platform})`,
         version: sql`coalesce(excluded.version, ${users.version})`,
         country: sql`coalesce(excluded.country, ${users.country})`,
+        serverGroups: sql`coalesce(excluded.server_groups, ${users.serverGroups})`,
       },
     })
     .returning({ id: users.id })
