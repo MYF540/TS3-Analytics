@@ -10,6 +10,7 @@ export const ALERT_EVENTS = [
   'ban.added',
   'bot.connection',
   'join.spike',
+  'group.protected',
 ] as const;
 export type AlertEvent = (typeof ALERT_EVENTS)[number];
 

@@ -299,6 +299,7 @@ export const de = {
   'audit.action.person.primary': 'Haupt-Account geändert',
   'audit.action.settings.alerts': 'Discord-Benachrichtigungen geändert',
   'audit.action.settings.moderation': 'Moderations-Einstellungen geändert',
+  'audit.action.settings.groups': 'Geschützte Servergruppen geändert',
   'audit.action.moderation.poke': 'Spieler angestupst',
   'audit.action.moderation.message': 'Nachricht an Spieler',
   'audit.action.moderation.move': 'Spieler verschoben',
@@ -376,6 +377,24 @@ export const de = {
   'mod.duration.0': 'dauerhaft',
   'mod.duration.custom': '{value} (eigene)',
 
+  'groups.title': 'Servergruppen-Überwachung',
+  'groups.intro':
+    'Der Bot liest das Server-Log und merkt sich, wer welcher Servergruppe hinzugefügt oder daraus entfernt wurde. Änderungen an geschützten Gruppen werden gemeldet (Discord, Ereignis „geschützte Servergruppe“).',
+  'groups.protected': 'Geschützte Gruppen',
+  'groups.noGroups':
+    'Noch keine Gruppenliste bekannt. Sie erscheint, sobald der Bot verbunden war (Recht b_virtualserver_servergroup_list).',
+  'groups.save': 'Gruppen speichern',
+  'groups.history': 'Letzte Änderungen',
+  'groups.historyEmpty': 'Noch keine Gruppenänderungen im Server-Log gefunden.',
+  'groups.col.time': 'Zeitpunkt',
+  'groups.col.player': 'Spieler',
+  'groups.col.change': 'Änderung',
+  'groups.col.by': 'durch',
+  'groups.added': '+ {group}',
+  'groups.removed': '− {group}',
+  'groups.protectedBadge': 'geschützt',
+  'groups.permissionHint': 'Der Query-Account braucht das Recht b_virtualserver_log_view.',
+
   'alerts.title': 'Discord-Benachrichtigungen',
   'alerts.intro':
     'Meldungen an einen Discord-Kanal über einen Webhook. Sie enthalten Nicknames und UIDs von Spielern, aber nie IP-Adressen.',
@@ -390,6 +409,7 @@ export const de = {
   'alerts.event.flag.medium': 'Neuer Hinweis mit Stufe „mittel“ (gleiches Subnetz)',
   'alerts.event.ban.added': 'Neuer Ban auf dem Server',
   'alerts.event.join.spike': 'Join-Spike: ungewöhnlich viele neue Accounts in kurzer Zeit',
+  'alerts.event.group.protected': 'Änderung an einer geschützten Servergruppe',
   'alerts.event.bot.connection': 'Bot länger als 2 Minuten ohne Verbindung und wieder verbunden',
   'alerts.rate': 'Höchstens Meldungen pro Minute',
   'alerts.rateHint': 'Weitere Meldungen werden zusammengefasst. 1 bis 30.',

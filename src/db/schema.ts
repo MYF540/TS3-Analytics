@@ -444,3 +444,33 @@ export const personMembers = sqliteTable(
   },
   (t) => [index('person_members_person_idx').on(t.personId)],
 );
+
+/**
+ * Server-group changes read from the server log (T5.7). Only parsed fields are stored, never the
+ * log line. `user_id` is resolved from the client database id when the bot knows the client.
+ */
+export const groupChanges = sqliteTable(
+  'group_changes',
+  {
+    id: integer('id').primaryKey(),
+    /** UTC seconds of the log entry. */
+    at: integer('at').notNull(),
+    /** Log position (`at` * 1e6 + microseconds); unique per entry, used against duplicates. */
+    logPos: integer('log_pos').notNull(),
+    action: text('action', { enum: ['added', 'removed'] }).notNull(),
+    dbid: integer('dbid').notNull(),
+    userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+    nickname: text('nickname'),
+    groupId: integer('group_id').notNull(),
+    groupName: text('group_name').notNull(),
+    invokerName: text('invoker_name').notNull(),
+    invokerDbid: integer('invoker_dbid').notNull(),
+    /** The group was marked as protected when the change was seen. */
+    protected: integer('protected', { mode: 'boolean' }).notNull().default(false),
+  },
+  (t) => [
+    uniqueIndex('group_changes_entry_idx').on(t.logPos, t.dbid, t.groupId, t.action),
+    index('group_changes_at_idx').on(t.at),
+    index('group_changes_user_idx').on(t.userId),
+  ],
+);

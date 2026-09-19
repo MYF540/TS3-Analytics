@@ -12,6 +12,8 @@ import type {
   FlagLevel,
   FlagsResponse,
   FlagStatus,
+  GroupChange,
+  GroupSettings,
   Health,
   Heatmap,
   Leaderboard,
@@ -203,6 +205,13 @@ export const api = {
   ) => apiGet<FlagsResponse>('/flags', query, signal),
   setFlagStatus: (id: number, status: FlagStatus) =>
     apiPost<{ id: number; status: FlagStatus }>(`/flags/${String(id)}/status`, { status }),
+  groupSettings: (signal?: AbortSignal) => apiGet<GroupSettings>('/settings/groups', {}, signal),
+  saveGroupSettings: (protectedGroupIds: number[]) =>
+    apiSend<GroupSettings>('PUT', '/settings/groups', { protectedGroupIds }),
+  groupChanges: (
+    query: { protectedOnly?: boolean; userId?: number; page?: number; pageSize?: number },
+    signal?: AbortSignal,
+  ) => apiGet<Paged<GroupChange>>('/group-changes', query, signal),
   moderationSettings: (signal?: AbortSignal) =>
     apiGet<ModerationSettings>('/settings/moderation', {}, signal),
   saveModerationSettings: (settings: ModerationSettings) =>

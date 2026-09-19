@@ -263,6 +263,23 @@ export interface BotStatus {
   }[];
 }
 
+export interface GroupSettings {
+  protectedGroupIds: number[];
+  knownGroups: { id: number; name: string }[];
+}
+
+export interface GroupChange {
+  id: number;
+  at: number;
+  action: 'added' | 'removed';
+  userId: number | null;
+  nickname: string | null;
+  groupId: number;
+  groupName: string;
+  invokerName: string;
+  protected: boolean;
+}
+
 export interface BanTemplate {
   id: string;
   label: string;
@@ -290,7 +307,7 @@ export type ModerationAction =
     };
 
 export type AlertEvent =
-  'flag.high' | 'flag.medium' | 'ban.added' | 'bot.connection' | 'join.spike';
+  'flag.high' | 'flag.medium' | 'ban.added' | 'bot.connection' | 'join.spike' | 'group.protected';
 
 export interface AlertSettings {
   configured: boolean;

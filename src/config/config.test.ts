@@ -45,6 +45,7 @@ describe('parseConfig', () => {
         flushIntervalS: 300,
         resumeGraceS: 300,
         banSyncIntervalS: 600,
+        groupLogIntervalS: 30,
       },
       logging: { level: 'info', dir: './data/logs', retentionDays: 14, pretty: undefined },
     });

@@ -13,7 +13,7 @@ import type { Config } from '../config/config.js';
 import type { Logger } from '../logging/logger.js';
 import { useWithFreeNickname } from './nickname.js';
 import type { Ts3Transport } from './transport.js';
-import type { Ts3Ban, Ts3Channel, Ts3Client, Ts3TransportEvents } from './types.js';
+import type { Ts3Ban, Ts3Channel, Ts3Client, Ts3ServerGroup, Ts3TransportEvents } from './types.js';
 
 type ClientLike = Pick<
   TeamSpeakClient,
@@ -262,6 +262,21 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
   async banList(): Promise<Ts3Ban[]> {
     const query = this.connected();
     return fetchAllBans((start, count) => query.banList(start, count));
+  }
+
+  async serverGroups(): Promise<Ts3ServerGroup[]> {
+    const groups = await this.connected().serverGroupList();
+    return groups.map((g) => ({ id: Number(g.sgid), name: g.name, type: g.type }));
+  }
+
+  async logLines(lines: number): Promise<string[]> {
+    // Called directly: the library's logView() always sends begin_pos=0.
+    const rows = await this.connected().execute<{ l?: string }[]>('logview', {
+      lines: Math.min(100, Math.max(1, lines)),
+      reverse: 1,
+      instance: 0,
+    });
+    return (Array.isArray(rows) ? rows : [rows]).flatMap((r) => (r.l ? [r.l] : []));
   }
 
   async kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {

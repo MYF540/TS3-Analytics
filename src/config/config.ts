@@ -49,6 +49,7 @@ const envSchema = z.object({
   SEGMENT_FLUSH_INTERVAL_S: optional(z.coerce.number().int().min(30).max(3600).default(300)),
   SESSION_RESUME_GRACE_S: optional(z.coerce.number().int().min(0).max(3600).default(300)),
   BAN_SYNC_INTERVAL_S: optional(z.coerce.number().int().min(60).max(86_400).default(600)),
+  GROUP_LOG_INTERVAL_S: optional(z.coerce.number().int().min(10).max(3600).default(30)),
   LOG_LEVEL: optional(z.enum(LOG_LEVELS).default('info')),
   LOG_DIR: optional(z.string().default('./data/logs')),
   LOG_RETENTION_DAYS: optional(z.coerce.number().int().min(1).default(14)),
@@ -101,6 +102,8 @@ export interface Config {
     readonly resumeGraceS: number;
     /** How often the ban list is mirrored (T5.1). */
     readonly banSyncIntervalS: number;
+    /** How often the server log is read for group changes (T5.7). */
+    readonly groupLogIntervalS: number;
   };
   readonly logging: {
     readonly level: LogLevel;
@@ -163,6 +166,7 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
       flushIntervalS: e.SEGMENT_FLUSH_INTERVAL_S,
       resumeGraceS: e.SESSION_RESUME_GRACE_S,
       banSyncIntervalS: e.BAN_SYNC_INTERVAL_S,
+      groupLogIntervalS: e.GROUP_LOG_INTERVAL_S,
     }),
     logging: Object.freeze({
       level: e.LOG_LEVEL,

@@ -1,5 +1,5 @@
 import type { EventEmitter } from 'node:events';
-import type { Ts3Ban, Ts3Channel, Ts3Client, Ts3TransportEvents } from './types.js';
+import type { Ts3Ban, Ts3Channel, Ts3Client, Ts3ServerGroup, Ts3TransportEvents } from './types.js';
 
 /**
  * One physical ServerQuery connection. It does not reconnect or rate-limit by itself; that is
@@ -24,6 +24,13 @@ export interface Ts3Transport extends EventEmitter<Ts3TransportEvents> {
   clientIps(): Promise<Map<number, string>>;
   /** The whole ban list (empty when there are no bans). Same rules apply to `ip`. */
   banList(): Promise<Ts3Ban[]>;
+
+  serverGroups(): Promise<Ts3ServerGroup[]>;
+  /**
+   * The newest lines of the virtual server log (`logview`, at most 100). Lines can contain IP
+   * addresses: callers only parse what they need and never store or log the raw text.
+   */
+  logLines(lines: number): Promise<string[]>;
 
   // Moderation (T5.6). Callers check permissions, the global switch and write the audit log.
   /** Kicks from the server or back to the default channel. `reason` max. 40 characters. */

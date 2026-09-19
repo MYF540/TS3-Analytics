@@ -5,6 +5,7 @@ import type { Ts3Transport, Ts3TransportFactory } from './transport.js';
 import {
   CLIENT_TYPE_QUERY,
   type Ts3Ban,
+  type Ts3ServerGroup,
   type Ts3Channel,
   type Ts3Client,
   type Ts3ClientLeft,
@@ -164,6 +165,14 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
 
   async banList(): Promise<Ts3Ban[]> {
     return this.command((t) => t.banList());
+  }
+
+  serverGroups(): Promise<Ts3ServerGroup[]> {
+    return this.command((t) => t.serverGroups());
+  }
+
+  logLines(lines: number): Promise<string[]> {
+    return this.command((t) => t.logLines(lines));
   }
 
   kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {

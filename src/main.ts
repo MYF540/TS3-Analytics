@@ -14,6 +14,7 @@ import { alertNewBans, alertNewFlags } from './alerts/dispatch.js';
 import { JoinSpikeDetector } from './alerts/join-spike.js';
 import { AlertNotifier } from './alerts/notifier.js';
 import { BanSync } from './watcher/bans.js';
+import { GroupWatch } from './watcher/group-watch.js';
 import { Watcher } from './watcher/watcher.js';
 
 async function main(): Promise<void> {
@@ -70,6 +71,14 @@ async function main(): Promise<void> {
     },
   });
   banSync.start();
+  const groupWatch = new GroupWatch({
+    database,
+    connection,
+    notifier: alerts,
+    logger,
+    intervalS: config.watcher.groupLogIntervalS,
+  });
+  groupWatch.start();
   connection.start();
 
   const jobs = new JobRunner(
@@ -135,6 +144,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'Shutting down');
     jobs.stop();
     banSync.stop();
+    groupWatch.stop();
     connectionAlerts.stop();
     alerts.stop();
     void api.close();

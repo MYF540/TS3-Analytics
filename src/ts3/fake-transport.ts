@@ -3,6 +3,7 @@ import type { Ts3Transport } from './transport.js';
 import {
   CLIENT_TYPE_REGULAR,
   type Ts3Ban,
+  type Ts3ServerGroup,
   type Ts3Channel,
   type Ts3Client,
   type Ts3TransportEvents,
@@ -22,6 +23,12 @@ export class FakeTs3Server {
   readonly commandLog: { command: string; at: number }[] = [];
   /** Ban list as returned by `banlist`. */
   bans: Ts3Ban[] = [];
+  readonly serverGroups: Ts3ServerGroup[] = [
+    { id: 6, name: 'Server Admin', type: 1 },
+    { id: 8, name: 'Guest', type: 1 },
+  ];
+  /** Server log lines, oldest first (`logview` returns the newest). */
+  readonly serverLog: string[] = [];
   /** Moderation commands received (T5.6), for assertions. */
   readonly moderation: {
     command: string;
@@ -171,6 +178,16 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
   channelList(): Promise<Ts3Channel[]> {
     this.assertOpen('channellist');
     return Promise.resolve([...this.server.channels.values()].map((c) => ({ ...c })));
+  }
+
+  serverGroups(): Promise<Ts3ServerGroup[]> {
+    this.assertOpen('servergrouplist');
+    return Promise.resolve(this.server.serverGroups.map((g) => ({ ...g })));
+  }
+
+  logLines(lines: number): Promise<string[]> {
+    this.assertOpen('logview');
+    return Promise.resolve(this.server.serverLog.slice(-Math.min(100, lines)).reverse());
   }
 
   kick(clid: number, from: 'server' | 'channel', reason: string): Promise<void> {

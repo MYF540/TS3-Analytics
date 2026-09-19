@@ -9,6 +9,7 @@ const EVENTS: readonly AlertEvent[] = [
   'flag.medium',
   'ban.added',
   'join.spike',
+  'group.protected',
   'bot.connection',
 ];
 

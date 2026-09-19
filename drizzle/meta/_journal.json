@@ -57,6 +57,13 @@
       "when": 1789851769690,
       "tag": "0007_persons",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789853611189,
+      "tag": "0008_group_changes",
+      "breakpoints": true
     }
   ]
 }

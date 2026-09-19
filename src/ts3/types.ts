@@ -57,6 +57,13 @@ export interface Ts3Ban {
   enforcements: number;
 }
 
+export interface Ts3ServerGroup {
+  id: number;
+  name: string;
+  /** 0 = template, 1 = regular, 2 = query group. */
+  type: number;
+}
+
 export interface Ts3ClientLeft {
   clid: number;
   /** TS3 reason id (e.g. 8 = left, 3 = timeout, 4/5 = kicked, 6 = banned). */

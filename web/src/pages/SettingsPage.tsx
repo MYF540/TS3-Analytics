@@ -4,6 +4,7 @@ import type { ActivitySettings, ActivitySettingsResponse } from '../api/types';
 import { useApi } from '../hooks/useApi';
 import { formatDateTime, t } from '../i18n';
 import { AlertSettingsCard } from '../components/AlertSettingsCard';
+import { GroupSettingsCard } from '../components/GroupSettingsCard';
 import { ModerationSettingsCard } from '../components/ModerationSettingsCard';
 import { PageHeader } from './pages';
 
@@ -259,6 +260,7 @@ export function SettingsPage() {
       {!data && !error && <p className="muted">{t('common.loading')}</p>}
       {data && <ActivityForm data={data} />}
       <ModerationSettingsCard />
+      <GroupSettingsCard />
       <AlertSettingsCard />
     </section>
   );

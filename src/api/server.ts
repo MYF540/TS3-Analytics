@@ -17,6 +17,7 @@ import { auditRoutes } from './routes/audit.js';
 import { alertRoutes } from './routes/alerts.js';
 import { authRoutes } from './routes/auth.js';
 import { flagRoutes } from './routes/flags.js';
+import { groupRoutes } from './routes/groups.js';
 import { healthRoutes } from './routes/health.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
 import { moderationRoutes } from './routes/moderation.js';
@@ -118,6 +119,7 @@ export async function buildServer(
       await api.register(personRoutes(context));
       await api.register(alertRoutes(context));
       await api.register(moderationRoutes(context));
+      await api.register(groupRoutes(context));
     },
     { prefix: '/api' },
   );
