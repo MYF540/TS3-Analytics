@@ -46,6 +46,37 @@ export function formatDuration(seconds: number): string {
   return minutes === 0 || hours >= 100 ? h : `${h} ${t('unit.minutes', { value: minutes })}`;
 }
 
+const byteFormat = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
+
+/** Bytes as "512 KB", "1,5 MB", "2,3 GB" (base 1024). */
+export function formatBytes(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'] as const;
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  return `${byteFormat.format(value)} ${units[unit] ?? 'B'}`;
+}
+
+/** Elapsed time as "vor 45 s", "vor 12 min", "vor 3 h", "vor 2 Tagen". */
+export function formatAgo(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return t('unit.agoSeconds', { value: s });
+  if (s < 3600) return t('unit.agoMinutes', { value: Math.floor(s / 60) });
+  if (s < 2 * 86_400) return t('unit.agoHours', { value: Math.floor(s / 3600) });
+  return t('unit.agoDays', { value: Math.floor(s / 86_400) });
+}
+
+/** Uptime as "3 Tage 4 h", "5 h 12 min" or "7 min". */
+export function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86_400);
+  if (days === 0) return formatDuration(seconds);
+  const hours = Math.floor((seconds % 86_400) / 3600);
+  return `${t(days === 1 ? 'unit.day' : 'unit.days', { value: days })} ${t('unit.hours', { value: hours })}`;
+}
+
 /** Unix seconds → local date and time in Europe/Berlin. */
 export function formatDateTime(unixSeconds: number): string {
   return dateTimeFormat.format(new Date(unixSeconds * 1000));

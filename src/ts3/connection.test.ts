@@ -57,6 +57,34 @@ describe('Ts3Connection', () => {
     expect(states).toEqual(['connecting', 'connected', 'waiting', 'connecting', 'connected']);
   });
 
+  it('reports its status for the status page', async () => {
+    server.failConnects = 1;
+    createConnection().start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(connection.status()).toMatchObject({
+      state: 'waiting',
+      failedAttempts: 1,
+      lastConnectedAt: undefined,
+      lastError: { at: 0, message: 'connection refused (fake)' },
+    });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(connection.status()).toMatchObject({
+      state: 'connected',
+      since: 1,
+      failedAttempts: 0,
+      lastConnectedAt: 1,
+      queuedCommands: 0,
+    });
+    await vi.advanceTimersByTimeAsync(5000);
+    server.dropConnection(new Error('lost 192.168.1.20:10011'));
+    expect(connection.status()).toMatchObject({
+      state: 'waiting',
+      since: 6,
+      lastConnectedAt: 1,
+      lastError: { at: 6, message: 'lost [IP]:10011' },
+    });
+  });
+
   it('backs off exponentially while the server is unreachable and resets after success', async () => {
     server.failConnects = 4;
     const attemptsAt: number[] = [];

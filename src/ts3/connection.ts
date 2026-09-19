@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { Logger } from '../logging/logger.js';
+import { scrubIps, type Logger } from '../logging/logger.js';
 import { CommandQueue, systemClock, type Clock } from './command-queue.js';
 import type { Ts3Transport, Ts3TransportFactory } from './transport.js';
 import {
@@ -23,6 +23,20 @@ export interface ConnectionOptions {
 }
 
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'waiting' | 'stopped';
+
+/** Snapshot for the status page; times in UTC seconds. */
+export interface ConnectionStatus {
+  state: ConnectionState;
+  /** When the current state began. */
+  since: number;
+  /** Failed connection attempts in a row (0 while connected). */
+  failedAttempts: number;
+  lastConnectedAt: number | undefined;
+  /** Last connection error or close reason, already free of IP addresses. */
+  lastError: { at: number; message: string } | undefined;
+  /** Commands waiting in the rate-limited queue. */
+  queuedCommands: number;
+}
 
 export interface Ts3ConnectionEvents {
   connected: [];
@@ -56,6 +70,9 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
   readonly queue: CommandQueue;
   private transport: Ts3Transport | undefined;
   private currentState: ConnectionState = 'idle';
+  private stateSince: number;
+  private lastConnectedAt: number | undefined;
+  private lastError: { at: number; message: string } | undefined;
   private attempt = 0;
   private keepAliveHandle: unknown;
   private readonly clock: Clock;
@@ -82,6 +99,29 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
     this.maxBackoffMs = options.maxBackoffMs ?? 60_000;
     this.keepAliveMs = options.keepAliveMs ?? 60_000;
     this.jitter = options.jitter ?? 0.2;
+    this.stateSince = this.nowS();
+  }
+
+  status(): ConnectionStatus {
+    return {
+      state: this.currentState,
+      since: this.stateSince,
+      failedAttempts: this.currentState === 'connected' ? 0 : this.attempt,
+      lastConnectedAt: this.lastConnectedAt,
+      lastError: this.lastError,
+      queuedCommands: this.queue.pending,
+    };
+  }
+
+  private nowS(): number {
+    return Math.floor(this.clock.now() / 1000);
+  }
+
+  private rememberError(error: unknown): void {
+    if (error === undefined) return;
+    const message =
+      error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown error';
+    this.lastError = { at: this.nowS(), message: scrubIps(message).slice(0, 300) };
   }
 
   get state(): ConnectionState {
@@ -148,6 +188,8 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
   private setState(state: ConnectionState): void {
     if (this.currentState === state || this.isStopped()) return;
     this.currentState = state;
+    this.stateSince = this.nowS();
+    if (state === 'connected') this.lastConnectedAt = this.stateSince;
     this.emit('stateChange', state);
   }
 
@@ -173,6 +215,7 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
       await transport.connect();
     } catch (error) {
       this.attempt++;
+      this.rememberError(error);
       this.deps.logger.warn({ err: error, attempt: this.attempt }, 'TS3 connection failed');
       transport.removeAllListeners();
       await transport.disconnect().catch(() => undefined);
@@ -214,6 +257,7 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
     this.queue.clear();
     this.attempt = Math.max(1, this.attempt);
     if (!this.isStopped()) {
+      this.rememberError(error);
       this.deps.logger.warn({ err: error }, 'TS3 connection closed');
       this.setState('waiting');
       this.emit('disconnected', error);

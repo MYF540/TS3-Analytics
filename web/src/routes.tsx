@@ -9,6 +9,7 @@ import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
 import { PlayersPage } from './pages/PlayersPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { StatusPage } from './pages/StatusPage';
 
 /** URL paths are German, like the UI. Everything except the login page requires a login. */
 export const routes: RouteObject[] = [
@@ -33,6 +34,7 @@ export const routes: RouteObject[] = [
                 element: <RequireRole role="admin" />,
                 children: [
                   { path: 'protokoll', element: <AuditPage /> },
+                  { path: 'status', element: <StatusPage /> },
                   { path: 'einstellungen', element: <SettingsPage /> },
                 ],
               },

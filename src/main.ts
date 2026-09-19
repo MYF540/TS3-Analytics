@@ -77,6 +77,11 @@ async function main(): Promise<void> {
       logger,
       ts3: connection,
       live: watcher,
+      bot: {
+        connection: () => connection.status(),
+        jobs: () => jobs.status(),
+        logDir: config.logging.dir,
+      },
       now: () => Math.floor(Date.now() / 1000),
       startedAt: Math.floor(Date.now() / 1000),
       auth: { sessionTtlS: config.web.sessionTtlS, cookieSecure: config.web.cookieSecure },

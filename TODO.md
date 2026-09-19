@@ -191,8 +191,9 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Hinweis im UI, dass Änderungen nur für künftige Zeiten gelten (bestehende Segmente bleiben)
   - Notiz: `GET/PUT /api/settings/activity` (nur Admin), Seite „Einstellungen“ (`/einstellungen`). Der Watcher liest die Regeln bei jedem Ereignis, Änderungen wirken also ohne Neustart. Das Audit-Log speichert nur die geänderten Felder (`{feld: {from, to}}`). Die Channel-Liste enthält auch Channels, die es auf dem Server nicht mehr gibt (Hinweis „zuletzt gesehen“); ausgewählte, unbekannte Channel-IDs bleiben sichtbar und lassen sich abwählen. Die Idle-Schwelle wird in Minuten eingegeben (1–1440) und in Sekunden gespeichert.
 
-- [ ] **T4.4 Bot-Status-Seite** · `Backend` `Frontend` · braucht: T4.1
+- [x] **T4.4 Bot-Status-Seite** · `Backend` `Frontend` · braucht: T4.1
   - Query-Verbindung, letzter Heartbeat, Uptime, DB-Größe, letzte Fehler aus dem Log
+  - Notiz: `GET /api/status` (nur Admin), Seite „Bot-Status“ (`/status`), aktualisiert sich alle 30 s. Die Verbindung liefert Zustand, Zeitpunkt seit wann, Fehlversuche, letzte Verbindung, letzten Fehler (IP-bereinigt) und Warteschlange (`Ts3Connection.status()`); der JobRunner liefert letzten/nächsten Lauf und den letzten Fehler (`JobRunner.status()`). Die letzten 20 Warnungen und Fehler werden aus dem Ende der neuesten 3 Logdateien gelesen (`src/logging/recent.ts`), gleiche Meldungen direkt hintereinander werden mit Zähler zusammengefasst; so sind auch Fehler vor einem Absturz sichtbar. Relative Zeiten nutzen die Serveruhr. Warnung bei einem Heartbeat, der älter als 15 Minuten ist.
 
 ## Phase 5 – Sicherheit & Moderation
 

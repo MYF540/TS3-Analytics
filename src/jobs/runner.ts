@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getSetting, setSetting, type DbExecutor } from '../db/repositories/index.js';
-import type { Logger } from '../logging/logger.js';
+import { scrubIps, type Logger } from '../logging/logger.js';
 
 export interface PeriodicJob {
   /** Stable name; the last run is stored as `jobs.<name>.lastRun`. */
@@ -17,6 +17,16 @@ export interface JobRunnerDeps {
   checkIntervalMs?: number;
 }
 
+export interface JobStatus {
+  name: string;
+  intervalS: number;
+  lastRun: number | undefined;
+  /** When the job is due next (it runs at the first check after this time). */
+  nextRun: number;
+  /** Failure of the last run in this process, if it failed. */
+  lastError: { at: number; message: string } | undefined;
+}
+
 const lastRunKey = (name: string) => `jobs.${name}.lastRun`;
 
 /**
@@ -26,6 +36,7 @@ const lastRunKey = (name: string) => `jobs.${name}.lastRun`;
 export class JobRunner {
   private timer: NodeJS.Timeout | undefined;
   private readonly now: () => number;
+  private readonly errors = new Map<string, { at: number; message: string }>();
 
   constructor(
     private readonly jobs: readonly PeriodicJob[],
@@ -53,6 +64,19 @@ export class JobRunner {
     return getSetting(this.deps.db, lastRunKey(name), z.number().int());
   }
 
+  status(): JobStatus[] {
+    return this.jobs.map((job) => {
+      const lastRun = this.lastRun(job.name);
+      return {
+        name: job.name,
+        intervalS: job.intervalS,
+        lastRun,
+        nextRun: lastRun === undefined ? this.now() : lastRun + job.intervalS,
+        lastError: this.errors.get(job.name),
+      };
+    });
+  }
+
   /** Runs every job whose interval has passed. Returns the names of the jobs that ran. */
   runDue(): string[] {
     const ran: string[] = [];
@@ -62,8 +86,11 @@ export class JobRunner {
       if (last !== undefined && now - last < job.intervalS) continue;
       try {
         const result = job.run(now);
+        this.errors.delete(job.name);
         this.deps.logger.info({ job: job.name, result }, 'Job finished');
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.errors.set(job.name, { at: now, message: scrubIps(message).slice(0, 300) });
         this.deps.logger.error({ err: error, job: job.name }, 'Job failed');
       }
       // Also recorded after a failure, so a broken job does not run every ten minutes.

@@ -205,4 +205,32 @@ describe('JobRunner', () => {
     expect(restarted.runDue()).toEqual([]);
     expect(restarted.lastRun('daily')).toBe(now);
   });
+
+  it('reports last and next runs and the last failure', () => {
+    const runner = new JobRunner(
+      [
+        { name: 'ok', intervalS: DAY, run: () => 1 },
+        {
+          name: 'broken',
+          intervalS: 3600,
+          run: () => {
+            throw new Error('disk full at 10.1.2.3');
+          },
+        },
+      ],
+      { db: database.db, logger: createSilentLogger(), now: () => NOW },
+    );
+    expect(runner.status().map((j) => j.lastRun)).toEqual([undefined, undefined]);
+    runner.runDue();
+    expect(runner.status()).toEqual([
+      { name: 'ok', intervalS: DAY, lastRun: NOW, nextRun: NOW + DAY, lastError: undefined },
+      {
+        name: 'broken',
+        intervalS: 3600,
+        lastRun: NOW,
+        nextRun: NOW + 3600,
+        lastError: { at: NOW, message: 'disk full at [IP]' },
+      },
+    ]);
+  });
 });

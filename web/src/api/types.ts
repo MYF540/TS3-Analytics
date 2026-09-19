@@ -172,6 +172,53 @@ export interface NoteRevision {
   replacedAt: number;
 }
 
+export interface TimedMessage {
+  at: number;
+  message: string;
+}
+
+export interface BotStatus {
+  process: {
+    version: string;
+    nodeVersion: string;
+    startedAt: number;
+    uptimeS: number;
+    rssBytes: number;
+    heapUsedBytes: number;
+  };
+  ts3: {
+    state: string;
+    since: number;
+    failedAttempts: number;
+    lastConnectedAt: number | null;
+    lastError: TimedMessage | null;
+    queuedCommands: number;
+  } | null;
+  watcher: { lastHeartbeat: number | null; onlineClients: number | null; openSessions: number };
+  database: {
+    sizeBytes: number;
+    walBytes: number | null;
+    freeBytes: number;
+    users: number;
+    sessions: number;
+    segments: number;
+  };
+  jobs: {
+    name: string;
+    intervalS: number;
+    lastRun: number | null;
+    nextRun: number;
+    lastError: TimedMessage | null;
+  }[];
+  problems: {
+    at: number;
+    level: 'warn' | 'error' | 'fatal';
+    message: string;
+    detail: string | null;
+    count: number;
+  }[];
+}
+
 export interface ActivitySettings {
   idleThresholdS: number;
   afkChannelIds: number[];

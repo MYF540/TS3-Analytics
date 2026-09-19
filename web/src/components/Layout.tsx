@@ -9,6 +9,7 @@ const NAV: { to: string; label: string; end: boolean; adminOnly?: boolean }[] = 
   { to: '/spieler', label: t('nav.players'), end: false },
   { to: '/leaderboards', label: t('nav.leaderboards'), end: false },
   { to: '/protokoll', label: t('nav.audit'), end: false, adminOnly: true },
+  { to: '/status', label: t('nav.status'), end: false, adminOnly: true },
   { to: '/einstellungen', label: t('nav.settings'), end: false, adminOnly: true },
 ];
 

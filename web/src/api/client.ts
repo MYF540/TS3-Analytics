@@ -6,6 +6,7 @@ import type {
   AuditEntry,
   AuditFilters,
   AuthResponse,
+  BotStatus,
   Health,
   Heatmap,
   Leaderboard,
@@ -181,6 +182,7 @@ export const api = {
   deleteNote: (noteId: number) => apiSend<undefined>('DELETE', `/notes/${String(noteId)}`),
   noteRevisions: (noteId: number, signal?: AbortSignal) =>
     apiGet<{ revisions: NoteRevision[] }>(`/notes/${String(noteId)}/revisions`, {}, signal),
+  status: (signal?: AbortSignal) => apiGet<BotStatus>('/status', {}, signal),
   activitySettings: (signal?: AbortSignal) =>
     apiGet<ActivitySettingsResponse>('/settings/activity', {}, signal),
   saveActivitySettings: (settings: ActivitySettings) =>
