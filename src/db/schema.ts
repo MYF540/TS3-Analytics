@@ -13,7 +13,6 @@ import {
   index,
   integer,
   primaryKey,
-  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -82,6 +81,7 @@ export const sessions = sqliteTable(
   (t) => [
     index('sessions_user_join_idx').on(t.userId, t.joinAt),
     index('sessions_join_idx').on(t.joinAt),
+    index('sessions_leave_idx').on(t.leaveAt),
     index('sessions_open_idx')
       .on(t.userId)
       .where(sql`${t.leaveAt} IS NULL`),
@@ -167,7 +167,9 @@ export const serverMinutely = sqliteTable('server_minutely', {
 export const serverHourly = sqliteTable('server_hourly', {
   /** Start of the hour (UTC Unix seconds). */
   hour: integer('hour').primaryKey(),
-  avgOnline: real('avg_online').notNull(),
+  /** Sum of online seconds of all sessions in this hour; average online = online_s / 3600. */
+  onlineS: integer('online_s').notNull(),
+  /** Maximum number of concurrent sessions within the hour. */
   maxOnline: integer('max_online').notNull(),
   uniqueUsers: integer('unique_users').notNull(),
 });

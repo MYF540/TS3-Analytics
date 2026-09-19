@@ -40,11 +40,29 @@ Beim Start führt der Dienst alle ausstehenden Migrationen aus (`runMigrations()
 | `user_daily_stats`  | Tagesaggregat pro Nutzer                                                 |
 | `user_totals`       | Allzeit-Aggregat pro Nutzer (Leaderboards)                               |
 | `server_minutely`   | Online-Zahl pro Minute (kurzfristig)                                     |
-| `server_hourly`     | Stundenaggregat (dauerhaft)                                              |
+| `server_hourly`     | Stundenaggregat (dauerhaft); Ø online = `online_s / 3600`                |
 | `ip_seen`           | IP- und Subnetz-Hashes pro Nutzer                                        |
 | `settings`          | Schlüssel/JSON-Wert                                                      |
 
 Das maßgebliche Schema steht in `src/db/schema.ts`.
+
+## Aggregate
+
+Leaderboards, Dashboard und Rang-Engine lesen nur aus `user_daily_stats`, `user_totals` und `server_hourly`. Die Logik steht in `src/domain/aggregation.ts` (rein) und `src/db/aggregates.ts`.
+
+- **Wann:** Eine Session bzw. ein Segment fließt erst beim Schließen in die Aggregate ein (`finalizeSession`, `finalizeSegment`). Schließen und Fortschreiben laufen in einer Transaktion; ein zweites Schließen trifft nichts, daher keine Doppelzählung. Offene Sessions/Segmente sind nicht enthalten – „online jetzt“ und laufende Sessions muss die API separat ergänzen.
+- **Tage:** Online- und Zustandszeiten werden an Berliner Mitternacht aufgeteilt (Tage mit 23 bzw. 25 Stunden bei Zeitumstellung). Session-Anzahl und „längste Session“ zählen am Tag des Joins, mit der vollen Dauer.
+- **Zustände:** `online_s` kommt aus Sessions, `active_s`/`idle_s`/`afk_s`/`unknown_s` aus Segmenten. Importierte Sessions (`source = 'import'`) zählen zusätzlich als `unknown_s`.
+- **Gesamtwerte:** `user_totals` = Summe bzw. Maximum der Tageswerte; `first_seen`/`last_seen` = frühester/spätester Zeitpunkt abgeschlossener Sessions und Segmente.
+- **Stunden (UTC):** `online_s` = Summe der Session-Sekunden in der Stunde, `max_online` = maximale Anzahl gleichzeitiger Sessions, `unique_users` = verschiedene Nutzer. Beim Schließen einer Session werden alle berührten Stunden aus den abgeschlossenen Sessions neu berechnet. Stunden ohne Sessions haben keine Zeile.
+
+### Neu berechnen
+
+```
+pnpm stats:rebuild [--from YYYY-MM-DD] [--to YYYY-MM-DD]
+```
+
+Berechnet die Aggregate aus Sessions und Segmenten neu (Tage in Berliner Zeit, beide inklusive). Tageszeilen außerhalb des Zeitraums bleiben unverändert, `user_totals` wird für alle betroffenen Nutzer vollständig neu gebildet. Jeder Nutzer läuft in einer eigenen Transaktion, die Stunden in einer gemeinsamen. Für ein konsistentes Ergebnis den Dienst vorher stoppen. Im Produktivbetrieb ohne Dev-Abhängigkeiten: `pnpm build` und dann `node dist/cli/stats-rebuild.js …`.
 
 ## Schema ändern
 

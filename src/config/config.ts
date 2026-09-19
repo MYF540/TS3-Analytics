@@ -148,3 +148,17 @@ export function loadConfig(options: LoadConfigOptions = {}): Config {
   const fileValues = existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {};
   return parseConfig({ ...fileValues, ...(options.env ?? process.env) });
 }
+
+/** For entry points: loads the config or prints the problems and exits with code 1. */
+export function loadConfigOrExit(options?: LoadConfigOptions): Config {
+  try {
+    return loadConfig(options);
+  } catch (error) {
+    if (error instanceof ConfigError) {
+      // No logger yet: its settings are part of the invalid config.
+      console.error(error.message);
+      process.exit(1);
+    }
+    throw error;
+  }
+}

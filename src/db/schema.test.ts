@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { is } from 'drizzle-orm';
@@ -12,6 +12,10 @@ const options = { path: IN_MEMORY, cacheSizeMb: 16, mmapSizeMb: 0 };
 const tables = (Object.values(schema) as unknown[]).filter((value): value is SQLiteTable =>
   is(value, SQLiteTable),
 );
+
+const journal = JSON.parse(
+  readFileSync(new URL('../../drizzle/meta/_journal.json', import.meta.url), 'utf8'),
+) as { entries: unknown[] };
 
 const WITHOUT_ROWID = new Set(['user_daily_stats', 'ip_seen', 'settings']);
 
@@ -196,7 +200,7 @@ describe('openDatabase', () => {
       runMigrations(database);
       expect(
         database.sqlite.prepare(`SELECT count(*) AS n FROM __drizzle_migrations`).get(),
-      ).toEqual({ n: 1 });
+      ).toEqual({ n: journal.entries.length });
     } finally {
       database.close();
     }

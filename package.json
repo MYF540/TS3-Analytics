@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "stats:rebuild": "tsx src/cli/stats-rebuild.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
