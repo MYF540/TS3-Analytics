@@ -11,7 +11,9 @@ import {
 import type { Config } from '../config/config.js';
 import type { ApiContext } from './context.js';
 import { errorBody, registerErrorHandler } from './errors.js';
+import { registerAudit } from './audit/plugin.js';
 import { registerAuth, type RouteAuth } from './auth/plugin.js';
+import { auditRoutes } from './routes/audit.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
@@ -90,6 +92,8 @@ export async function buildServer(
 
   // Protects every /api route by default (see auth/plugin.ts).
   await registerAuth(app, context);
+  // Records every state-changing request (AGENTS.md rule 10).
+  registerAudit(app, context);
 
   await app.register(
     async (api) => {
@@ -99,6 +103,7 @@ export async function buildServer(
       await api.register(userRoutes(context));
       await api.register(leaderboardRoutes(context));
       await api.register(onlineRoutes(context));
+      await api.register(auditRoutes(context));
     },
     { prefix: '/api' },
   );

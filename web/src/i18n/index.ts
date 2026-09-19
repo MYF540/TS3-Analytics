@@ -17,6 +17,12 @@ export function errorMessage(code: string): string {
   return key in de ? de[key as MessageKey] : de['error.UNKNOWN'];
 }
 
+/** German label for an audit action code; unknown codes are shown as they are. */
+export function auditActionLabel(action: string): string {
+  const key = `audit.action.${action}`;
+  return key in de ? de[key as MessageKey] : action;
+}
+
 const numberFormat = new Intl.NumberFormat('de-DE');
 const dateTimeFormat = new Intl.DateTimeFormat('de-DE', {
   timeZone: TIME_ZONE,

@@ -4,11 +4,12 @@ import { t } from '../i18n';
 import { useTheme } from '../theme/theme';
 import { StatusIndicator } from './StatusIndicator';
 
-const NAV = [
+const NAV: { to: string; label: string; end: boolean; adminOnly?: boolean }[] = [
   { to: '/', label: t('nav.dashboard'), end: true },
   { to: '/spieler', label: t('nav.players'), end: false },
   { to: '/leaderboards', label: t('nav.leaderboards'), end: false },
-] as const;
+  { to: '/protokoll', label: t('nav.audit'), end: false, adminOnly: true },
+];
 
 export function Layout() {
   const { theme, toggle } = useTheme();
@@ -22,7 +23,7 @@ export function Layout() {
       <header className="header">
         <span className="header__brand">{t('app.title')}</span>
         <nav className="header__nav" aria-label={t('nav.main')}>
-          {NAV.map((item) => (
+          {NAV.filter((item) => !item.adminOnly || user?.role === 'admin').map((item) => (
             <NavLink key={item.to} to={item.to} end={item.end} className="nav-link">
               {item.label}
             </NavLink>

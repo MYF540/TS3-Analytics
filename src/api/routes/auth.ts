@@ -35,6 +35,7 @@ export function authRoutes(context: ApiContext): FastifyPluginAsyncZod {
         const now = context.now();
         const decision = throttle.check(username, now);
         if (!decision.allowed) {
+          request.audit({ action: 'auth.login_blocked', details: { username } });
           void reply.header('retry-after', String(decision.retryAfterS));
           throw new ApiError(429, 'RATE_LIMITED', 'Too many failed logins', {
             retryAfterS: decision.retryAfterS,
@@ -43,10 +44,18 @@ export function authRoutes(context: ApiContext): FastifyPluginAsyncZod {
         const user = await authenticate(context.database.db, username, request.body.password);
         if (!user) {
           throttle.recordFailure(username, now);
+          request.audit({ action: 'auth.login_failed', details: { username } });
           request.log.warn({ username }, 'Failed login');
           throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid username or password');
         }
         throttle.recordSuccess(username);
+        request.audit({
+          action: 'auth.login',
+          actorId: user.id,
+          actorName: user.username,
+          targetType: 'admin_user',
+          targetId: user.id,
+        });
         const token = createSession(context.database.db, user.id, now, context.auth.sessionTtlS);
         request.log.info({ username: user.username, role: user.role }, 'Login');
         setSessionCookie(reply, context, token);
@@ -56,6 +65,7 @@ export function authRoutes(context: ApiContext): FastifyPluginAsyncZod {
 
     app.post('/auth/logout', { config: { auth: 'public' } }, (request, reply) => {
       const token = request.cookies[SESSION_COOKIE];
+      request.audit({ action: 'auth.logout' });
       if (token) deleteSession(context.database.db, token);
       clearSessionCookie(reply, context);
       return reply.status(204).send();

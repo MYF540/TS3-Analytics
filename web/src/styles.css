@@ -596,6 +596,17 @@ a.button {
   font-size: 0.85rem;
 }
 
+.audit-table td,
+.audit-table th {
+  text-align: left;
+}
+
+.audit-table__details {
+  white-space: normal;
+  min-width: 12rem;
+  color: var(--muted);
+}
+
 @media (max-width: 720px) {
   .leaderboard__track {
     width: 60px;

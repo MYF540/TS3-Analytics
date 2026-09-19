@@ -1,6 +1,8 @@
 import { errorMessage } from '../i18n';
 import type {
   ApiErrorBody,
+  AuditEntry,
+  AuditFilters,
   AuthResponse,
   Health,
   Heatmap,
@@ -109,6 +111,18 @@ export const api = {
   login: (username: string, password: string) =>
     apiPost<AuthResponse>('/auth/login', { username, password }),
   logout: () => apiPost<undefined>('/auth/logout'),
+  audit: (
+    query: {
+      actor?: string | undefined;
+      action?: string | undefined;
+      from?: string | undefined;
+      to?: string | undefined;
+      page?: number | undefined;
+      pageSize?: number | undefined;
+    },
+    signal?: AbortSignal,
+  ) => apiGet<Paged<AuditEntry>>('/audit', query, signal),
+  auditFilters: (signal?: AbortSignal) => apiGet<AuditFilters>('/audit/filters', {}, signal),
   onlineNow: (signal?: AbortSignal) => apiGet<OnlineNow>('/online', {}, signal),
   overview: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Overview>('/stats/overview', { range }, signal),

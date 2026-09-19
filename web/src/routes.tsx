@@ -1,7 +1,8 @@
 import type { RouteObject } from 'react-router';
-import { AuthProvider, RequireAuth } from './auth/AuthProvider';
+import { AuthProvider, RequireAuth, RequireRole } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { AuditPage } from './pages/AuditPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { ErrorPage, NotFoundPage } from './pages/pages';
@@ -27,6 +28,10 @@ export const routes: RouteObject[] = [
               { path: 'spieler', element: <PlayersPage /> },
               { path: 'spieler/:id', element: <PlayerPage /> },
               { path: 'leaderboards', element: <LeaderboardsPage /> },
+              {
+                element: <RequireRole role="admin" />,
+                children: [{ path: 'protokoll', element: <AuditPage /> }],
+              },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

@@ -19,6 +19,7 @@ import {
   setDisabled,
   setPassword,
 } from '../api/auth/service.js';
+import { CLI_ACTOR, writeAudit } from '../api/audit/audit.js';
 import { loadConfigOrExit } from '../config/config.js';
 import { openDatabase, runMigrations } from '../db/client.js';
 import { ADMIN_ROLES, type AdminRole } from '../db/schema.js';
@@ -84,6 +85,17 @@ async function main(): Promise<void> {
   try {
     runMigrations(database);
     const now = Math.floor(Date.now() / 1000);
+    const audit = (action: string, target: string, details?: Record<string, unknown>) => {
+      writeAudit(database.db, {
+        at: now,
+        actorId: null,
+        actorName: CLI_ACTOR,
+        action,
+        targetType: 'admin_user',
+        targetId: target.trim().toLowerCase(),
+        details,
+      });
+    };
     switch (command) {
       case 'create': {
         if (!name) usage();
@@ -93,18 +105,21 @@ async function main(): Promise<void> {
           { username: name, password: await askPassword(), role: values.role as AdminRole },
           now,
         );
+        audit('admin_user.create', user.username, { role: user.role });
         console.log(`Konto "${user.username}" mit Rolle ${user.role} angelegt.`);
         break;
       }
       case 'password':
         if (!name) usage();
         await setPassword(database.db, name, await askPassword());
+        audit('admin_user.password', name);
         console.log('Passwort geändert, alle Sitzungen dieses Kontos wurden beendet.');
         break;
       case 'disable':
       case 'enable':
         if (!name) usage();
         setDisabled(database.db, name, command === 'disable');
+        audit(`admin_user.${command}`, name);
         console.log(command === 'disable' ? 'Konto gesperrt.' : 'Konto entsperrt.');
         break;
       case 'list':

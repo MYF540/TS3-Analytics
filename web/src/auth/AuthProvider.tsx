@@ -47,6 +47,22 @@ export function AuthProvider() {
   );
 }
 
+/** Renders its pages only for users with at least the given role. */
+export function RequireRole({ role }: { role: 'moderator' | 'admin' }) {
+  const { state } = useAuth();
+  if (state.status !== 'authenticated') return null;
+  const rank = { viewer: 1, moderator: 2, admin: 3 } as const;
+  if (rank[state.user.role] < rank[role]) {
+    return (
+      <section>
+        <h1>{t('page.forbidden.title')}</h1>
+        <p className="muted">{t('page.forbidden.text')}</p>
+      </section>
+    );
+  }
+  return <Outlet />;
+}
+
 /** Only renders its pages for logged-in users; everyone else goes to the login page. */
 export function RequireAuth() {
   const { state } = useAuth();

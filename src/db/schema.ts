@@ -244,3 +244,31 @@ export const adminSessions = sqliteTable(
     index('admin_sessions_expires_idx').on(t.expiresAt),
   ],
 );
+
+/**
+ * Audit trail of every state-changing action (web interface and CLI). The actor's name is kept as
+ * a snapshot so entries stay readable after an account is deleted. Never contains passwords.
+ */
+export const auditLog = sqliteTable(
+  'audit_log',
+  {
+    id: integer('id').primaryKey(),
+    at: integer('at').notNull(),
+    actorId: integer('actor_id').references(() => adminUsers.id, { onDelete: 'set null' }),
+    /** Username at the time of the action, or `cli` / `anonymous`. */
+    actorName: text('actor_name').notNull(),
+    /** Dotted action code, e.g. `auth.login` or `POST /api/...` as fallback. */
+    action: text('action').notNull(),
+    targetType: text('target_type'),
+    targetId: text('target_id'),
+    /** JSON object with action-specific details. */
+    details: text('details'),
+    /** HTTP status of the request (null for CLI actions). */
+    status: integer('status'),
+  },
+  (t) => [
+    index('audit_log_at_idx').on(t.at),
+    index('audit_log_actor_idx').on(t.actorName, t.at),
+    index('audit_log_action_idx').on(t.action, t.at),
+  ],
+);

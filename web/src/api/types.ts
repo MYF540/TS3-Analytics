@@ -20,6 +20,22 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+export interface AuditEntry {
+  id: number;
+  at: number;
+  actorName: string;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  details: Record<string, unknown> | null;
+  status: number | null;
+}
+
+export interface AuditFilters {
+  actors: string[];
+  actions: string[];
+}
+
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown };
 }
