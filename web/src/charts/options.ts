@@ -1,5 +1,6 @@
-import type { SeriesPoint } from '../api/types';
-import { formatNumber, t, type MessageKey } from '../i18n';
+import type { SeriesPoint, UserDetail } from '../api/types';
+import { formatDay, formatDuration, formatNumber, t, type MessageKey } from '../i18n';
+import { eachDay } from '../util/days';
 import type { ChartOption } from './EChart';
 import type { ChartPalette } from './palette';
 
@@ -208,5 +209,81 @@ export function heatmapOption(values: readonly number[][], palette: ChartPalette
         emphasis: { itemStyle: { borderColor: palette.text, borderWidth: 1 } },
       },
     ],
+  };
+}
+
+export const STATE_KEYS = [
+  ['activeS', 'player.state.active'],
+  ['idleS', 'player.state.idle'],
+  ['afkS', 'player.state.afk'],
+  ['unknownS', 'player.state.unknown'],
+] as const satisfies readonly (readonly [keyof UserDetail['daily'][number], MessageKey])[];
+
+/**
+ * Stacked daily bars of a player's time by activity state (hours). Days without data are shown
+ * as empty bars so the time axis stays continuous.
+ */
+export function playtimeChartOption(
+  daily: UserDetail['daily'],
+  fromDay: number,
+  toDay: number,
+  palette: ChartPalette,
+): ChartOption {
+  const days = eachDay(fromDay, toDay);
+  const byDay = new Map(daily.map((d) => [d.day, d]));
+  const hours = (seconds: number) => Math.round((seconds / 3600) * 10) / 10;
+  return {
+    animation: false,
+    grid: { left: 8, right: 8, top: 60, bottom: 8, containLabel: true },
+    legend: {
+      top: 0,
+      left: 0,
+      icon: 'roundRect',
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: { color: palette.text },
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      ...tooltipStyle(palette),
+      formatter: (
+        params: { dataIndex: number; seriesName: string; marker: string; seriesIndex: number }[],
+      ) => {
+        const first = params[0];
+        const day = first ? days[first.dataIndex] : undefined;
+        if (day === undefined) return '';
+        const entry = byDay.get(day);
+        const rows = params.map((p) => {
+          const key = STATE_KEYS[p.seriesIndex]?.[0];
+          const seconds = entry && key ? entry[key] : 0;
+          return `${p.marker}${p.seriesName}: <b>${formatDuration(seconds)}</b>`;
+        });
+        return [formatDay(day), ...rows].join('<br/>');
+      },
+    },
+    xAxis: {
+      type: 'category',
+      data: days.map((d) => formatDay(d).slice(0, 6)),
+      ...axisStyle(palette),
+      splitLine: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      name: t('player.hours'),
+      nameTextStyle: { color: palette.muted },
+      min: 0,
+      ...axisStyle(palette),
+    },
+    series: STATE_KEYS.map(([key, label], index) => ({
+      name: t(label),
+      type: 'bar',
+      stack: 'time',
+      barMaxWidth: 24,
+      data: days.map((d) => hours(byDay.get(d)?.[key] ?? 0)),
+      // Surface-coloured edge = visible gap between stacked segments.
+      itemStyle: { color: palette.states[index], borderColor: palette.surface, borderWidth: 1 },
+      emphasis: { focus: 'series' },
+    })),
   };
 }

@@ -1,4 +1,4 @@
-import { HeatmapChart, LineChart } from 'echarts/charts';
+import { BarChart, HeatmapChart, LineChart } from 'echarts/charts';
 import {
   GridComponent,
   LegendComponent,
@@ -10,6 +10,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { useEffect, useRef } from 'react';
 
 echarts.use([
+  BarChart,
   LineChart,
   HeatmapChart,
   GridComponent,

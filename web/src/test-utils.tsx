@@ -1,7 +1,15 @@
 import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { vi } from 'vitest';
-import type { Health, Heatmap, OnlineSeries, Overview } from './api/types';
+import type {
+  Health,
+  Heatmap,
+  OnlineSeries,
+  Overview,
+  Paged,
+  UserDetail,
+  UserListItem,
+} from './api/types';
 import { routes } from './routes';
 
 export const sampleHealth: Health = {
@@ -37,6 +45,78 @@ export const sampleHeatmap: Heatmap = {
   values: Array.from({ length: 7 }, (_, d) => Array.from({ length: 24 }, (_, h) => d + h / 10)),
 };
 
+export const sampleUsers: Paged<UserListItem> = {
+  items: [
+    {
+      userId: 1,
+      uid: 'uid-alice=',
+      nickname: 'Alice',
+      onlineS: 90_000,
+      activeS: 60_000,
+      sessions: 42,
+      firstSeen: 1_700_000_000,
+      lastSeen: 1_789_800_000,
+      country: 'DE',
+      online: true,
+    },
+    {
+      userId: 2,
+      uid: 'uid-bob=',
+      nickname: null,
+      onlineS: 7200,
+      activeS: 3600,
+      sessions: 3,
+      firstSeen: 1_750_000_000,
+      lastSeen: 1_780_000_000,
+      country: null,
+      online: false,
+    },
+  ],
+  total: 120,
+  page: 1,
+  pageSize: 50,
+};
+
+export const sampleUser: UserDetail = {
+  user: {
+    id: 1,
+    uid: 'uid-alice=',
+    dbid: 17,
+    nickname: 'Alice',
+    firstSeen: 1_700_000_000,
+    lastSeen: 1_789_800_000,
+    platform: 'Windows',
+    version: '3.6.2',
+    country: 'DE',
+  },
+  online: { since: 1_789_790_000 },
+  totals: { onlineS: 90_000, activeS: 60_000, sessions: 42, longestSessionS: 18_000 },
+  nicknames: [
+    { nick: 'Alice', firstSeen: 1_760_000_000, lastSeen: 1_789_800_000 },
+    { nick: 'Al1ce', firstSeen: 1_700_000_000, lastSeen: 1_759_000_000 },
+  ],
+  recentSessions: [
+    { id: 9, joinAt: 1_789_790_000, leaveAt: null, duration: null, source: 'live' },
+    { id: 8, joinAt: 1_600_000_000, leaveAt: 1_600_003_600, duration: 3600, source: 'import' },
+  ],
+  daily: [
+    {
+      day: 20260918,
+      onlineS: 7200,
+      activeS: 3600,
+      idleS: 1800,
+      afkS: 1800,
+      unknownS: 0,
+      sessions: 1,
+    },
+  ],
+  topChannels: [
+    { channelId: 3, name: 'Gaming', seconds: 50_000 },
+    { channelId: null, name: null, seconds: 10_000 },
+  ],
+  countries: [{ country: 'DE', lastSeen: 1_789_790_000, connections: 12 }],
+};
+
 type Responder = (url: URL) => { status?: number; body: unknown } | undefined;
 
 function toUrl(input: RequestInfo | URL): URL {
@@ -54,6 +134,8 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/stats/overview': sampleOverview,
     '/api/stats/online': sampleSeries,
     '/api/stats/heatmap': sampleHeatmap,
+    '/api/users': sampleUsers,
+    '/api/users/1': sampleUser,
   };
   const table = { ...defaults, ...overrides };
   const fetchMock = vi.fn((input: RequestInfo | URL) => {

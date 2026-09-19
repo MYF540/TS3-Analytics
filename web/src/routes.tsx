@@ -1,7 +1,9 @@
 import type { RouteObject } from 'react-router';
 import { Layout } from './components/Layout';
 import { DashboardPage } from './pages/DashboardPage';
-import { ErrorPage, LeaderboardsPage, NotFoundPage, PlayerPage, PlayersPage } from './pages/pages';
+import { ErrorPage, LeaderboardsPage, NotFoundPage } from './pages/pages';
+import { PlayerPage } from './pages/PlayerPage';
+import { PlayersPage } from './pages/PlayersPage';
 
 /** URL paths are German, like the UI. */
 export const routes: RouteObject[] = [

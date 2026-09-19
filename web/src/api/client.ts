@@ -72,18 +72,20 @@ export const api = {
   health: (signal?: AbortSignal) => apiGet<Health>('/health', {}, signal),
   overview: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Overview>('/stats/overview', { range }, signal),
-  online: (query: { range?: TimeRange; from?: number; to?: number }, signal?: AbortSignal) =>
-    apiGet<OnlineSeries>('/stats/online', query, signal),
+  online: (
+    query: { range?: TimeRange | undefined; from?: number | undefined; to?: number | undefined },
+    signal?: AbortSignal,
+  ) => apiGet<OnlineSeries>('/stats/online', query, signal),
   heatmap: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>('/stats/heatmap', { range }, signal),
   users: (
     query: {
-      search?: string;
-      sort?: UserSort;
-      order?: 'asc' | 'desc';
-      page?: number;
-      pageSize?: number;
-      includeCasual?: boolean;
+      search?: string | undefined;
+      sort?: UserSort | undefined;
+      order?: 'asc' | 'desc' | undefined;
+      page?: number | undefined;
+      pageSize?: number | undefined;
+      includeCasual?: boolean | undefined;
     },
     signal?: AbortSignal,
   ) => apiGet<Paged<UserListItem>>('/users', query, signal),
@@ -91,12 +93,12 @@ export const api = {
     apiGet<UserDetail>(`/users/${String(id)}`, { days }, signal),
   leaderboard: (
     query: {
-      period?: LeaderboardPeriod;
-      metric?: LeaderboardMetric;
-      from?: string;
-      to?: string;
-      page?: number;
-      pageSize?: number;
+      period?: LeaderboardPeriod | undefined;
+      metric?: LeaderboardMetric | undefined;
+      from?: string | undefined;
+      to?: string | undefined;
+      page?: number | undefined;
+      pageSize?: number | undefined;
     },
     signal?: AbortSignal,
   ) => apiGet<Leaderboard>('/leaderboards', query, signal),

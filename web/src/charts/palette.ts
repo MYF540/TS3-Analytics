@@ -14,6 +14,11 @@ export interface ChartPalette {
   series: [string, string];
   /** Sequential ramp from "near zero" (close to the surface) to "high". */
   ramp: string[];
+  /**
+   * Activity states active/idle/afk/unknown = categorical slots 1–4 (validated for adjacent
+   * stacking in both modes; light aqua/yellow are below 3:1 → legend + table view required).
+   */
+  states: [string, string, string, string];
 }
 
 export const CHART_PALETTES: Record<Theme, ChartPalette> = {
@@ -24,6 +29,7 @@ export const CHART_PALETTES: Record<Theme, ChartPalette> = {
     surface: '#ffffff',
     series: ['#2a78d6', '#eb6834'],
     ramp: ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'],
+    states: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100'],
   },
   dark: {
     text: '#e6e9ef',
@@ -33,5 +39,6 @@ export const CHART_PALETTES: Record<Theme, ChartPalette> = {
     series: ['#3987e5', '#d95926'],
     // On the dark surface "near zero" is the dark end and magnitude gets lighter.
     ramp: ['#0d366b', '#184f95', '#256abf', '#3987e5', '#6da7ec', '#9ec5f4', '#cde2fb'],
+    states: ['#3987e5', '#d95926', '#199e70', '#c98500'],
   },
 };

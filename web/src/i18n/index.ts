@@ -29,14 +29,15 @@ export function formatNumber(value: number): string {
   return numberFormat.format(value);
 }
 
-/** Durations are stored in seconds; shown as "12 h 5 min" or "5 min". */
+/** Durations are stored in seconds; shown as "12 h 5 min", "5 min" or "1.234 h". */
 export function formatDuration(seconds: number): string {
   const totalMinutes = Math.floor(seconds / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   if (hours === 0) return t('unit.minutes', { value: minutes });
   const h = t('unit.hours', { value: formatNumber(hours) });
-  return minutes === 0 ? h : `${h} ${t('unit.minutes', { value: minutes })}`;
+  // From 100 hours on, minutes are noise.
+  return minutes === 0 || hours >= 100 ? h : `${h} ${t('unit.minutes', { value: minutes })}`;
 }
 
 /** Unix seconds → local date and time in Europe/Berlin. */

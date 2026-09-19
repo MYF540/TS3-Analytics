@@ -17,7 +17,7 @@ describe('routing', () => {
   it.each([
     ['/', 'Dashboard'],
     ['/spieler', 'Spieler'],
-    ['/spieler/42', 'Spieler'],
+    ['/spieler/1', 'Alice'],
     ['/leaderboards', 'Leaderboards'],
     ['/gibt-es-nicht', 'Seite nicht gefunden'],
   ])('renders %s', async (path, heading) => {
@@ -98,6 +98,8 @@ describe('i18n', () => {
     expect(formatDuration(59)).toBe('0 min');
     expect(formatDuration(3 * 3600 + 5 * 60)).toBe('3 h 5 min');
     expect(formatDuration(1234 * 3600)).toBe('1.234 h');
+    expect(formatDuration(150 * 3600 + 59 * 60)).toBe('150 h');
+    expect(formatDuration(99 * 3600 + 59 * 60)).toBe('99 h 59 min');
     expect(formatDay(20260919)).toBe('19.09.2026');
   });
 });

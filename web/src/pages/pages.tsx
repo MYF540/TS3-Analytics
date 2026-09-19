@@ -1,4 +1,4 @@
-import { isRouteErrorResponse, Link, useParams, useRouteError } from 'react-router';
+import { isRouteErrorResponse, Link, useRouteError } from 'react-router';
 import { t, type MessageKey } from '../i18n';
 
 export function PageHeader({ title, intro }: { title: string; intro: string }) {
@@ -14,20 +14,6 @@ function Placeholder({ title, intro }: { title: MessageKey; intro: MessageKey })
   return (
     <section>
       <PageHeader title={t(title)} intro={t(intro)} />
-      <p className="card">{t('page.placeholder')}</p>
-    </section>
-  );
-}
-
-export function PlayersPage() {
-  return <Placeholder title="page.players.title" intro="page.players.intro" />;
-}
-
-export function PlayerPage() {
-  const { id = '' } = useParams();
-  return (
-    <section>
-      <PageHeader title={t('page.player.title')} intro={t('page.player.intro', { id })} />
       <p className="card">{t('page.placeholder')}</p>
     </section>
   );
