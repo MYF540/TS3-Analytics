@@ -207,9 +207,11 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 - [ ] **T5.3 UID-Verknüpfung** · `DB` `Backend` · braucht: T5.2
   - Tabelle `persons`; mehrere UIDs einer Person zuordnen; Statistiken und Leaderboards rechnen auf Personenebene zusammen
+  - Entscheidung (19.09.2026): Leaderboards und Statistiken fassen verknüpfte UIDs zu einer Person zusammen; die Spielerseite zeigt alle UIDs der Person.
 
 - [ ] **T5.4 Discord-Alerts** · `Backend` · braucht: T5.2
   - Webhook-URL und Ereignistypen im Webinterface konfigurierbar; Versand gedrosselt
+  - Entscheidung (19.09.2026): Die Webhook-URL wird vom Admin im Webinterface eingetragen und in der DB gespeichert; danach nie mehr im Klartext angezeigt, geloggt oder ins Audit-Log geschrieben (nur maskiert, z. B. „…abcd“). Test-Button zum Prüfen.
 
 - [ ] **T5.5 Join-Spike-Erkennung** · `Watcher` `Security` · braucht: T5.4
   - Alarm, wenn neue UIDs in Zeitfenster X über Schwelle Y liegen (beides konfigurierbar)
@@ -217,6 +219,7 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 - [ ] **T5.6 Moderationsaktionen** · `Backend` `Frontend` · braucht: T4.2
   - Kick, Ban (Vorlagen für Grund und Dauer), Poke, Nachricht, Move – je nach Rolle
   - Fertig wenn: jede Aktion läuft über die Query-Queue und landet im Audit-Log
+  - Entscheidung (19.09.2026): Alle Aktionen nur für Admins. Globaler Schalter „Moderationsaktionen erlauben“ in den Einstellungen, standardmäßig aus; solange er aus ist, lehnt die API die Aktionen ab und die Buttons sind deaktiviert.
 
 - [ ] **T5.7 Servergruppen-Überwachung** · `Watcher` `Security` · braucht: T5.4
   - Serverlog per `logview` auf Gruppenzuweisungen auswerten; Alarm bei als „geschützt“ markierten Gruppen
