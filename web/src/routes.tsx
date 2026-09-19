@@ -1,7 +1,8 @@
 import type { RouteObject } from 'react-router';
 import { Layout } from './components/Layout';
 import { DashboardPage } from './pages/DashboardPage';
-import { ErrorPage, LeaderboardsPage, NotFoundPage } from './pages/pages';
+import { LeaderboardsPage } from './pages/LeaderboardsPage';
+import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
 import { PlayersPage } from './pages/PlayersPage';
 

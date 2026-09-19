@@ -450,7 +450,88 @@ td:first-child {
   border-radius: 3px;
 }
 
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.is-active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.toolbar--plain {
+  padding: 0;
+}
+
+.toolbar--plain > p {
+  flex: 1 1 240px;
+}
+
+.field--narrow {
+  flex: 0 0 auto;
+}
+
+.leaderboard th:nth-child(2),
+.leaderboard td:nth-child(2) {
+  text-align: left;
+  width: 100%;
+}
+
+.leaderboard__rank {
+  width: 4rem;
+  font-weight: 600;
+}
+
+.is-podium .leaderboard__rank {
+  color: var(--accent);
+}
+
+.leaderboard__value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.leaderboard__track {
+  display: inline-block;
+  width: 120px;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+}
+
+.leaderboard__bar {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
 @media (max-width: 720px) {
+  .leaderboard__track {
+    width: 60px;
+  }
+
   .kpi__value {
     font-size: 1.4rem;
   }

@@ -1,5 +1,5 @@
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router';
-import { t, type MessageKey } from '../i18n';
+import { t } from '../i18n';
 
 export function PageHeader({ title, intro }: { title: string; intro: string }) {
   return (
@@ -8,19 +8,6 @@ export function PageHeader({ title, intro }: { title: string; intro: string }) {
       <p className="muted">{intro}</p>
     </header>
   );
-}
-
-function Placeholder({ title, intro }: { title: MessageKey; intro: MessageKey }) {
-  return (
-    <section>
-      <PageHeader title={t(title)} intro={t(intro)} />
-      <p className="card">{t('page.placeholder')}</p>
-    </section>
-  );
-}
-
-export function LeaderboardsPage() {
-  return <Placeholder title="page.leaderboards.title" intro="page.leaderboards.intro" />;
 }
 
 export function NotFoundPage() {

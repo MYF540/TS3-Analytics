@@ -153,8 +153,9 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Liste mit Suche; Detailseite mit Spielzeit-Verlauf, Sessions, Channels, Nickverlauf
   - Notiz: `web/src/pages/PlayersPage.tsx`: Suche (300 ms verzögert), Sortierung per Spaltenkopf (aria-sort), Gelegenheitsspieler-Schalter, Paginierung (50/Seite); gesamter Zustand in der URL (`q`, `sort`, `order`, `page`, `casual`). `PlayerPage.tsx`: Kopf mit Online-Status und UID, 6 Kennzahlen, gestapelte Tagesbalken aktiv/idle/AFK/unbekannt (30 Tage/1 Jahr, fehlende Tage als leere Balken, Tabellenansicht), letzte Sessions (laufend/importiert markiert), Top-Channels als Balkenliste, Nickverlauf, Länder mit Hinweis auf IP-Aufbewahrung. Farben: Kategorie-Slots 1–4 der Referenzpalette (validiert; Aqua/Gelb im Hellmodus < 3:1 → Legende + Tabelle). Dauern ab 100 h ohne Minuten. Per Screenshot mit synthetischen Daten geprüft.
 
-- [ ] **T3.6 Leaderboards-Seite** · `Frontend` · braucht: T3.2, T3.3
+- [x] **T3.6 Leaderboards-Seite** · `Frontend` · braucht: T3.2, T3.3
   - Tabs für alle Leaderboard-Arten, Link zur Spielerseite
+  - Notiz: `web/src/pages/LeaderboardsPage.tsx`: Reiter Gesamt, Aktiv, Woche, Monat, Jahr, Längste Session, Zeitraum (Datumsfelder) als ARIA-Tablist; bei Woche/Monat/Jahr/Zeitraum Umschalter Spielzeit/Aktivzeit; Rang (Podium hervorgehoben), Spieler-Link, Wert + Balken relativ zu Platz 1, ausgewerteter Zeitraum, Paginierung (25). Zustand in der URL mit deutschen Parametern (`art`, `wertung`, `von`, `bis`, `page`). Hinweis bei Aktivzeit, dass diese erst ab Live-Erfassung existiert (T8.7 präzisiert das für Importe). Per Screenshot geprüft.
 
 ## Phase 4 – Auth & Admin-Basis
 
