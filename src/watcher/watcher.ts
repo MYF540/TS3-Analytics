@@ -3,7 +3,9 @@ import { recordServerMinute, upsertChannels } from '../db/repositories/index.js'
 import type { Logger } from '../logging/logger.js';
 import type { Ts3Connection } from '../ts3/connection.js';
 import type { Ts3Client, Ts3ClientLeft, Ts3ClientMoved } from '../ts3/types.js';
+import type { CountryLookup } from '../geoip/country-lookup.js';
 import { ActivityTracker } from './activity.js';
+import { IpProcessor } from './ip-processor.js';
 import { recoverOpenSessions, writeHeartbeat } from './recovery.js';
 import { loadActivitySettings } from './settings.js';
 import { SessionTracker } from './tracker.js';
@@ -20,6 +22,8 @@ export interface WatcherDeps {
   flushIntervalS?: number;
   /** Poll on a timer (default true); tests call `sync()` themselves. */
   autoPoll?: boolean;
+  /** IP pseudonymisation on join (T2.5); disabled when omitted. */
+  ip?: { countries: CountryLookup; hmacSecret: string };
 }
 
 /**
@@ -29,6 +33,7 @@ export interface WatcherDeps {
 export class Watcher {
   readonly tracker: SessionTracker;
   readonly activity: ActivityTracker;
+  readonly ip: IpProcessor | undefined;
   private pollTimer: NodeJS.Timeout | undefined;
   private lastFlushAt: number | undefined;
   private syncing: Promise<void> | undefined;
@@ -46,6 +51,15 @@ export class Watcher {
       loadActivitySettings(deps.database.db),
     );
     this.tracker.addListener(this.activity);
+    this.ip = deps.ip
+      ? new IpProcessor({
+          database: deps.database,
+          connection: deps.connection,
+          logger: deps.logger,
+          ...deps.ip,
+        })
+      : undefined;
+    if (this.ip) this.tracker.addListener(this.ip);
   }
 
   start(): void {

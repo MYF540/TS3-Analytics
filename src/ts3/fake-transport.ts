@@ -14,6 +14,8 @@ import {
  */
 export class FakeTs3Server {
   readonly clients = new Map<number, Ts3Client>();
+  /** IP addresses per clid (kept apart from `Ts3Client`, like on the real server). */
+  readonly ips = new Map<number, string>();
   readonly channels = new Map<number, Ts3Channel>([[1, { cid: 1, pid: 0, name: 'Lobby' }]]);
   /** Every executed command, in order, with the time it started. */
   readonly commandLog: { command: string; at: number }[] = [];
@@ -60,8 +62,9 @@ export class FakeTs3Server {
   }
 
   /** A client connects; returns its clid. */
-  join(client: Partial<Ts3Client> & Pick<Ts3Client, 'uid' | 'nickname'>): number {
+  join(client: Partial<Ts3Client> & Pick<Ts3Client, 'uid' | 'nickname'>, ip?: string): number {
     const clid = client.clid ?? this.nextClid++;
+    if (ip !== undefined) this.ips.set(clid, ip);
     const full: Ts3Client = {
       clid,
       dbid: client.dbid ?? clid + 100,
@@ -84,6 +87,7 @@ export class FakeTs3Server {
 
   leave(clid: number, reasonId = 8): void {
     if (!this.clients.delete(clid)) return;
+    this.ips.delete(clid);
     this.active?.emit('clientDisconnect', { clid, reasonId });
   }
 
@@ -138,6 +142,11 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
   channelList(): Promise<Ts3Channel[]> {
     this.assertOpen('channellist');
     return Promise.resolve([...this.server.channels.values()].map((c) => ({ ...c })));
+  }
+
+  clientIp(clid: number): Promise<string | undefined> {
+    this.assertOpen('clientinfo');
+    return Promise.resolve(this.server.clients.has(clid) ? this.server.ips.get(clid) : undefined);
   }
 
   ping(): Promise<void> {

@@ -1,11 +1,12 @@
 import { loadConfigOrExit } from './config/config.js';
 import { openDatabase, runMigrations } from './db/client.js';
+import { openCountryLookup } from './geoip/country-lookup.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
 import { RealTs3Transport } from './ts3/real-transport.js';
 import { Watcher } from './watcher/watcher.js';
 
-function main(): void {
+async function main(): Promise<void> {
   const config = loadConfigOrExit();
   const logger = createLogger(config.logging);
   logger.info(
@@ -21,10 +22,12 @@ function main(): void {
     { commandsPerSecond: config.ts3.queryRateLimit },
     { logger },
   );
+  const countries = await openCountryLookup(config.paths.geoipDb, logger);
   const watcher = new Watcher({
     database,
     connection,
     logger,
+    ip: { countries, hmacSecret: config.security.hmacSecret },
     pollIntervalS: config.watcher.pollIntervalS,
     flushIntervalS: config.watcher.flushIntervalS,
   });
@@ -57,4 +60,7 @@ function main(): void {
   process.on('SIGTERM', shutdown);
 }
 
-main();
+main().catch((error: unknown) => {
+  console.error(error);
+  process.exit(1);
+});

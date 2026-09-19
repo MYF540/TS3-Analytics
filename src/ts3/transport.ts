@@ -15,6 +15,11 @@ export interface Ts3Transport extends EventEmitter<Ts3TransportEvents> {
   channelList(): Promise<Ts3Channel[]>;
   /** Cheap command used as keepalive and health check. */
   ping(): Promise<void>;
+  /**
+   * The client's IP address (`clientinfo`). Callers must hash it right away and never store or
+   * log it (AGENTS.md rule 1).
+   */
+  clientIp(clid: number): Promise<string | undefined>;
 }
 
 /** Creates a fresh transport for every connection attempt. */

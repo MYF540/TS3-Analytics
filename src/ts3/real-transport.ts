@@ -190,6 +190,11 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
     await this.connected().whoami();
   }
 
+  async clientIp(clid: number): Promise<string | undefined> {
+    const [info] = await this.connected().clientInfo(String(clid));
+    return info?.connectionClientIp || undefined;
+  }
+
   private connected(): TeamSpeak {
     if (!this.teamspeak) throw new Error('Not connected');
     return this.teamspeak;
