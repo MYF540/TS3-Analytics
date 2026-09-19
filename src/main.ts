@@ -129,6 +129,7 @@ async function main(): Promise<void> {
       ts3: connection,
       live: watcher,
       moderation: connection,
+      ranks: rankJob,
       bot: {
         connection: () => connection.status(),
         jobs: () => jobs.status(),

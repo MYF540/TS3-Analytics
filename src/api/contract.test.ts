@@ -17,6 +17,12 @@ import type { flagsResponse } from './routes/flags.js';
 import type { alertSettingsResponse } from './routes/alerts.js';
 import type { moderationSettingsResponse } from './routes/moderation.js';
 import type { groupChange, groupSettingsResponse } from './routes/groups.js';
+import type {
+  rankConfigResponse,
+  rankHistoryItem,
+  rankPreviewResponse,
+  rankRunResponse,
+} from './routes/ranks.js';
 import type { moderationAction } from '../moderation/actions.js';
 import type { onlineResponse } from './routes/online.js';
 import type { heatmapResponse, overviewResponse, seriesResponse } from './routes/stats.js';
@@ -53,6 +59,10 @@ export type Contract = [
   Assert<Equals<z.input<typeof moderationAction>, Web.ModerationAction>>,
   Assert<Equals<z.output<typeof groupSettingsResponse>, Web.GroupSettings>>,
   Assert<Equals<z.output<typeof groupChange>, Web.GroupChange>>,
+  Assert<Equals<z.output<typeof rankConfigResponse>, Web.RankConfig>>,
+  Assert<Equals<z.output<typeof rankPreviewResponse>, Web.RankPreview>>,
+  Assert<Equals<z.output<typeof rankHistoryItem>, Web.RankHistoryItem>>,
+  Assert<Equals<z.output<typeof rankRunResponse>, Web.RankRunResult>>,
   Assert<Equals<ApiErrorBody, Web.ApiErrorBody>>,
 ];
 

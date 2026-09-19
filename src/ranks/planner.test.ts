@@ -155,6 +155,8 @@ describe('GET /api/ranks/preview', () => {
           rankingS: 60 * H,
           fromRankId: ladder[0]?.id,
           toRankId: ladder[1]?.id,
+          fromRankName: 'Neuling',
+          toRankName: 'Stammgast',
           direction: 'up',
           frozen: false,
         },

@@ -263,6 +263,76 @@ export interface BotStatus {
   }[];
 }
 
+export interface Rank {
+  id: number;
+  name: string;
+  sortOrder: number;
+  requiredS: number;
+  serverGroupId: number;
+}
+
+export interface RankSettings {
+  countMode: 'online' | 'active';
+  excludedGroupIds: number[];
+  dryRun: boolean;
+  intervalMinutes: number;
+  promotionMessage: { enabled: boolean; text: string };
+}
+
+export interface RankConfig {
+  ranks: Rank[];
+  settings: RankSettings;
+  knownGroups: { id: number; name: string }[];
+  lastRun: number | null;
+}
+
+export interface RankDraft {
+  ranks: { id?: number; name: string; requiredS: number; serverGroupId: number }[];
+  settings: RankSettings;
+}
+
+export interface RankPreview {
+  dryRun: boolean;
+  counts: { up: number; down: number; skipped: number };
+  changes: {
+    userId: number;
+    nickname: string | null;
+    accounts: number;
+    rankingS: number;
+    fromRankId: number | null;
+    toRankId: number | null;
+    fromRankName: string | null;
+    toRankName: string | null;
+    direction: 'up' | 'down';
+    frozen: boolean;
+  }[];
+}
+
+export interface RankHistoryItem {
+  id: number;
+  at: number;
+  userId: number;
+  nickname: string | null;
+  fromRankId: number | null;
+  toRankId: number | null;
+  fromRankName: string | null;
+  toRankName: string | null;
+  rankingS: number;
+  dryRun: boolean;
+  outcome: 'applied' | 'pending' | 'dry_run' | 'failed';
+}
+
+export interface RankRunResult {
+  skipped: 'not_connected' | 'no_ranks' | null;
+  full: boolean;
+  dryRun: boolean;
+  checked: number;
+  changed: number;
+  commands: number;
+  pending: number;
+  failed: number;
+}
+
 export interface GroupSettings {
   protectedGroupIds: number[];
   knownGroups: { id: number; name: string }[];

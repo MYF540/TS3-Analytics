@@ -25,6 +25,11 @@ import type {
   NoteRevision,
   OnlineNow,
   OnlineSeries,
+  RankConfig,
+  RankDraft,
+  RankHistoryItem,
+  RankPreview,
+  RankRunResult,
   Person,
   Overview,
   Paged,
@@ -205,6 +210,12 @@ export const api = {
   ) => apiGet<FlagsResponse>('/flags', query, signal),
   setFlagStatus: (id: number, status: FlagStatus) =>
     apiPost<{ id: number; status: FlagStatus }>(`/flags/${String(id)}/status`, { status }),
+  ranks: (signal?: AbortSignal) => apiGet<RankConfig>('/ranks', {}, signal),
+  saveRanks: (draft: RankDraft) => apiSend<RankConfig>('PUT', '/ranks', draft),
+  previewRanks: (draft: RankDraft) => apiPost<RankPreview>('/ranks/preview', draft),
+  runRanks: () => apiPost<RankRunResult>('/ranks/run'),
+  rankHistory: (query: { page?: number; pageSize?: number }, signal?: AbortSignal) =>
+    apiGet<Paged<RankHistoryItem>>('/ranks/history', query, signal),
   groupSettings: (signal?: AbortSignal) => apiGet<GroupSettings>('/settings/groups', {}, signal),
   saveGroupSettings: (protectedGroupIds: number[]) =>
     apiSend<GroupSettings>('PUT', '/settings/groups', { protectedGroupIds }),

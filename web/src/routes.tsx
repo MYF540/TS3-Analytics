@@ -9,6 +9,7 @@ import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
 import { PlayersPage } from './pages/PlayersPage';
+import { RanksPage } from './pages/RanksPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatusPage } from './pages/StatusPage';
 
@@ -39,6 +40,7 @@ export const routes: RouteObject[] = [
                 element: <RequireRole role="admin" />,
                 children: [
                   { path: 'protokoll', element: <AuditPage /> },
+                  { path: 'raenge', element: <RanksPage /> },
                   { path: 'status', element: <StatusPage /> },
                   { path: 'einstellungen', element: <SettingsPage /> },
                 ],

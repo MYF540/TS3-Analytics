@@ -91,7 +91,18 @@ export function planRanks(
     .all() as { userId: number; primaryUserId: number }[];
   const primaryOf = new Map(members.map((m) => [m.userId, m.primaryUserId]));
   const excludedGroups = new Set(settings.excludedGroupIds);
-  const groupsOf = sqlite.prepare('SELECT server_groups FROM users WHERE id = ?').pluck();
+  // Only needed with excluded groups; one query instead of one per user.
+  const groupsById = new Map(
+    excludedGroups.size === 0
+      ? []
+      : (
+          sqlite
+            .prepare(
+              'SELECT id, server_groups AS groups FROM users WHERE server_groups IS NOT NULL',
+            )
+            .all() as { id: number; groups: string }[]
+        ).map((u) => [u.id, parseGroups(u.groups)]),
+  );
 
   // Everyone relevant, grouped by person.
   const relevant = new Set<number>([
@@ -128,9 +139,7 @@ export function planRanks(
     );
     const inExcludedGroup =
       excludedGroups.size > 0 &&
-      sorted.some((id) =>
-        parseGroups(groupsOf.get(id) as string | null).some((g) => excludedGroups.has(g)),
-      );
+      sorted.some((id) => (groupsById.get(id) ?? []).some((g) => excludedGroups.has(g)));
     const known = sorted.some((id) => states.has(id));
     return {
       primaryUserId,

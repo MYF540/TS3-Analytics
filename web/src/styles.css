@@ -779,6 +779,11 @@ a.button {
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
+.notice--warn {
+  border-left-color: var(--bad);
+  font-weight: 600;
+}
+
 .settings-form h2 {
   margin: 0;
 }

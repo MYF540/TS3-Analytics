@@ -2,6 +2,7 @@ import type { AppDatabase } from '../db/client.js';
 import type { Logger } from '../logging/logger.js';
 import type { JobStatus } from '../jobs/runner.js';
 import type { ModerationCommands } from '../moderation/actions.js';
+import type { RankRunResult } from '../ranks/job.js';
 import type { ConnectionState, ConnectionStatus } from '../ts3/connection.js';
 import type { LiveClient } from '../watcher/watcher.js';
 
@@ -13,6 +14,8 @@ export interface ApiContext {
   ts3: { readonly state: ConnectionState } | undefined;
   /** Live view of the watcher; undefined when it is not running. */
   live: { liveClients(): LiveClient[]; clidsOf?(userId: number): number[] } | undefined;
+  /** Rank job (T6.3) for "run now"; undefined when the bot is not running. */
+  ranks: { run(options?: { full?: boolean }): Promise<RankRunResult> } | undefined;
   /** Query commands for moderation (T5.6); undefined when the watcher is not running. */
   moderation: ModerationCommands | undefined;
   /** Current time in UTC seconds. */

@@ -11,7 +11,7 @@ import type { OnlineClient, TrackerListener } from '../watcher/tracker.js';
 import { planOptions, planRanks } from './planner.js';
 import { loadRankSettings, type RankSettings } from './settings.js';
 
-const LAST_RUN_KEY = 'ranks.lastRun';
+export const LAST_RUN_KEY = 'ranks.lastRun';
 const FINGERPRINT_KEY = 'ranks.fingerprint';
 
 export interface RankRunResult {

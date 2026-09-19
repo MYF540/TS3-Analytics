@@ -14,6 +14,7 @@ export const de = {
   'nav.settings': 'Einstellungen',
   'nav.status': 'Bot-Status',
   'nav.flags': 'Hinweise',
+  'nav.ranks': 'Ränge',
 
   'theme.toggle': 'Farbschema wechseln',
   'theme.light': 'Hell',
@@ -36,6 +37,9 @@ export const de = {
   'page.flags.title': 'Hinweise',
   'page.flags.intro':
     'Mögliche Zweitaccounts und Ban-Umgehungen, erkannt über gemeinsame IP-Adressen und Subnetze. Die Adressen selbst werden nicht gespeichert, nur Prüfsummen.',
+  'page.ranks.title': 'Ränge',
+  'page.ranks.intro':
+    'Rangleiter nach Spielzeit. Der Rang-Job setzt die passende Servergruppe und entfernt andere Ranggruppen; alle anderen Gruppen bleiben unberührt.',
   'page.status.title': 'Bot-Status',
   'page.status.intro':
     'Zustand des Dienstes, der TeamSpeak-Verbindung und der Datenbank. Aktualisiert sich alle 30 Sekunden.',
@@ -92,6 +96,8 @@ export const de = {
   'error.BAN_REASON_MISSING': 'Bitte einen Grund angeben.',
   'error.DUPLICATE_TEMPLATE': 'Zwei Vorlagen haben dieselbe Kennung.',
   'error.TS3_UNAVAILABLE': 'Keine Verbindung zum TeamSpeak-Server.',
+  'error.DUPLICATE_GROUP': 'Jede Servergruppe darf nur für einen Rang verwendet werden.',
+  'error.NOT_ASCENDING': 'Zwei Ränge haben dieselbe benötigte Zeit.',
   'error.TS3_ERROR': 'Der TeamSpeak-Server hat den Befehl abgelehnt (Details im Server-Log).',
 
   'common.loading': 'Wird geladen …',
@@ -300,6 +306,8 @@ export const de = {
   'audit.action.settings.alerts': 'Discord-Benachrichtigungen geändert',
   'audit.action.settings.moderation': 'Moderations-Einstellungen geändert',
   'audit.action.settings.groups': 'Geschützte Servergruppen geändert',
+  'audit.action.ranks.update': 'Ränge geändert',
+  'audit.action.ranks.run': 'Rang-Job gestartet',
   'audit.action.moderation.poke': 'Spieler angestupst',
   'audit.action.moderation.message': 'Nachricht an Spieler',
   'audit.action.moderation.move': 'Spieler verschoben',
@@ -376,6 +384,68 @@ export const de = {
   'mod.duration.2592000': '30 Tage',
   'mod.duration.0': 'dauerhaft',
   'mod.duration.custom': '{value} (eigene)',
+
+  'ranks.dryRunOn':
+    'Dry-Run ist an: Der Rang-Job berechnet und protokolliert nur, er ändert keine Servergruppen.',
+  'ranks.dryRunOff': 'Dry-Run ist aus: Der Rang-Job setzt Servergruppen auf dem Server.',
+  'ranks.ladder': 'Rangleiter',
+  'ranks.ladderHint':
+    'Die Reihenfolge ergibt sich aus der benötigten Zeit (aufsteigend). Wer die Zeit für keinen Rang erreicht, bekommt keine Ranggruppe.',
+  'ranks.name': 'Name',
+  'ranks.hours': 'Benötigte Stunden',
+  'ranks.group': 'Servergruppe',
+  'ranks.groupUnknown': 'Gruppe #{id}',
+  'ranks.remove': 'Rang „{name}“ entfernen',
+  'ranks.add': 'Rang hinzufügen',
+  'ranks.empty':
+    'Noch keine Ränge angelegt. Solange die Leiter leer ist, macht der Rang-Job nichts.',
+  'ranks.noGroups':
+    'Die Servergruppen-Liste ist noch leer; sie wird geladen, sobald der Bot verbunden war.',
+  'ranks.invalid': 'Jeder Rang braucht einen Namen, eine Servergruppe und eine Zeit ab 0 Stunden.',
+  'ranks.settings': 'Einstellungen',
+  'ranks.countMode': 'Gezählte Zeit',
+  'ranks.countMode.online': 'Online-Zeit (auch inaktiv und AFK)',
+  'ranks.countMode.active': 'Nur aktive Zeit',
+  'ranks.countHint':
+    'Aus Logs importierte Zeit zählt nie für Ränge. Zeit aus dem alten Ranking-System kommt mit dem Import hinzu.',
+  'ranks.interval': 'Rang-Job alle (Minuten)',
+  'ranks.excluded': 'Nie ranken: Mitglieder dieser Gruppen',
+  'ranks.dryRun': 'Dry-Run (nur protokollieren, keine Servergruppen ändern)',
+  'ranks.dryRunHint':
+    'Beim Ausschalten gleicht der nächste Lauf alle Spieler ab: Online-Spieler sofort, Offline-Spieler beim nächsten Beitritt.',
+  'ranks.message': 'Nachricht bei Aufstieg senden',
+  'ranks.messageText': 'Text der Nachricht',
+  'ranks.messageHint': '{rank} wird durch den Namen des Rangs ersetzt.',
+  'ranks.preview': 'Vorschau',
+  'ranks.save': 'Speichern',
+  'ranks.saved': 'Gespeichert.',
+  'ranks.run': 'Jetzt ausführen',
+  'ranks.runConfirm':
+    'Dry-Run ist aus. Der Rang-Job ändert jetzt Servergruppen auf dem Server. Fortfahren?',
+  'ranks.runResult':
+    'Geprüft: {checked} · geändert: {changed} · Befehle: {commands} · vorgemerkt: {pending} · Fehler: {failed}',
+  'ranks.runSkipped.not_connected': 'Nicht ausgeführt: keine Verbindung zum TeamSpeak-Server.',
+  'ranks.runSkipped.no_ranks': 'Nicht ausgeführt: Es sind noch keine Ränge gespeichert.',
+  'ranks.lastRun': 'Letzter Lauf: {time}',
+  'ranks.neverRun': 'Der Rang-Job ist noch nicht gelaufen.',
+  'ranks.previewTitle': 'Vorschau: nächster Lauf',
+  'ranks.previewDraft': 'Berechnet mit dem aktuellen Entwurf (noch nicht gespeichert).',
+  'ranks.previewCounts': 'Aufstiege: {up} · Abstiege: {down} · ausgeschlossen: {skipped}',
+  'ranks.previewEmpty': 'Der nächste Lauf würde nichts ändern.',
+  'ranks.col.player': 'Spieler',
+  'ranks.col.time': 'Rangzeit',
+  'ranks.col.change': 'Änderung',
+  'ranks.col.when': 'Zeitpunkt',
+  'ranks.col.result': 'Ergebnis',
+  'ranks.none': 'kein Rang',
+  'ranks.frozen': 'eingefroren',
+  'ranks.accounts': '{count} Accounts',
+  'ranks.history': 'Verlauf',
+  'ranks.historyEmpty': 'Noch keine Rangänderungen.',
+  'ranks.outcome.applied': 'gesetzt',
+  'ranks.outcome.pending': 'vorgemerkt (offline)',
+  'ranks.outcome.dry_run': 'Dry-Run',
+  'ranks.outcome.failed': 'fehlgeschlagen',
 
   'groups.title': 'Servergruppen-Überwachung',
   'groups.intro':
