@@ -1,3 +1,4 @@
+import { startServer } from './api/server.js';
 import { loadConfigOrExit } from './config/config.js';
 import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
@@ -63,7 +64,17 @@ async function main(): Promise<void> {
     { db: database.db, logger },
   );
   jobs.start();
-  // API is wired up here in a later task.
+
+  const api = await startServer(
+    {
+      database,
+      logger,
+      ts3: connection,
+      now: () => Math.floor(Date.now() / 1000),
+      startedAt: Math.floor(Date.now() / 1000),
+    },
+    config.web,
+  );
 
   let stopping = false;
   const shutdown = (signal: string) => {
@@ -71,6 +82,7 @@ async function main(): Promise<void> {
     stopping = true;
     logger.info({ signal }, 'Shutting down');
     jobs.stop();
+    void api.close();
     try {
       watcher.stop();
     } catch (error) {

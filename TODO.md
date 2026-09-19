@@ -124,9 +124,10 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 ## Phase 3 – API & Webinterface (lokal)
 
-- [ ] **T3.1 Fastify-Server** · `Backend` · braucht: T1.2
+- [x] **T3.1 Fastify-Server** · `Backend` · braucht: T1.2
   - Bindet an `127.0.0.1`, liefert das gebaute Frontend aus, einheitliches Fehlerformat, zod-Validierung
   - Fertig wenn: `/api/health` antwortet mit Status von DB und Query-Verbindung
+  - Notiz: `src/api/server.ts` (`buildServer` für Tests via `inject`, `startServer` bindet an `WEB_HOST`, das per Config nur Loopback erlaubt), Routen unter `/api` als Plugins mit `ApiContext` (`src/api/context.ts`). zod über `fastify-type-provider-zod` (Validierung + Response-Serialisierung). Einheitliches Fehlerformat `{ error: { code, message, details? } }` (`src/api/errors.ts`, `ApiError` für erwartete Fehler; 500 ohne Interna). `GET /api/health`: `ok` / `degraded` (TS3 nicht verbunden) mit 200, `down` (DB) mit 503. Frontend aus `web/dist` (wenn vorhanden) mit SPA-Fallback, API-404 bleibt JSON. Sicherheits-Header (nosniff, DENY, no-referrer). Request-Logs nur auf debug. Codes statt deutscher Texte in der API; Übersetzung im Frontend.
 
 - [ ] **T3.2 Statistik-Endpunkte** · `Backend` · braucht: T3.1, T2.3
   - Übersicht (online jetzt, Peak heute/Allzeit, Nutzer gesamt/neu), Online-Verlauf, Heatmap Wochentag × Stunde
