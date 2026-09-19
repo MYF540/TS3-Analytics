@@ -226,23 +226,27 @@ export function rebuildAggregates(
     `DELETE FROM user_daily_stats WHERE user_id = ? AND day BETWEEN ? AND ?`,
   );
   const deleteTotals = sqlite.prepare(`DELETE FROM user_totals WHERE user_id = ?`);
+  // Bounds are queried separately: inlined as a subquery, SQLite re-evaluated them per daily row.
+  const sessionBounds = sqlite.prepare(
+    `SELECT min(join_at) AS first, max(leave_at) AS last FROM sessions
+     WHERE user_id = ? AND leave_at IS NOT NULL`,
+  );
+  const segmentBounds = sqlite.prepare(
+    `SELECT min(start_at) AS first, max(end_at) AS last FROM activity_segments
+     WHERE user_id = ? AND is_open = 0`,
+  );
   const insertTotals = sqlite.prepare(`
     INSERT INTO user_totals
       (user_id, online_s, active_s, sessions, longest_session_s, first_seen, last_seen)
-    SELECT d.user_id, sum(d.online_s), sum(d.active_s), sum(d.sessions), max(d.longest_session_s),
-           b.first_seen, b.last_seen
-    FROM user_daily_stats d
-    JOIN (
-      SELECT min(first_seen) AS first_seen, max(last_seen) AS last_seen FROM (
-        SELECT min(join_at) AS first_seen, max(leave_at) AS last_seen
-          FROM sessions WHERE user_id = @userId AND leave_at IS NOT NULL
-        UNION ALL
-        SELECT min(start_at), max(end_at)
-          FROM activity_segments WHERE user_id = @userId AND is_open = 0
-      )
-    ) b
-    WHERE d.user_id = @userId AND b.first_seen IS NOT NULL
-    GROUP BY d.user_id`);
+    SELECT user_id, sum(online_s), sum(active_s), sum(sessions), max(longest_session_s),
+           @firstSeen, @lastSeen
+    FROM user_daily_stats WHERE user_id = @userId
+    GROUP BY user_id`);
+  type Bounds = { first: number | null; last: number | null };
+  const minOf = (a: number | null, b: number | null) =>
+    a === null ? b : b === null ? a : Math.min(a, b);
+  const maxOf = (a: number | null, b: number | null) =>
+    a === null ? b : b === null ? a : Math.max(a, b);
 
   let dailyRows = 0;
   const rebuildUser = sqlite.transaction((userId: number) => {
@@ -266,7 +270,13 @@ export function rebuildAggregates(
     addDaily(sqlite, userId, [...days.values()]);
     dailyRows += days.size;
     deleteTotals.run(userId);
-    insertTotals.run({ userId });
+    const sb = sessionBounds.get(userId) as Bounds;
+    const gb = segmentBounds.get(userId) as Bounds;
+    const firstSeen = minOf(sb.first, gb.first);
+    const lastSeen = maxOf(sb.last, gb.last);
+    if (firstSeen !== null && lastSeen !== null) {
+      insertTotals.run({ userId, firstSeen, lastSeen });
+    }
   });
 
   userIds.forEach((userId, index) => {
