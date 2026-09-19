@@ -22,3 +22,18 @@ export function upsertChannels(db: DbExecutor, sightings: readonly ChannelSighti
     })
     .run();
 }
+
+export interface Channel {
+  id: number;
+  name: string;
+  lastSeen: UnixSeconds;
+}
+
+/** All known channels (including ones deleted on the server), ordered by name. */
+export function listChannels(db: DbExecutor): Channel[] {
+  return db
+    .select({ id: channels.id, name: channels.name, lastSeen: channels.lastSeen })
+    .from(channels)
+    .orderBy(sql`${channels.name} COLLATE NOCASE`, channels.id)
+    .all();
+}

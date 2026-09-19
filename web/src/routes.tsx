@@ -8,6 +8,7 @@ import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
 import { PlayersPage } from './pages/PlayersPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 /** URL paths are German, like the UI. Everything except the login page requires a login. */
 export const routes: RouteObject[] = [
@@ -30,7 +31,10 @@ export const routes: RouteObject[] = [
               { path: 'leaderboards', element: <LeaderboardsPage /> },
               {
                 element: <RequireRole role="admin" />,
-                children: [{ path: 'protokoll', element: <AuditPage /> }],
+                children: [
+                  { path: 'protokoll', element: <AuditPage /> },
+                  { path: 'einstellungen', element: <SettingsPage /> },
+                ],
               },
               { path: '*', element: <NotFoundPage /> },
             ],

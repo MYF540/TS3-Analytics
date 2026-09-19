@@ -186,9 +186,10 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Notizen mit Verlauf und Autor, frei definierbare Tags, Anzeige auf der Spielerseite
   - Notiz: Tabellen `player_notes`, `player_note_revisions`, `tags`, `user_tags` (Migration 0004). Rechte: Betrachter lesen; Moderator schreibt Notizen, legt Tags an und vergibt sie, ändert/löscht eigene Notizen; Admin ändert/löscht alle Notizen, benennt Tags um und löscht sie. Bearbeiten und Löschen legen die alte Fassung im Verlauf ab (Löschen ist weich, der Text bleibt im Verlauf). Das Audit-Log speichert nur IDs, nie den Notiztext. Tag-Namen sind ohne Groß-/Kleinschreibung eindeutig; 6 feste Farben. Umbenennen gibt es bisher nur per API (`PATCH /api/tags/:id`), noch nicht in der Oberfläche.
 
-- [ ] **T4.5 Aktivitäts-Einstellungen im Webinterface** · `Backend` `Frontend` · braucht: T4.2, T2.3
+- [x] **T4.5 Aktivitäts-Einstellungen im Webinterface** · `Backend` `Frontend` · braucht: T4.2, T2.3
   - Idle-Schwelle, AFK-Channels (Auswahl aus Channelliste), „Away = AFK“, „Lautsprecher stumm = AFK“ bearbeiten (nur Admin); Speichern über `saveActivitySettings`, Eintrag im Audit-Log
   - Hinweis im UI, dass Änderungen nur für künftige Zeiten gelten (bestehende Segmente bleiben)
+  - Notiz: `GET/PUT /api/settings/activity` (nur Admin), Seite „Einstellungen“ (`/einstellungen`). Der Watcher liest die Regeln bei jedem Ereignis, Änderungen wirken also ohne Neustart. Das Audit-Log speichert nur die geänderten Felder (`{feld: {from, to}}`). Die Channel-Liste enthält auch Channels, die es auf dem Server nicht mehr gibt (Hinweis „zuletzt gesehen“); ausgewählte, unbekannte Channel-IDs bleiben sichtbar und lassen sich abwählen. Die Idle-Schwelle wird in Minuten eingegeben (1–1440) und in Sekunden gespeichert.
 
 - [ ] **T4.4 Bot-Status-Seite** · `Backend` `Frontend` · braucht: T4.1
   - Query-Verbindung, letzter Heartbeat, Uptime, DB-Größe, letzte Fehler aus dem Log

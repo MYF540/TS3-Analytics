@@ -763,6 +763,62 @@ a.button {
   resize: vertical;
 }
 
+.notice {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--warn);
+  background: var(--surface-2);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.settings-form h2 {
+  margin: 0;
+}
+
+.settings-form .field--narrow {
+  max-width: 16rem;
+}
+
+.settings-form .muted.small,
+.settings-form .alert {
+  margin: -0.5rem 0 0;
+}
+
+.settings-form__channels {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem 1rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.settings-form__channels legend {
+  font-weight: 600;
+  padding: 0 0.3rem;
+}
+
+.settings-form__channels .muted.small {
+  margin: 0;
+}
+
+.channel-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 22rem;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 0.25rem 1rem;
+}
+
+.channel-list .checkbox {
+  flex-wrap: wrap;
+}
+
 @media (max-width: 720px) {
   .leaderboard__track {
     width: 60px;
@@ -779,7 +835,7 @@ a.button {
   .header__nav {
     order: 3;
     flex-basis: 100%;
-    overflow-x: auto;
+    flex-wrap: wrap;
   }
 
   .status__label {

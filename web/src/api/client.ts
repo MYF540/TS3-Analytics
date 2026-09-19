@@ -1,5 +1,7 @@
 import { errorMessage } from '../i18n';
 import type {
+  ActivitySettings,
+  ActivitySettingsResponse,
   ApiErrorBody,
   AuditEntry,
   AuditFilters,
@@ -179,6 +181,10 @@ export const api = {
   deleteNote: (noteId: number) => apiSend<undefined>('DELETE', `/notes/${String(noteId)}`),
   noteRevisions: (noteId: number, signal?: AbortSignal) =>
     apiGet<{ revisions: NoteRevision[] }>(`/notes/${String(noteId)}/revisions`, {}, signal),
+  activitySettings: (signal?: AbortSignal) =>
+    apiGet<ActivitySettingsResponse>('/settings/activity', {}, signal),
+  saveActivitySettings: (settings: ActivitySettings) =>
+    apiSend<ActivitySettings>('PUT', '/settings/activity', settings),
   tags: (signal?: AbortSignal) => apiGet<{ tags: TagWithUsage[] }>('/tags', {}, signal),
   createTag: (name: string, color: TagColor) => apiPost<Tag>('/tags', { name, color }),
   deleteTag: (tagId: number) => apiSend<undefined>('DELETE', `/tags/${String(tagId)}`),

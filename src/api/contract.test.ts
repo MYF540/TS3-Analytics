@@ -11,6 +11,7 @@ import type { leaderboardResponse } from './routes/leaderboards.js';
 import type { auditEntry, auditFiltersResponse } from './routes/audit.js';
 import type { authResponse } from './routes/auth.js';
 import type { note, noteRevision, tagWithUsage } from './routes/notes.js';
+import type { activitySettings, activitySettingsResponse } from './routes/settings.js';
 import type { onlineResponse } from './routes/online.js';
 import type { heatmapResponse, overviewResponse, seriesResponse } from './routes/stats.js';
 import type { userDetailResponse, userListItem } from './routes/users.js';
@@ -37,6 +38,8 @@ export type Contract = [
   Assert<Equals<z.output<typeof note>, Web.Note>>,
   Assert<Equals<z.output<typeof noteRevision>, Web.NoteRevision>>,
   Assert<Equals<z.output<typeof tagWithUsage>, Web.TagWithUsage>>,
+  Assert<Equals<z.output<typeof activitySettings>, Web.ActivitySettings>>,
+  Assert<Equals<z.output<typeof activitySettingsResponse>, Web.ActivitySettingsResponse>>,
   Assert<Equals<ApiErrorBody, Web.ApiErrorBody>>,
 ];
 

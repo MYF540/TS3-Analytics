@@ -11,6 +11,7 @@ export const de = {
   'nav.leaderboards': 'Leaderboards',
   'nav.main': 'Hauptnavigation',
   'nav.audit': 'Protokoll',
+  'nav.settings': 'Einstellungen',
 
   'theme.toggle': 'Farbschema wechseln',
   'theme.light': 'Hell',
@@ -30,6 +31,8 @@ export const de = {
   'page.player.intro': 'Details zu Spieler #{id}.',
   'page.leaderboards.title': 'Leaderboards',
   'page.leaderboards.intro': 'Ranglisten nach Spielzeit, Aktivität und längster Session.',
+  'page.settings.title': 'Einstellungen',
+  'page.settings.intro': 'Regeln, nach denen Spielzeit als aktiv, inaktiv oder AFK gezählt wird.',
   'page.audit.title': 'Protokoll',
   'page.audit.intro': 'Alle Änderungen und Anmeldungen im Webinterface und über die Kommandozeile.',
   'page.forbidden.title': 'Keine Berechtigung',
@@ -267,6 +270,29 @@ export const de = {
   'audit.action.tag.update': 'Tag geändert',
   'audit.action.tag.delete': 'Tag gelöscht',
   'audit.action.user.tags': 'Tags eines Spielers geändert',
+  'audit.action.settings.activity': 'Aktivitäts-Einstellungen geändert',
+
+  'settings.activity.title': 'Aktivität',
+  'settings.activity.futureOnly':
+    'Änderungen gelten ab dem Speichern für neue Zeiten. Bereits erfasste Zeiten werden nicht neu bewertet.',
+  'settings.idle.label': 'Inaktiv nach (Minuten)',
+  'settings.idle.hint':
+    'Ohne Tastatur-/Mikrofon-Aktivität gilt ein Spieler nach dieser Zeit als inaktiv (idle). 1 bis 1440 Minuten.',
+  'settings.away.label': 'Status „Abwesend“ zählt als AFK',
+  'settings.muted.label': 'Lautsprecher stumm zählt als AFK',
+  'settings.afk.title': 'AFK-Channels',
+  'settings.afk.hint': 'Wer sich in einem dieser Channels aufhält, gilt als AFK.',
+  'settings.afk.filter': 'Channels filtern',
+  'settings.afk.selected': '{count} ausgewählt',
+  'settings.afk.noChannels':
+    'Noch keine Channels bekannt. Sie erscheinen, sobald der Bot mit dem Server verbunden war.',
+  'settings.afk.unknown': 'Unbekannter Channel #{id}',
+  'settings.afk.gone': 'zuletzt gesehen {time}',
+  'settings.save': 'Speichern',
+  'settings.reset': 'Änderungen verwerfen',
+  'settings.defaults': 'Standardwerte eintragen',
+  'settings.saved': 'Gespeichert.',
+  'settings.invalidIdle': 'Bitte eine ganze Zahl zwischen 1 und 1440 eingeben.',
 
   'unit.clock': 'Uhr',
   'unit.hours': '{value} h',

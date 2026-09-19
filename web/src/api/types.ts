@@ -172,6 +172,19 @@ export interface NoteRevision {
   replacedAt: number;
 }
 
+export interface ActivitySettings {
+  idleThresholdS: number;
+  afkChannelIds: number[];
+  awayIsAfk: boolean;
+  outputMutedIsAfk: boolean;
+}
+
+export interface ActivitySettingsResponse {
+  settings: ActivitySettings;
+  defaults: ActivitySettings;
+  channels: { id: number; name: string; lastSeen: number }[];
+}
+
 export interface LeaderboardEntry {
   rank: number;
   userId: number;
