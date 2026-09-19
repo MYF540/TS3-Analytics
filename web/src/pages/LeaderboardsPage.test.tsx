@@ -87,6 +87,13 @@ describe('LeaderboardsPage', () => {
     });
   });
 
+  it('offers a CSV export of the current selection', async () => {
+    mockApi({ '/api/leaderboards': board });
+    renderAt('/leaderboards?art=woche&wertung=aktiv');
+    const link = await screen.findByRole('link', { name: 'Als CSV exportieren' });
+    expect(link).toHaveAttribute('href', '/api/leaderboards/export.csv?period=week&metric=active');
+  });
+
   it('pages through the ranking', async () => {
     const fetchMock = mockApi({ '/api/leaderboards': board });
     renderAt('/leaderboards');

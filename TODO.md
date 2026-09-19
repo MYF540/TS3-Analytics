@@ -163,10 +163,11 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Fertig wenn: Tests für Endpunkt und Anzeige; ohne Query-Verbindung klarer Hinweis statt veralteter Liste
   - Notiz: `Watcher.liveClients()` (Tracker + aktueller Zustand aus `ActivityTracker.stateOf`), im `ApiContext` als `live`. `GET /api/online` liefert `{ connected, items }` sortiert nach Channel und Nickname; ohne Verbindung `connected: false` und leere Liste. Dashboard-Karte `web/src/components/OnlineNow.tsx`, aktualisiert alle 30 s, Zustand mit Text + Punkt (nicht nur Farbe).
 
-- [ ] **T3.8 CSV-Export** · `Backend` `Frontend` · braucht: T3.5, T3.6
+- [x] **T3.8 CSV-Export** · `Backend` `Frontend` · braucht: T3.5, T3.6
   - Export der Spielerliste (mit aktueller Suche/Sortierung/Filter) und der Leaderboards (aktuelle Auswahl) als CSV
   - Excel-freundlich für deutsche Systeme: UTF-8 mit BOM, Semikolon als Trenner, Dauern in Stunden mit Dezimalkomma sowie in Sekunden
   - Fertig wenn: Tests prüfen Inhalt, Escaping (Semikolon, Anführungszeichen, Zeilenumbrüche in Nicknames) und Schutz vor CSV-Formel-Injection
+  - Notiz: Reine Funktion `toCsv` in `src/domain/csv.ts` (BOM, `;`, CRLF, Dezimalkomma, Quoting, Zellen mit `= + - @ Tab CR` am Anfang bekommen ein `'`). Endpunkte `GET /api/users/export.csv` (Filter/Sortierung wie Liste, ohne Paginierung) und `GET /api/leaderboards/export.csv` (gleiche Auswahl wie Leaderboard, komplette Rangliste); Spaltenköpfe deutsch in `src/api/csv.ts`; Zeiten als `YYYY-MM-DD HH:MM` Berliner Zeit, Dauern in h und s. Export-Link auf Spieler- und Leaderboard-Seite übernimmt die aktuelle Auswahl.
 
 ## Phase 4 – Auth & Admin-Basis
 

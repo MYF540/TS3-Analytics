@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from 'react-router';
-import { api } from '../api/client';
+import { api, buildUrl } from '../api/client';
 import type { LeaderboardMetric, LeaderboardPeriod } from '../api/types';
 import { Pagination } from '../components/Pagination';
 import { useApi } from '../hooks/useApi';
@@ -167,6 +167,22 @@ export function LeaderboardsPage() {
           )}
         </div>
 
+        {enabled && (
+          <p>
+            <a
+              className="button"
+              download
+              href={buildUrl('/leaderboards/export.csv', {
+                period: tab.period,
+                metric,
+                from: tab.period === 'custom' ? from : undefined,
+                to: tab.period === 'custom' ? to : undefined,
+              })}
+            >
+              {t('common.exportCsv')}
+            </a>
+          </p>
+        )}
         {metric === 'active' && <p className="muted small">{t('lb.activeHint')}</p>}
         {!enabled && <p className="muted">{t('lb.chooseRange')}</p>}
         {error && <p className="alert">{error}</p>}

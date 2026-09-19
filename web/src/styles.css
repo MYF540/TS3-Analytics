@@ -322,6 +322,11 @@ td:first-child {
   cursor: pointer;
 }
 
+a.button {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .button:disabled {
   opacity: 0.5;
   cursor: default;

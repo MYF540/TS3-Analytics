@@ -70,6 +70,16 @@ describe('PlayersPage', () => {
     expect(lastQuery(fetchMock)?.get('includeCasual')).toBe('true');
   });
 
+  it('offers a CSV export of the current selection', async () => {
+    mockApi();
+    renderAt('/spieler?q=bob&sort=lastSeen&order=asc&casual=1');
+    const link = await screen.findByRole('link', { name: 'Als CSV exportieren' });
+    expect(link).toHaveAttribute(
+      'href',
+      '/api/users/export.csv?search=bob&sort=lastSeen&order=asc&includeCasual=true',
+    );
+  });
+
   it('restores its state from the URL', async () => {
     const fetchMock = mockApi();
     renderAt('/spieler?q=bob&sort=lastSeen&order=asc&page=2');

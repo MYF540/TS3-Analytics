@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { api } from '../api/client';
+import { api, buildUrl } from '../api/client';
 import type { UserSort } from '../api/types';
 import { Pagination } from '../components/Pagination';
 import { useApi } from '../hooks/useApi';
@@ -108,6 +108,18 @@ export function PlayersPage() {
         {data && (
           <span className="muted">{t('players.count', { count: formatNumber(data.total) })}</span>
         )}
+        <a
+          className="button"
+          download
+          href={buildUrl('/users/export.csv', {
+            search,
+            sort,
+            order,
+            includeCasual: includeCasual || undefined,
+          })}
+        >
+          {t('common.exportCsv')}
+        </a>
       </div>
 
       {error && <p className="alert">{error}</p>}

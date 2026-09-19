@@ -5,6 +5,8 @@ import { daysBefore } from '../../domain/periods.js';
 import { berlinDay } from '../../domain/time.js';
 import type { ApiContext } from '../context.js';
 import { ApiError } from '../errors.js';
+import { csvDateTime, hours, toCsv } from '../../domain/csv.js';
+import { CSV_LABELS, sendCsv } from '../csv.js';
 import { paged, pageQuery } from '../schemas.js';
 
 /** Users below this all-time online time are "casual" and hidden unless requested. */
@@ -103,6 +105,53 @@ export function userRoutes(context: ApiContext): FastifyPluginAsyncZod {
           minOnlineS: includeCasual ? 0 : CASUAL_THRESHOLD_S,
         });
         return { ...result, page, pageSize };
+      },
+    );
+
+    app.get(
+      '/users/export.csv',
+      { schema: { querystring: userListQuery.omit({ page: true, pageSize: true }) } },
+      (request, reply) => {
+        const { search, sort, order, includeCasual } = request.query;
+        const { items } = listUsers(sqlite, {
+          search,
+          sort,
+          order,
+          limit: 1_000_000,
+          offset: 0,
+          minOnlineS: includeCasual ? 0 : CASUAL_THRESHOLD_S,
+        });
+        const csv = toCsv(
+          [
+            CSV_LABELS.userId,
+            CSV_LABELS.uid,
+            CSV_LABELS.nickname,
+            CSV_LABELS.onlineH,
+            CSV_LABELS.onlineS,
+            CSV_LABELS.activeH,
+            CSV_LABELS.activeS,
+            CSV_LABELS.sessions,
+            CSV_LABELS.firstSeen,
+            CSV_LABELS.lastSeen,
+            CSV_LABELS.country,
+            CSV_LABELS.online,
+          ],
+          items.map((u) => [
+            u.userId,
+            u.uid,
+            u.nickname,
+            hours(u.onlineS),
+            u.onlineS,
+            hours(u.activeS),
+            u.activeS,
+            u.sessions,
+            csvDateTime(u.firstSeen),
+            csvDateTime(u.lastSeen),
+            u.country,
+            u.online ? CSV_LABELS.yes : CSV_LABELS.no,
+          ]),
+        );
+        return sendCsv(reply, 'spieler.csv', csv);
       },
     );
 

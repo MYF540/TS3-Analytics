@@ -49,6 +49,7 @@ export const de = {
   'common.loading': 'Wird geladen …',
   'common.range': 'Zeitraum',
   'common.showTable': 'Als Tabelle anzeigen',
+  'common.exportCsv': 'Als CSV exportieren',
 
   'range.24h': '24 Stunden',
   'range.7d': '7 Tage',

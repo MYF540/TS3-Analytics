@@ -10,7 +10,9 @@ import { LEADERBOARD_PERIODS, rollingDays } from '../../domain/periods.js';
 import { berlinDay } from '../../domain/time.js';
 import type { ApiContext } from '../context.js';
 import { ApiError } from '../errors.js';
+import { CSV_LABELS, sendCsv } from '../csv.js';
 import { dayParam, leaderboardEntry, pageQuery } from '../schemas.js';
+import { hours, toCsv } from '../../domain/csv.js';
 
 export const LEADERBOARD_METRICS = ['online', 'active', 'longestSession'] as const;
 
@@ -33,47 +35,95 @@ export const leaderboardResponse = z.object({
   pageSize: z.number().int(),
 });
 
+type LeaderboardQuery = z.infer<typeof leaderboardQuery>;
+
+/** Day range of a leaderboard query; `null` means all time (from `user_totals`). */
+function resolveRange(
+  query: Pick<LeaderboardQuery, 'period' | 'from' | 'to'>,
+  now: number,
+): { fromDay: number; toDay: number } | null {
+  if (query.period === 'all') return null;
+  if (query.period === 'custom') {
+    if (query.from === undefined || query.to === undefined) {
+      throw new ApiError(400, 'INVALID_RANGE', 'A custom period needs "from" and "to"');
+    }
+    if (query.from > query.to) throw new ApiError(400, 'INVALID_RANGE', '"from" is after "to"');
+    return { fromDay: query.from, toDay: query.to };
+  }
+  const range = rollingDays(query.period, berlinDay(now));
+  if (!range) throw new ApiError(400, 'INVALID_RANGE', 'Unknown period');
+  return range;
+}
+
+const EXPORT_LIMIT = 1_000_000;
+
 /**
  * `GET /api/leaderboards`: all time (from `user_totals`), rolling week/month/year or a custom day
  * range (from `user_daily_stats`); metric online time, active time or longest session.
+ * `GET /api/leaderboards/export.csv`: the complete ranking of the same selection as CSV.
  */
 export function leaderboardRoutes(context: ApiContext): FastifyPluginAsyncZod {
   return (app) => {
     const { sqlite } = context.database;
+
+    const rank = (
+      query: Pick<LeaderboardQuery, 'period' | 'metric' | 'from' | 'to'>,
+      paging: { limit: number; offset: number },
+    ) => {
+      const range = resolveRange(query, context.now());
+      if (!range) {
+        return {
+          fromDay: null,
+          toDay: null,
+          items: leaderboardAllTime(sqlite, query.metric, paging),
+          total: () => countLeaderboardAllTime(sqlite, query.metric),
+        };
+      }
+      return {
+        ...range,
+        items: leaderboardForDays(sqlite, query.metric, range.fromDay, range.toDay, paging),
+        total: () => countLeaderboardForDays(sqlite, query.metric, range.fromDay, range.toDay),
+      };
+    };
+
     app.get(
       '/leaderboards',
       { schema: { querystring: leaderboardQuery, response: { 200: leaderboardResponse } } },
       (request) => {
         const { period, metric, page, pageSize } = request.query;
-        const paging = { limit: pageSize, offset: (page - 1) * pageSize };
-        const base = { period, metric, page, pageSize };
-
-        if (period === 'all') {
-          return {
-            ...base,
-            fromDay: null,
-            toDay: null,
-            items: leaderboardAllTime(sqlite, metric, paging),
-            total: countLeaderboardAllTime(sqlite, metric),
-          };
-        }
-
-        let range = rollingDays(period, berlinDay(context.now()));
-        if (period === 'custom') {
-          const { from, to } = request.query;
-          if (from === undefined || to === undefined) {
-            throw new ApiError(400, 'INVALID_RANGE', 'A custom period needs "from" and "to"');
-          }
-          if (from > to) throw new ApiError(400, 'INVALID_RANGE', '"from" is after "to"');
-          range = { fromDay: from, toDay: to };
-        }
-        if (!range) throw new ApiError(400, 'INVALID_RANGE', 'Unknown period');
+        const result = rank(request.query, { limit: pageSize, offset: (page - 1) * pageSize });
         return {
-          ...base,
-          ...range,
-          items: leaderboardForDays(sqlite, metric, range.fromDay, range.toDay, paging),
-          total: countLeaderboardForDays(sqlite, metric, range.fromDay, range.toDay),
+          period,
+          metric,
+          page,
+          pageSize,
+          fromDay: result.fromDay,
+          toDay: result.toDay,
+          items: result.items,
+          total: result.total(),
         };
+      },
+    );
+
+    app.get(
+      '/leaderboards/export.csv',
+      { schema: { querystring: leaderboardQuery.omit({ page: true, pageSize: true }) } },
+      (request, reply) => {
+        const result = rank(request.query, { limit: EXPORT_LIMIT, offset: 0 });
+        const csv = toCsv(
+          [
+            CSV_LABELS.rank,
+            CSV_LABELS.userId,
+            CSV_LABELS.uid,
+            CSV_LABELS.nickname,
+            `${CSV_LABELS.metric[request.query.metric]} (h)`,
+            `${CSV_LABELS.metric[request.query.metric]} (s)`,
+          ],
+          result.items.map((e) => [e.rank, e.userId, e.uid, e.nickname, hours(e.value), e.value]),
+        );
+        const range =
+          result.fromDay === null ? 'gesamt' : `${String(result.fromDay)}-${String(result.toDay)}`;
+        return sendCsv(reply, `leaderboard-${request.query.metric}-${range}.csv`, csv);
       },
     );
     return Promise.resolve();
