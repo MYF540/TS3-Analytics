@@ -30,7 +30,7 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 ## Phase 1 – Datenbank
 
-- [ ] **T1.1 Schema & Migrationen** · `DB` · braucht: T0.2
+- [x] **T1.1 Schema & Migrationen** · `DB` · braucht: T0.2
   - Siehe Abschnitt „Datenumfang & Performance“ in AGENTS.md
   - `users`: interne Integer-ID als Primärschlüssel, UID (unique), dbid, first_seen, last_seen, platform, version, country. Alle anderen Tabellen referenzieren die Integer-ID, nie die UID-Zeichenkette
   - `nicknames` (user_id, nick, first_seen, last_seen) plus FTS5-Index für die Suche
@@ -43,6 +43,7 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - `ip_seen`, `settings` wie gehabt
   - Alle Tabellen STRICT, Zeitstempel als Integer (Unix-Sekunden, UTC)
   - Fertig wenn: Migration läuft auf leerer DB durch; PRAGMAs laut AGENTS.md werden beim Öffnen gesetzt
+  - Notiz: Schema in `src/db/schema.ts`, Verbindung/Migration in `src/db/client.ts` (`openDatabase`, `runMigrations`, läuft beim Start). Migration `drizzle/0000_init.sql` von drizzle-kit erzeugt und von Hand um `STRICT`, `WITHOUT ROWID` (`user_daily_stats`, `ip_seen`, `settings`) und FTS5 (`nicknames_fts`, Trigram-Tokenizer, externe Content-Tabelle + 3 Trigger) ergänzt; `schema.test.ts` sichert ab, dass DB und Drizzle-Schema übereinstimmen. Ablauf für Schemaänderungen in `docs/database.md`. Entscheidungen: `day` = YYYYMMDD (Berlin) als Integer; Segment-Spalten `start_at`/`end_at` statt `start`/`end`; zusätzlich `activity_segments.session_id` und `is_open` (offene Segmente werden periodisch geflusht, T2.3/T2.4); `ip_seen` = (user_id, ip_hash BLOB, subnet_hash BLOB, country, first_seen, last_seen, seen_count); `settings` = (key, value JSON, updated_at); CHECK-Constraints für `source`, `state`, Zeitbereiche. `sessions.source` existiert damit bereits (T8.2 muss nur noch `import_runs`/Legacy-Felder ergänzen). better-sqlite3 auf `^12.11` gepinnt: v13 liefert keine Prebuilds und bräuchte Visual-Studio-Build-Tools inkl. Windows SDK. Neue Config: `SQLITE_CACHE_SIZE_MB`, `SQLITE_MMAP_SIZE_MB`; `paths.sqlite` → `database.path`. Scripts: `db:generate`, `db:check`.
 
 - [ ] **T1.2 Repository-Layer** · `DB` · braucht: T1.1
   - Typisierte Funktionen für alle Schreib- und Lesezugriffe des Watchers

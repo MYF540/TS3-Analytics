@@ -39,6 +39,8 @@ const envSchema = z.object({
   WEB_PORT: optional(port.default(8080)),
   GEOIP_DB_PATH: optional(z.string().default('./data/GeoLite2-Country.mmdb')),
   SQLITE_PATH: optional(z.string().default('./data/ts3-analytics.sqlite')),
+  SQLITE_CACHE_SIZE_MB: optional(z.coerce.number().int().min(1).default(64)),
+  SQLITE_MMAP_SIZE_MB: optional(z.coerce.number().int().min(0).default(256)),
   IP_RETENTION_DAYS: optional(z.coerce.number().int().min(1).default(90)),
   LOG_LEVEL: optional(z.enum(LOG_LEVELS).default('info')),
   LOG_DIR: optional(z.string().default('./data/logs')),
@@ -67,7 +69,12 @@ export interface Config {
   };
   readonly paths: {
     readonly geoipDb: string;
-    readonly sqlite: string;
+  };
+  readonly database: {
+    readonly path: string;
+    readonly cacheSizeMb: number;
+    /** 0 disables memory-mapped I/O. */
+    readonly mmapSizeMb: number;
   };
   readonly retention: {
     readonly ipDays: number;
@@ -113,7 +120,12 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
     }),
     security: Object.freeze({ hmacSecret: e.HMAC_SECRET }),
     web: Object.freeze({ host: e.WEB_HOST, port: e.WEB_PORT }),
-    paths: Object.freeze({ geoipDb: e.GEOIP_DB_PATH, sqlite: e.SQLITE_PATH }),
+    paths: Object.freeze({ geoipDb: e.GEOIP_DB_PATH }),
+    database: Object.freeze({
+      path: e.SQLITE_PATH,
+      cacheSizeMb: e.SQLITE_CACHE_SIZE_MB,
+      mmapSizeMb: e.SQLITE_MMAP_SIZE_MB,
+    }),
     retention: Object.freeze({ ipDays: e.IP_RETENTION_DAYS }),
     logging: Object.freeze({
       level: e.LOG_LEVEL,

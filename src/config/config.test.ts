@@ -37,10 +37,8 @@ describe('parseConfig', () => {
       },
       security: { hmacSecret: VALID_SECRET },
       web: { host: '127.0.0.1', port: 8080 },
-      paths: {
-        geoipDb: './data/GeoLite2-Country.mmdb',
-        sqlite: './data/ts3-analytics.sqlite',
-      },
+      paths: { geoipDb: './data/GeoLite2-Country.mmdb' },
+      database: { path: './data/ts3-analytics.sqlite', cacheSizeMb: 64, mmapSizeMb: 256 },
       retention: { ipDays: 90 },
       logging: { level: 'info', dir: './data/logs', retentionDays: 14, pretty: undefined },
     });
@@ -58,6 +56,8 @@ describe('parseConfig', () => {
       WEB_PORT: '3000',
       GEOIP_DB_PATH: 'geo.mmdb',
       SQLITE_PATH: 'db.sqlite',
+      SQLITE_CACHE_SIZE_MB: '128',
+      SQLITE_MMAP_SIZE_MB: '0',
       IP_RETENTION_DAYS: '30',
       LOG_LEVEL: 'debug',
       LOG_DIR: 'logs',
@@ -72,7 +72,8 @@ describe('parseConfig', () => {
       queryRateLimit: 2.5,
     });
     expect(config.web).toEqual({ host: '::1', port: 3000 });
-    expect(config.paths).toEqual({ geoipDb: 'geo.mmdb', sqlite: 'db.sqlite' });
+    expect(config.paths).toEqual({ geoipDb: 'geo.mmdb' });
+    expect(config.database).toEqual({ path: 'db.sqlite', cacheSizeMb: 128, mmapSizeMb: 0 });
     expect(config.retention.ipDays).toBe(30);
     expect(config.logging).toEqual({
       level: 'debug',

@@ -1,4 +1,5 @@
 import { ConfigError, loadConfig, type Config } from './config/config.js';
+import { openDatabase, runMigrations } from './db/client.js';
 import { createLogger } from './logging/logger.js';
 
 function readConfig(): Config {
@@ -21,7 +22,10 @@ function main(): void {
     { logLevel: config.logging.level, logDir: config.logging.dir },
     'TS3 Analytics starting',
   );
-  // Services (db, watcher, api) are wired up here in later tasks.
+  const database = openDatabase(config.database);
+  runMigrations(database);
+  logger.info({ path: config.database.path }, 'Database ready');
+  // Services (watcher, api) are wired up here in later tasks.
 }
 
 main();
