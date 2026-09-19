@@ -22,6 +22,8 @@ export class FakeTs3Server {
   /** When set, `ping` fails (simulates a dead connection that did not emit `close`). */
   failPing = false;
   connectAttempts = 0;
+  /** Called after a command took its snapshot but before it answers (to simulate races). */
+  afterSnapshot: ((command: string) => void) | undefined;
   private active: FakeTs3Transport | undefined;
   private nextClid = 1;
 
@@ -128,7 +130,9 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
 
   clientList(): Promise<Ts3Client[]> {
     this.assertOpen('clientlist');
-    return Promise.resolve([...this.server.clients.values()].map((c) => ({ ...c })));
+    const snapshot = [...this.server.clients.values()].map((c) => ({ ...c }));
+    this.server.afterSnapshot?.('clientlist');
+    return Promise.resolve(snapshot);
   }
 
   channelList(): Promise<Ts3Channel[]> {

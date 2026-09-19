@@ -3,6 +3,7 @@ import { openDatabase, runMigrations } from './db/client.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
 import { RealTs3Transport } from './ts3/real-transport.js';
+import { Watcher } from './watcher/watcher.js';
 
 function main(): void {
   const config = loadConfigOrExit();
@@ -20,14 +21,21 @@ function main(): void {
     { commandsPerSecond: config.ts3.queryRateLimit },
     { logger },
   );
+  const watcher = new Watcher({ database, connection, logger });
+  watcher.start();
   connection.start();
-  // Watcher and API are wired up here in later tasks.
+  // API is wired up here in a later task.
 
   let stopping = false;
   const shutdown = (signal: string) => {
     if (stopping) return;
     stopping = true;
     logger.info({ signal }, 'Shutting down');
+    try {
+      watcher.stop();
+    } catch (error) {
+      logger.error({ err: error }, 'Error while closing open sessions');
+    }
     void connection
       .stop()
       .catch((error: unknown) => {
