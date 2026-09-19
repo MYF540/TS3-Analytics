@@ -4,6 +4,7 @@ import type { Logger } from '../logging/logger.js';
 import type { Ts3Connection } from '../ts3/connection.js';
 import type { Ts3Client, Ts3ClientLeft, Ts3ClientMoved } from '../ts3/types.js';
 import { ActivityTracker } from './activity.js';
+import { recoverOpenSessions, writeHeartbeat } from './recovery.js';
 import { loadActivitySettings } from './settings.js';
 import { SessionTracker } from './tracker.js';
 
@@ -17,6 +18,8 @@ export interface WatcherDeps {
   pollIntervalS?: number;
   /** Minimum seconds between batched segment writes (default 300). */
   flushIntervalS?: number;
+  /** Poll on a timer (default true); tests call `sync()` themselves. */
+  autoPoll?: boolean;
 }
 
 /**
@@ -47,6 +50,8 @@ export class Watcher {
 
   start(): void {
     const { connection } = this.deps;
+    // Close what an unclean shutdown left open before tracking anything new (T2.4).
+    recoverOpenSessions(this.deps.database, this.deps.logger);
     const onConnect = (client: Ts3Client) => {
       this.touchedDuringSync?.add(client.clid);
       this.safely(() => this.tracker.join(client, this.now()));
@@ -82,6 +87,7 @@ export class Watcher {
       connection.off('connected', onConnected);
     });
     if (connection.isConnected) void this.sync();
+    if (this.deps.autoPoll === false) return;
     const intervalMs = (this.deps.pollIntervalS ?? 60) * 1000;
     this.pollTimer = setInterval(() => {
       if (connection.isConnected) void this.sync();
@@ -120,6 +126,7 @@ export class Watcher {
       this.lostAt = undefined;
       this.activity.observe(clients, (clid) => this.tracker.get(clid), at, touched);
       recordServerMinute(database.db, at, this.tracker.onlineClients.length);
+      writeHeartbeat(database.db, at);
       this.lastFlushAt ??= at;
       if (at - this.lastFlushAt >= (this.deps.flushIntervalS ?? 300)) this.flush(at);
       logger.debug({ online: this.tracker.onlineClients.length }, 'Client list synchronized');
