@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { AuditPage } from './pages/AuditPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { FlagsPage } from './pages/FlagsPage';
 import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
@@ -30,6 +31,10 @@ export const routes: RouteObject[] = [
               { path: 'spieler', element: <PlayersPage /> },
               { path: 'spieler/:id', element: <PlayerPage /> },
               { path: 'leaderboards', element: <LeaderboardsPage /> },
+              {
+                element: <RequireRole role="moderator" />,
+                children: [{ path: 'hinweise', element: <FlagsPage /> }],
+              },
               {
                 element: <RequireRole role="admin" />,
                 children: [

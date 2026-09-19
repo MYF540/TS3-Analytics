@@ -13,6 +13,7 @@ import type { authResponse } from './routes/auth.js';
 import type { note, noteRevision, tagWithUsage } from './routes/notes.js';
 import type { activitySettings, activitySettingsResponse } from './routes/settings.js';
 import type { statusResponse } from './routes/status.js';
+import type { flagsResponse } from './routes/flags.js';
 import type { onlineResponse } from './routes/online.js';
 import type { heatmapResponse, overviewResponse, seriesResponse } from './routes/stats.js';
 import type { userDetailResponse, userListItem } from './routes/users.js';
@@ -42,6 +43,7 @@ export type Contract = [
   Assert<Equals<z.output<typeof activitySettings>, Web.ActivitySettings>>,
   Assert<Equals<z.output<typeof activitySettingsResponse>, Web.ActivitySettingsResponse>>,
   Assert<Equals<z.output<typeof statusResponse>, Web.BotStatus>>,
+  Assert<Equals<z.output<typeof flagsResponse>, Web.FlagsResponse>>,
   Assert<Equals<ApiErrorBody, Web.ApiErrorBody>>,
 ];
 

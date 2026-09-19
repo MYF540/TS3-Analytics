@@ -172,6 +172,36 @@ export interface NoteRevision {
   replacedAt: number;
 }
 
+export type FlagKind = 'ban_ip' | 'ban_subnet' | 'shared_ip';
+export type FlagLevel = 'high' | 'medium' | 'info';
+export type FlagStatus = 'open' | 'linked' | 'ignored';
+
+export interface PlayerRef {
+  id: number;
+  nickname: string | null;
+}
+
+export interface FlagItem {
+  id: number;
+  kind: FlagKind;
+  level: FlagLevel;
+  status: FlagStatus;
+  user: PlayerRef;
+  related: PlayerRef | null;
+  ban: { id: number; reason: string | null; active: boolean } | null;
+  evidence: { sharedIps: number; sharedSubnets: number; lastSeen: number };
+  firstDetected: number;
+  lastDetected: number;
+  current: boolean;
+  decidedBy: string | null;
+  decidedAt: number | null;
+}
+
+export interface FlagsResponse extends Paged<FlagItem> {
+  openCounts: { high: number; medium: number; info: number };
+  lastRun: number | null;
+}
+
 export interface TimedMessage {
   at: number;
   message: string;

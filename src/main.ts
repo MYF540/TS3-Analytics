@@ -4,6 +4,7 @@ import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
 import { deleteExpiredSessions } from './api/auth/service.js';
 import { runMaintenance, runRetention } from './jobs/retention.js';
+import { runFlagDetection } from './jobs/flag-detection.js';
 import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
@@ -44,6 +45,14 @@ async function main(): Promise<void> {
     logger,
     hmacSecret: config.security.hmacSecret,
     intervalS: config.watcher.banSyncIntervalS,
+    onChange: () => {
+      try {
+        const result = runFlagDetection(database, Math.floor(Date.now() / 1000));
+        logger.info({ result }, 'Flag detection after ban list change');
+      } catch (error) {
+        logger.error({ err: error }, 'Flag detection failed');
+      }
+    },
   });
   banSync.start();
   connection.start();
@@ -67,6 +76,11 @@ async function main(): Promise<void> {
         name: 'expired-sessions',
         intervalS: 3600,
         run: (now) => deleteExpiredSessions(database.db, now),
+      },
+      {
+        name: 'flag-detection',
+        intervalS: 15 * 60,
+        run: (now) => runFlagDetection(database, now),
       },
       {
         name: 'maintenance',

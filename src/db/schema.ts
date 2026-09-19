@@ -380,3 +380,39 @@ export const bans = sqliteTable(
     index('bans_subnet_hash_idx').on(t.subnetHash),
   ],
 );
+
+export const FLAG_STATUSES = ['open', 'linked', 'ignored'] as const;
+export type FlagStatus = (typeof FLAG_STATUSES)[number];
+
+/**
+ * Alt/evasion hints (T5.2). One row per pair (`pair_key`); a new detection only refreshes
+ * `evidence` and `last_detected`, so decisions (linked, ignored) stay. Evidence holds counts,
+ * never hashes.
+ */
+export const flags = sqliteTable(
+  'flags',
+  {
+    id: integer('id').primaryKey(),
+    pairKey: text('pair_key').notNull(),
+    kind: text('kind', { enum: ['ban_ip', 'ban_subnet', 'shared_ip'] }).notNull(),
+    level: text('level', { enum: ['high', 'medium', 'info'] }).notNull(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    relatedUserId: integer('related_user_id').references(() => users.id, { onDelete: 'cascade' }),
+    banId: integer('ban_id').references(() => bans.id, { onDelete: 'set null' }),
+    status: text('status', { enum: FLAG_STATUSES }).notNull().default('open'),
+    /** JSON: `{ sharedIps, sharedSubnets, lastSeen }`. */
+    evidence: text('evidence').notNull(),
+    firstDetected: integer('first_detected').notNull(),
+    lastDetected: integer('last_detected').notNull(),
+    decidedBy: text('decided_by'),
+    decidedAt: integer('decided_at'),
+  },
+  (t) => [
+    uniqueIndex('flags_pair_key_idx').on(t.pairKey),
+    index('flags_status_level_idx').on(t.status, t.level, t.lastDetected),
+    index('flags_user_idx').on(t.userId),
+    index('flags_related_user_idx').on(t.relatedUserId),
+  ],
+);

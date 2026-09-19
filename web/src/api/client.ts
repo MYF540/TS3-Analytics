@@ -7,6 +7,9 @@ import type {
   AuditFilters,
   AuthResponse,
   BotStatus,
+  FlagLevel,
+  FlagsResponse,
+  FlagStatus,
   Health,
   Heatmap,
   Leaderboard,
@@ -183,6 +186,18 @@ export const api = {
   noteRevisions: (noteId: number, signal?: AbortSignal) =>
     apiGet<{ revisions: NoteRevision[] }>(`/notes/${String(noteId)}/revisions`, {}, signal),
   status: (signal?: AbortSignal) => apiGet<BotStatus>('/status', {}, signal),
+  flags: (
+    query: {
+      status?: FlagStatus | 'all' | undefined;
+      level?: FlagLevel | 'all' | undefined;
+      userId?: number | undefined;
+      page?: number | undefined;
+      pageSize?: number | undefined;
+    },
+    signal?: AbortSignal,
+  ) => apiGet<FlagsResponse>('/flags', query, signal),
+  setFlagStatus: (id: number, status: FlagStatus) =>
+    apiPost<{ id: number; status: FlagStatus }>(`/flags/${String(id)}/status`, { status }),
   activitySettings: (signal?: AbortSignal) =>
     apiGet<ActivitySettingsResponse>('/settings/activity', {}, signal),
   saveActivitySettings: (settings: ActivitySettings) =>

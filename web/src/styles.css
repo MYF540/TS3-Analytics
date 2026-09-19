@@ -904,6 +904,75 @@ a.button {
   margin: 0.1rem 0;
 }
 
+.flags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flag {
+  border-left: 4px solid var(--border);
+}
+
+.flag--high {
+  border-left-color: var(--bad);
+}
+
+.flag--medium {
+  border-left-color: var(--warn);
+}
+
+.flag__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.flag__level {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.flag__level--high {
+  color: var(--bad);
+}
+
+.flag__level--medium {
+  color: var(--warn);
+}
+
+.flag__level--info {
+  color: var(--muted);
+}
+
+.flag__text {
+  margin: 0.35rem 0;
+}
+
+.flag .muted.small {
+  margin: 0.15rem 0;
+}
+
+.flag .button-row {
+  margin-top: 0.6rem;
+}
+
+.count {
+  display: inline-block;
+  margin-left: 0.35rem;
+  min-width: 1.4em;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
 /* With the admin entries the header gets crowded; the dot keeps the state as tooltip. */
 @media (max-width: 1360px) {
   .status__label {

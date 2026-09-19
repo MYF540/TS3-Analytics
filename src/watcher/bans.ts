@@ -82,6 +82,8 @@ export interface BanSyncDeps {
   logger: Logger;
   intervalS: number;
   now?: () => number;
+  /** Called after a sync that added or removed bans (e.g. to rerun the flag detection). */
+  onChange?: (result: BanSyncResult) => void;
 }
 
 /** Reads the ban list after every (re)connect and then every `intervalS` seconds (T5.1). */
@@ -123,6 +125,7 @@ export class BanSync {
       const now = this.deps.now?.() ?? Math.floor(Date.now() / 1000);
       const result = applyBanList(database, bans, hmacSecret, now);
       logger.info(result, 'Ban list synced');
+      if (result.added > 0 || result.removed > 0) this.deps.onChange?.(result);
       return result;
     } catch (error) {
       // Without a complete list nothing is marked as removed.

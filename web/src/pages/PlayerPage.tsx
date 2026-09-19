@@ -5,6 +5,7 @@ import type { UserDetail } from '../api/types';
 import { EChart } from '../charts/EChart';
 import { playtimeChartOption, STATE_KEYS } from '../charts/options';
 import { CHART_PALETTES } from '../charts/palette';
+import { PlayerFlagsNotice } from '../components/PlayerFlagsNotice';
 import { PlayerNotes } from '../components/PlayerNotes';
 import { PlayerTags } from '../components/PlayerTags';
 import { RangePicker } from '../components/RangePicker';
@@ -237,6 +238,7 @@ export function PlayerPage() {
         </p>
         <PlayerTags key={id} userId={id} tags={data.tags} />
       </header>
+      <PlayerFlagsNotice userId={id} />
       <Kpis detail={data} />
       <section className="card chart-card">
         <header className="chart-card__header">
