@@ -77,10 +77,10 @@ describe('GET /api/leaderboards/export.csv', () => {
       'attachment; filename="leaderboard-online-20260911-20260917.csv"',
     );
     expect(lines.slice(0, 4)).toEqual([
-      'Platz;Spieler-ID;UID;Nickname;Spielzeit (h);Spielzeit (s)',
-      `1;2;uid-b;"'=cmd|""/c calc""!A1";2;7200`,
-      '2;1;uid-a;Alice;1,5;5400',
-      '3;3;uid-c;"Carol; the ""Great""";0,17;600',
+      'Platz;Spieler-ID;UID;Nickname;Spielzeit (h);Spielzeit (s);Verknüpfte Accounts',
+      `1;2;uid-b;"'=cmd|""/c calc""!A1";2;7200;1`,
+      '2;1;uid-a;Alice;1,5;5400;1',
+      '3;3;uid-c;"Carol; the ""Great""";0,17;600;1',
     ]);
   });
 

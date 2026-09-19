@@ -23,6 +23,8 @@ export const leaderboardEntry = z.object({
   uid: z.string(),
   nickname: z.string().nullable(),
   value: z.number(),
+  /** Linked UIDs counted in this entry (T5.3). */
+  accounts: z.number().int(),
 });
 
 export function paged<T extends z.ZodType>(item: T) {

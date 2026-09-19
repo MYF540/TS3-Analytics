@@ -15,6 +15,7 @@ export const CSV_LABELS = {
   lastSeen: 'Zuletzt gesehen',
   country: 'Land',
   online: 'Online',
+  accounts: 'Verknüpfte Accounts',
   yes: 'ja',
   no: 'nein',
   metric: { online: 'Spielzeit', active: 'Aktivzeit', longestSession: 'Längste Session' },

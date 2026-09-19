@@ -129,6 +129,20 @@ export interface UserDetail {
   topChannels: { channelId: number | null; name: string | null; seconds: number }[];
   countries: { country: string; lastSeen: number; connections: number }[];
   tags: Tag[];
+  /** Linked UIDs of the same person (T5.3); totals, daily and channels include all of them. */
+  person: Person | null;
+}
+
+export interface Person {
+  id: number;
+  primaryUserId: number;
+  members: {
+    userId: number;
+    uid: string;
+    nickname: string | null;
+    addedAt: number;
+    addedBy: string;
+  }[];
 }
 
 export interface OnlineNow {
@@ -268,6 +282,7 @@ export interface LeaderboardEntry {
   uid: string;
   nickname: string | null;
   value: number;
+  accounts: number;
 }
 
 export interface Leaderboard extends Paged<LeaderboardEntry> {

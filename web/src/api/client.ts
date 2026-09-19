@@ -19,6 +19,7 @@ import type {
   NoteRevision,
   OnlineNow,
   OnlineSeries,
+  Person,
   Overview,
   Paged,
   Tag,
@@ -202,6 +203,12 @@ export const api = {
     apiGet<ActivitySettingsResponse>('/settings/activity', {}, signal),
   saveActivitySettings: (settings: ActivitySettings) =>
     apiSend<ActivitySettings>('PUT', '/settings/activity', settings),
+  linkUser: (userId: number, otherUserId: number) =>
+    apiPost<{ person: Person | null }>(`/users/${String(userId)}/links`, { userId: otherUserId }),
+  unlinkUser: (userId: number) =>
+    apiSend<{ person: Person | null }>('DELETE', `/users/${String(userId)}/links`),
+  setPrimaryUser: (userId: number) =>
+    apiPost<{ person: Person | null }>(`/users/${String(userId)}/primary`),
   tags: (signal?: AbortSignal) => apiGet<{ tags: TagWithUsage[] }>('/tags', {}, signal),
   createTag: (name: string, color: TagColor) => apiPost<Tag>('/tags', { name, color }),
   deleteTag: (tagId: number) => apiSend<undefined>('DELETE', `/tags/${String(tagId)}`),

@@ -3,10 +3,12 @@ import { berlinDayStart } from '../../domain/time.js';
 import { finalizeSegment, finalizeSession } from '../aggregates.js';
 import type { AppDatabase } from '../client.js';
 import {
+  linkUsers,
   openSegment,
   openSession,
   recordNickname,
   recordServerMinute,
+  setPrimaryUser,
   upsertChannels,
   upsertUser,
 } from '../repositories/index.js';
@@ -93,10 +95,48 @@ describe('leaderboards', () => {
   it('ranks all-time online time with the current nickname', () => {
     recordNickname(database.db, bob, 'Bobby', DAY1 + 5 * 86_400);
     expect(leaderboardAllTime(database.sqlite, 'online', page)).toEqual([
-      { rank: 1, userId: carol, uid: 'uid-carol', nickname: 'Carol', value: 5 * H },
-      { rank: 2, userId: bob, uid: 'uid-bob', nickname: 'Bobby', value: 4 * H },
-      { rank: 3, userId: alice, uid: 'uid-alice', nickname: 'Alice', value: 3 * H },
+      { rank: 1, userId: carol, uid: 'uid-carol', nickname: 'Carol', value: 5 * H, accounts: 1 },
+      { rank: 2, userId: bob, uid: 'uid-bob', nickname: 'Bobby', value: 4 * H, accounts: 1 },
+      { rank: 3, userId: alice, uid: 'uid-alice', nickname: 'Alice', value: 3 * H, accounts: 1 },
     ]);
+  });
+
+  it('counts linked UIDs as one person under the primary user (T5.3)', () => {
+    linkUsers(database.sqlite, alice, bob, 'test', DAY1);
+    expect(leaderboardAllTime(database.sqlite, 'online', page)).toEqual([
+      { rank: 1, userId: alice, uid: 'uid-alice', nickname: 'Alice', value: 7 * H, accounts: 2 },
+      { rank: 2, userId: carol, uid: 'uid-carol', nickname: 'Carol', value: 5 * H, accounts: 1 },
+    ]);
+    expect(countLeaderboardAllTime(database.sqlite, 'online')).toBe(2);
+    expect(
+      leaderboardForDays(database.sqlite, 'online', 20260914, 20260915, page).map((e) => [
+        e.userId,
+        e.value,
+        e.accounts,
+      ]),
+    ).toEqual([[alice, 7 * H, 2]]);
+    expect(countLeaderboardForDays(database.sqlite, 'online', 20260914, 20260915)).toBe(1);
+    // The longest session is the maximum, not the sum.
+    expect(
+      leaderboardAllTime(database.sqlite, 'longestSession', page).map((e) => [e.userId, e.value]),
+    ).toEqual([
+      [carol, 5 * H],
+      [alice, 3 * H],
+    ]);
+
+    // Either UID shows the figures of the whole person.
+    const detail = userDetail(database.sqlite, bob, 20260901);
+    expect(detail?.totals).toMatchObject({ online_s: 7 * H, sessions: 3 });
+    expect(detail?.daily.map((d) => [d.day, d.onlineS])).toEqual([
+      [20260914, 5 * H],
+      [20260915, 2 * H],
+    ]);
+
+    setPrimaryUser(database.sqlite, bob);
+    expect(leaderboardAllTime(database.sqlite, 'online', page)[0]).toMatchObject({
+      userId: bob,
+      value: 7 * H,
+    });
   });
 
   it('ranks active time and hides users without any', () => {

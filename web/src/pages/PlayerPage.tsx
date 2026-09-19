@@ -5,6 +5,7 @@ import type { UserDetail } from '../api/types';
 import { EChart } from '../charts/EChart';
 import { playtimeChartOption, STATE_KEYS } from '../charts/options';
 import { CHART_PALETTES } from '../charts/palette';
+import { PlayerAccounts } from '../components/PlayerAccounts';
 import { PlayerFlagsNotice } from '../components/PlayerFlagsNotice';
 import { PlayerNotes } from '../components/PlayerNotes';
 import { PlayerTags } from '../components/PlayerTags';
@@ -206,7 +207,9 @@ export function PlayerPage() {
   const id = Number(params.id);
   const [range, setRange] = useState<DaysRange>('30d');
   const days = DAYS[range];
-  const { data, error } = useApi((signal) => api.user(id, days, signal), [id, days]);
+  // Bumped after linking accounts, because totals and charts then change.
+  const [version, setVersion] = useState(0);
+  const { data, error } = useApi((signal) => api.user(id, days, signal), [id, days, version]);
   const toDay = berlinToday();
   const fromDay = addDays(toDay, -(days - 1));
 
@@ -265,6 +268,17 @@ export function PlayerPage() {
           <Countries countries={data.countries} />
         </section>
       </div>
+      <section className="card">
+        <h2>{t('accounts.title')}</h2>
+        <PlayerAccounts
+          key={id}
+          userId={id}
+          person={data.person}
+          onChanged={() => {
+            setVersion((v) => v + 1);
+          }}
+        />
+      </section>
       <section className="card">
         <h2>{t('notes.title')}</h2>
         <PlayerNotes key={id} userId={id} />

@@ -64,6 +64,27 @@ Neue Abfragen für die API, gleicher Datensatz und Rechner (alle anderen Werte u
 
 Eine Leaderboard-Seite „Jahr“ besteht aus Einträgen + Anzahl (zusammen ca. 16 ms).
 
+### Nachmessung T5.3 (2026-09-19, UID-Verknüpfung)
+
+Leaderboards rechnen jetzt pro Person (verknüpfte UIDs zusammen). Datensatz wie oben, zusätzlich 50 verknüpfte Paare unter den aktivsten Nutzern. Gleicher Rechner.
+
+| Abfrage                                         | Median (ms) | p95 (ms) | Max (ms) | Budget |
+| ----------------------------------------------- | ----------: | -------: | -------: | :----: |
+| Leaderboard gesamt (online)                     |         2.5 |      2.7 |      2.9 |   ✅   |
+| Leaderboard gesamt (aktiv)                      |         2.4 |      2.6 |      2.7 |   ✅   |
+| Leaderboard längste Session (gesamt)            |         2.6 |      2.8 |      2.8 |   ✅   |
+| Leaderboard Woche                               |         0.7 |      0.8 |      0.8 |   ✅   |
+| Leaderboard Monat                               |         2.5 |      2.6 |      2.8 |   ✅   |
+| Leaderboard Jahr                                |         6.8 |      7.5 |      7.6 |   ✅   |
+| Leaderboard Jahr, Seite 10                      |         7.1 |      7.4 |      7.4 |   ✅   |
+| Leaderboard frei (gesamter Zeitraum über Tage)  |        23.5 |     24.9 |     25.5 |   ✅   |
+| Leaderboard Jahr, Anzahl (Paginierung)          |         6.7 |      6.8 |      6.9 |   ✅   |
+| Nutzerdetail (aktivster Nutzer, 1 Jahr Verlauf) |         6.1 |      6.4 |      6.6 |   ✅   |
+
+Allzeit-Leaderboards lesen nicht mehr direkt den sortierten Index von `user_totals`, sondern gruppieren alle ca. 8.500 Nutzer (0,1 → 2,5 ms). Die übrigen Werte sind unverändert.
+
+Erster Ansatz (verworfen): Der Join auf die Personen-Tabellen direkt über alle Zeilen von `user_daily_stats` brauchte für „Leaderboard frei“ 272 ms. Jetzt wird zuerst pro Nutzer aggregiert und erst das Ergebnis (höchstens ein paar tausend Zeilen) auf Personen abgebildet.
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

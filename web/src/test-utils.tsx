@@ -117,6 +117,7 @@ export const sampleUser: UserDetail = {
   ],
   countries: [{ country: 'DE', lastSeen: 1_789_790_000, connections: 12 }],
   tags: [{ id: 1, name: 'Stammspieler', color: 'green' }],
+  person: null,
 };
 
 export const sampleNotes: Note[] = [

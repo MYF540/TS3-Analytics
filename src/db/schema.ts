@@ -416,3 +416,31 @@ export const flags = sqliteTable(
     index('flags_related_user_idx').on(t.relatedUserId),
   ],
 );
+
+/**
+ * Several UIDs of one person (T5.3). Statistics and leaderboards group by the person's primary
+ * user; `person_members` holds every member including the primary one.
+ */
+export const persons = sqliteTable('persons', {
+  id: integer('id').primaryKey(),
+  primaryUserId: integer('primary_user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'restrict' }),
+  createdAt: integer('created_at').notNull(),
+  createdBy: text('created_by').notNull(),
+});
+
+export const personMembers = sqliteTable(
+  'person_members',
+  {
+    userId: integer('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    personId: integer('person_id')
+      .notNull()
+      .references(() => persons.id, { onDelete: 'cascade' }),
+    addedAt: integer('added_at').notNull(),
+    addedBy: text('added_by').notNull(),
+  },
+  (t) => [index('person_members_person_idx').on(t.personId)],
+);

@@ -19,6 +19,7 @@ import { flagRoutes } from './routes/flags.js';
 import { healthRoutes } from './routes/health.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
 import { noteRoutes } from './routes/notes.js';
+import { personRoutes } from './routes/persons.js';
 import { settingsRoutes } from './routes/settings.js';
 import { statusRoutes } from './routes/status.js';
 import { onlineRoutes } from './routes/online.js';
@@ -112,6 +113,7 @@ export async function buildServer(
       await api.register(settingsRoutes(context));
       await api.register(statusRoutes(context));
       await api.register(flagRoutes(context));
+      await api.register(personRoutes(context));
     },
     { prefix: '/api' },
   );

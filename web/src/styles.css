@@ -973,6 +973,49 @@ a.button {
   text-align: center;
 }
 
+.accounts,
+.accounts__results {
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.accounts li,
+.accounts__results li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.accounts li:last-child,
+.accounts__results li:last-child {
+  border-bottom: 0;
+}
+
+.accounts__search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.accounts__search .field {
+  flex: 1 1 240px;
+}
+
+.leaderboard .badge,
+td .badge {
+  white-space: nowrap;
+}
+
 /* With the admin entries the header gets crowded; the dot keeps the state as tooltip. */
 @media (max-width: 1360px) {
   .status__label {

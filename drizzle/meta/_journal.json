@@ -50,6 +50,13 @@
       "when": 1789838157210,
       "tag": "0006_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1789851769690,
+      "tag": "0007_persons",
+      "breakpoints": true
     }
   ]
 }

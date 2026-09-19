@@ -118,8 +118,17 @@ export function leaderboardRoutes(context: ApiContext): FastifyPluginAsyncZod {
             CSV_LABELS.nickname,
             `${CSV_LABELS.metric[request.query.metric]} (h)`,
             `${CSV_LABELS.metric[request.query.metric]} (s)`,
+            CSV_LABELS.accounts,
           ],
-          result.items.map((e) => [e.rank, e.userId, e.uid, e.nickname, hours(e.value), e.value]),
+          result.items.map((e) => [
+            e.rank,
+            e.userId,
+            e.uid,
+            e.nickname,
+            hours(e.value),
+            e.value,
+            e.accounts,
+          ]),
         );
         const range =
           result.fromDay === null ? 'gesamt' : `${String(result.fromDay)}-${String(result.toDay)}`;

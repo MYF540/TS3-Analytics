@@ -211,6 +211,15 @@ export function LeaderboardsPage() {
                       <Link to={`/spieler/${String(entry.userId)}`}>
                         {entry.nickname ?? t('players.unknownNick')}
                       </Link>
+                      {entry.accounts > 1 && (
+                        <span
+                          className="badge"
+                          title={t('lb.accounts', { count: entry.accounts })}
+                          aria-label={t('lb.accounts', { count: entry.accounts })}
+                        >
+                          +{entry.accounts - 1}
+                        </span>
+                      )}
                     </td>
                     <td className="leaderboard__value">
                       <span>{formatDuration(entry.value)}</span>

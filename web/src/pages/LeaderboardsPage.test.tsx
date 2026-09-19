@@ -14,9 +14,9 @@ function board(url: URL): { body: Leaderboard } {
       fromDay: period === 'all' ? null : 20260913,
       toDay: period === 'all' ? null : 20260919,
       items: [
-        { rank: 1, userId: 1, uid: 'a', nickname: 'Alice', value: 36_000 },
-        { rank: 2, userId: 2, uid: 'b', nickname: 'Bob', value: 18_000 },
-        { rank: 4, userId: 4, uid: 'd', nickname: null, value: 600 },
+        { rank: 1, userId: 1, uid: 'a', nickname: 'Alice', value: 36_000, accounts: 2 },
+        { rank: 2, userId: 2, uid: 'b', nickname: 'Bob', value: 18_000, accounts: 1 },
+        { rank: 4, userId: 4, uid: 'd', nickname: null, value: 600, accounts: 1 },
       ],
       total: 60,
       page: Number(url.searchParams.get('page') ?? 1),

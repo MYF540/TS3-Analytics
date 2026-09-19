@@ -1,7 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { listUsers, USER_SORTS, userDetail } from '../../db/queries/stats.js';
-import { getUserTags } from '../../db/repositories/index.js';
+import { getPersonOfUser, getUserTags } from '../../db/repositories/index.js';
 import { tag } from './notes.js';
 import { daysBefore } from '../../domain/periods.js';
 import { berlinDay } from '../../domain/time.js';
@@ -88,6 +88,21 @@ export const userDetailResponse = z.object({
     z.object({ country: z.string(), lastSeen: z.number().int(), connections: z.number().int() }),
   ),
   tags: z.array(tag),
+  person: z
+    .object({
+      id: z.number().int(),
+      primaryUserId: z.number().int(),
+      members: z.array(
+        z.object({
+          userId: z.number().int(),
+          uid: z.string(),
+          nickname: z.string().nullable(),
+          addedAt: z.number().int(),
+          addedBy: z.string(),
+        }),
+      ),
+    })
+    .nullable(),
 });
 
 export function userRoutes(context: ApiContext): FastifyPluginAsyncZod {
@@ -204,6 +219,7 @@ export function userRoutes(context: ApiContext): FastifyPluginAsyncZod {
           topChannels: detail.topChannels as z.infer<typeof userDetailResponse>['topChannels'],
           countries: detail.countries as z.infer<typeof userDetailResponse>['countries'],
           tags: getUserTags(context.database.db, request.params.id),
+          person: getPersonOfUser(sqlite, request.params.id) ?? null,
         };
       },
     );

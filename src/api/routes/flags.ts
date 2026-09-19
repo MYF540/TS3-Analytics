@@ -1,5 +1,6 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import { linkUsers } from '../../db/repositories/index.js';
 import { FLAG_STATUSES } from '../../db/schema.js';
 import { flagsLastRun } from '../../jobs/flag-detection.js';
 import type { ApiContext } from '../context.js';
@@ -173,8 +174,12 @@ export function flagRoutes(context: ApiContext): FastifyPluginAsyncZod {
       (request) => {
         const { id } = request.params;
         const { status } = request.body;
-        const current = sqlite.prepare('SELECT status FROM flags WHERE id = ?').pluck().get(id) as
-          string | undefined;
+        const flag = sqlite
+          .prepare(
+            'SELECT status, user_id AS userId, related_user_id AS relatedUserId FROM flags WHERE id = ?',
+          )
+          .get(id) as { status: string; userId: number; relatedUserId: number | null } | undefined;
+        const current = flag?.status;
         request.audit({
           action: 'flag.status',
           targetType: 'flag',
@@ -183,14 +188,20 @@ export function flagRoutes(context: ApiContext): FastifyPluginAsyncZod {
         });
         if (current === undefined) throw new ApiError(404, 'FLAG_NOT_FOUND', 'Flag not found');
         const reopened = status === 'open';
-        sqlite
-          .prepare('UPDATE flags SET status = ?, decided_by = ?, decided_at = ? WHERE id = ?')
-          .run(
-            status,
-            reopened ? null : (request.user?.username ?? null),
-            reopened ? null : context.now(),
-            id,
-          );
+        const actor = request.user?.username ?? 'unknown';
+        sqlite.transaction(() => {
+          sqlite
+            .prepare('UPDATE flags SET status = ?, decided_by = ?, decided_at = ? WHERE id = ?')
+            .run(status, reopened ? null : actor, reopened ? null : context.now(), id);
+          if (status === 'linked' && flag?.relatedUserId != null) {
+            // The account seen first is treated as the original (primary) one.
+            const [first, second] = sqlite
+              .prepare('SELECT id FROM users WHERE id IN (?, ?) ORDER BY first_seen, id')
+              .pluck()
+              .all(flag.userId, flag.relatedUserId) as [number, number];
+            linkUsers(sqlite, first, second, actor, context.now());
+          }
+        })();
         return { id, status };
       },
     );

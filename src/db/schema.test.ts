@@ -56,7 +56,7 @@ describe('migrations', () => {
       .all() as { name: string; strict: number; wr: number }[];
     const byName = new Map(list.map((t) => [t.name, t]));
 
-    expect(tables.length).toBe(20);
+    expect(tables.length).toBe(22);
     for (const table of tables) {
       const { name } = getTableConfig(table);
       expect(byName.get(name), name).toMatchObject({

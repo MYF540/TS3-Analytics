@@ -14,6 +14,8 @@ export interface LeaderboardEntry {
   uid: string;
   nickname: string | null;
   value: number;
+  /** Number of linked UIDs counted in this entry (1 = not linked, T5.3). */
+  accounts: number;
 }
 
 export interface Page {
@@ -32,6 +34,48 @@ const DAILY_EXPRESSION: Record<LeaderboardMetric, string> = {
   active: 'sum(active_s)',
   longestSession: 'max(longest_session_s)',
 };
+
+/** How the values of several linked UIDs combine: times add up, the longest session is the max. */
+const COMBINE: Record<LeaderboardMetric, string> = {
+  online: 'sum',
+  active: 'sum',
+  longestSession: 'max',
+};
+
+/**
+ * Regroups a per-user result (`user_id`, `value`) by person (T5.3): linked UIDs count as their
+ * person's primary user, unlinked users as themselves. Aggregating per user first keeps the join
+ * to a few thousand rows instead of every daily row.
+ */
+function bySubject(metric: LeaderboardMetric, perUser: string): string {
+  return `SELECT COALESCE(p.primary_user_id, x.user_id) AS subject,
+                 ${COMBINE[metric]}(x.value) AS value
+          FROM (${perUser}) x
+          LEFT JOIN person_members pm ON pm.user_id = x.user_id
+          LEFT JOIN persons p ON p.id = pm.person_id
+          GROUP BY subject
+          HAVING value > 0`;
+}
+
+const totalsPerUser = (metric: LeaderboardMetric) =>
+  `SELECT user_id, ${TOTALS_COLUMN[metric]} AS value FROM user_totals
+   WHERE ${TOTALS_COLUMN[metric]} > 0`;
+
+const daysPerUser = (metric: LeaderboardMetric) =>
+  `SELECT user_id, ${DAILY_EXPRESSION[metric]} AS value FROM user_daily_stats
+   WHERE day BETWEEN ? AND ? GROUP BY user_id`;
+
+const ACCOUNTS_SUBQUERY = `max(1, (SELECT count(*) FROM person_members m
+  JOIN person_members me ON me.person_id = m.person_id WHERE me.user_id = u.id))`;
+
+/** Entries for one page of subjects, with nickname and number of linked accounts. */
+function rankedEntries(ranked: string): string {
+  return `WITH ranked AS (${ranked} ORDER BY value DESC, subject LIMIT ? OFFSET ?)
+     SELECT u.id AS userId, u.uid, ${NICKNAME_SUBQUERY} AS nickname, r.value,
+            ${ACCOUNTS_SUBQUERY} AS accounts
+     FROM ranked r JOIN users u ON u.id = r.subject
+     ORDER BY r.value DESC, r.subject`;
+}
 
 const NICKNAME_SUBQUERY = `(SELECT n.nick FROM nicknames n WHERE n.user_id = u.id
   ORDER BY n.last_seen DESC, n.id DESC LIMIT 1)`;
@@ -68,24 +112,20 @@ function toEntries(rows: Row[], offset: number): LeaderboardEntry[] {
     uid: row.uid as string,
     nickname: (row.nickname as string | null) ?? null,
     value: row.value as number,
+    accounts: (row.accounts as number | undefined) ?? 1,
   }));
 }
 
-/** All-time leaderboard from `user_totals`. */
+/** All-time leaderboard from `user_totals`, one entry per person (T5.3). */
 export function leaderboardAllTime(
   sqlite: Database.Database,
   metric: LeaderboardMetric,
   page: Page,
 ): LeaderboardEntry[] {
-  const column = TOTALS_COLUMN[metric];
-  const rows = prepared(
-    sqlite,
-    `SELECT u.id AS userId, u.uid, ${NICKNAME_SUBQUERY} AS nickname, t.${column} AS value
-     FROM user_totals t JOIN users u ON u.id = t.user_id
-     WHERE t.${column} > 0
-     ORDER BY t.${column} DESC, t.user_id
-     LIMIT ? OFFSET ?`,
-  ).all(page.limit, page.offset) as Row[];
+  const rows = prepared(sqlite, rankedEntries(bySubject(metric, totalsPerUser(metric)))).all(
+    page.limit,
+    page.offset,
+  ) as Row[];
   return toEntries(rows, page.offset);
 }
 
@@ -97,50 +137,46 @@ export function leaderboardForDays(
   toDay: number,
   page: Page,
 ): LeaderboardEntry[] {
-  const rows = prepared(
-    sqlite,
-    `WITH ranked AS (
-       SELECT user_id, ${DAILY_EXPRESSION[metric]} AS value
-       FROM user_daily_stats
-       WHERE day BETWEEN ? AND ?
-       GROUP BY user_id
-       HAVING value > 0
-       ORDER BY value DESC, user_id
-       LIMIT ? OFFSET ?
-     )
-     SELECT u.id AS userId, u.uid, ${NICKNAME_SUBQUERY} AS nickname, r.value
-     FROM ranked r JOIN users u ON u.id = r.user_id
-     ORDER BY r.value DESC, r.user_id`,
-  ).all(fromDay, toDay, page.limit, page.offset) as Row[];
+  const rows = prepared(sqlite, rankedEntries(bySubject(metric, daysPerUser(metric)))).all(
+    fromDay,
+    toDay,
+    page.limit,
+    page.offset,
+  ) as Row[];
   return toEntries(rows, page.offset);
 }
 
-/** Number of ranked users for `leaderboardAllTime` (for pagination). */
+/** Number of ranked entries for `leaderboardAllTime` (for pagination). */
 export function countLeaderboardAllTime(
   sqlite: Database.Database,
   metric: LeaderboardMetric,
 ): number {
-  const column = TOTALS_COLUMN[metric];
-  return prepared(sqlite, `SELECT count(*) FROM user_totals WHERE ${column} > 0`)
+  return prepared(sqlite, `SELECT count(*) FROM (${bySubject(metric, totalsPerUser(metric))})`)
     .pluck()
     .get() as number;
 }
 
-/** Number of ranked users for `leaderboardForDays` (for pagination). */
+/** Number of ranked entries for `leaderboardForDays` (for pagination). */
 export function countLeaderboardForDays(
   sqlite: Database.Database,
   metric: LeaderboardMetric,
   fromDay: number,
   toDay: number,
 ): number {
-  return prepared(
-    sqlite,
-    `SELECT count(*) FROM (
-       SELECT user_id FROM user_daily_stats WHERE day BETWEEN ? AND ?
-       GROUP BY user_id HAVING ${DAILY_EXPRESSION[metric]} > 0)`,
-  )
+  return prepared(sqlite, `SELECT count(*) FROM (${bySubject(metric, daysPerUser(metric))})`)
     .pluck()
     .get(fromDay, toDay) as number;
+}
+
+function personIds(sqlite: Database.Database, userId: number): number[] {
+  const ids = prepared(
+    sqlite,
+    `SELECT m2.user_id FROM person_members m1
+     JOIN person_members m2 ON m2.person_id = m1.person_id WHERE m1.user_id = ?`,
+  )
+    .pluck()
+    .all(userId) as number[];
+  return ids.length > 0 ? ids : [userId];
 }
 
 export interface UserDetail {
@@ -164,10 +200,17 @@ export function userDetail(
 ): UserDetail | undefined {
   const user = prepared(sqlite, `SELECT * FROM users WHERE id = ?`).get(userId) as Row | undefined;
   if (!user) return undefined;
+  // Figures of the whole person (T5.3); nicknames, sessions and countries stay per UID.
+  const ids = JSON.stringify(personIds(sqlite, userId));
   return {
     user,
-    totals: prepared(sqlite, `SELECT * FROM user_totals WHERE user_id = ?`).get(userId) as
-      Row | undefined,
+    totals: prepared(
+      sqlite,
+      `SELECT sum(online_s) AS online_s, sum(active_s) AS active_s, sum(sessions) AS sessions,
+              max(longest_session_s) AS longest_session_s
+       FROM user_totals WHERE user_id IN (SELECT value FROM json_each(?))
+       HAVING count(*) > 0`,
+    ).get(ids) as Row | undefined,
     nicknames: prepared(
       sqlite,
       `SELECT nick, first_seen AS firstSeen, last_seen AS lastSeen FROM nicknames
@@ -180,17 +223,18 @@ export function userDetail(
     ).all(userId) as Row[],
     daily: prepared(
       sqlite,
-      `SELECT day, online_s AS onlineS, active_s AS activeS, idle_s AS idleS, afk_s AS afkS,
-              unknown_s AS unknownS, sessions
-       FROM user_daily_stats WHERE user_id = ? AND day >= ? ORDER BY day`,
-    ).all(userId, sinceDay) as Row[],
+      `SELECT day, sum(online_s) AS onlineS, sum(active_s) AS activeS, sum(idle_s) AS idleS,
+              sum(afk_s) AS afkS, sum(unknown_s) AS unknownS, sum(sessions) AS sessions
+       FROM user_daily_stats WHERE user_id IN (SELECT value FROM json_each(?)) AND day >= ?
+       GROUP BY day ORDER BY day`,
+    ).all(ids, sinceDay) as Row[],
     topChannels: prepared(
       sqlite,
       `SELECT s.channel_id AS channelId, c.name, sum(s.end_at - s.start_at) AS seconds
        FROM activity_segments s LEFT JOIN channels c ON c.id = s.channel_id
-       WHERE s.user_id = ? AND s.is_open = 0
+       WHERE s.user_id IN (SELECT value FROM json_each(?)) AND s.is_open = 0
        GROUP BY s.channel_id ORDER BY seconds DESC LIMIT 10`,
-    ).all(userId) as Row[],
+    ).all(ids) as Row[],
     countries: prepared(
       sqlite,
       `SELECT country, max(last_seen) AS lastSeen, sum(seen_count) AS connections
@@ -200,8 +244,9 @@ export function userDetail(
     openSession: prepared(
       sqlite,
       `SELECT id, join_at AS joinAt FROM sessions
-       WHERE user_id = ? AND leave_at IS NULL ORDER BY join_at LIMIT 1`,
-    ).get(userId) as Row | undefined,
+       WHERE user_id IN (SELECT value FROM json_each(?)) AND leave_at IS NULL
+       ORDER BY join_at LIMIT 1`,
+    ).get(ids) as Row | undefined,
   };
 }
 

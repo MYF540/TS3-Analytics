@@ -7,3 +7,4 @@ export * from './settings.js';
 export * from './types.js';
 export * from './users.js';
 export * from './notes.js';
+export * from './persons.js';
