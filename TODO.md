@@ -113,9 +113,10 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
   - Fertig wenn: Tests zeigen minutengenaue statt poll-genaue Übergänge; Segmente decken die Session weiterhin lückenlos ab
   - Notiz: Reine Funktion `transitionTime()` in `src/domain/activity.ts`; nur bei Poll-Beobachtungen ohne Channelwechsel angewendet, begrenzt auf `[letzte Beobachtung, Poll]`. Übergänge von/zu AFK bleiben am Poll-Zeitpunkt (kein Zeitstempel verfügbar). Ergebnis sekundengenau (Test).
 
-- [ ] **T2.9 IPs beim Start gebündelt holen** · `Watcher` `Security` · braucht: T2.5
+- [x] **T2.9 IPs beim Start gebündelt holen** · `Watcher` `Security` · braucht: T2.5
   - Beim (Re-)Connect-Sync die IPs aller Clients mit einem `clientlist -ip` holen statt N × `clientinfo`; Einzel-Joins weiter per `clientinfo`
   - Klar-IPs weiterhin nur lokal (Regel 1); Test zählt die Query-Befehle beim Start
+  - Notiz: `Ts3Transport.clientIps()` (`clientlist -ip`). `IpProcessor.beginBatch/endBatch` umklammert `tracker.sync()` im Watcher: ≥ 2 dort entdeckte Clients → ein Befehl, 1 Client → `clientinfo`, Events außerhalb → `clientinfo`. Die IP-Map lebt nur innerhalb von `processMany` und wird danach geleert.
 
 - [ ] **T2.10 Bot-Nickname-Kollision** · `Watcher` · braucht: T2.1
   - Ist der Nickname belegt (Fehler 513), mit Suffix erneut versuchen (z. B. `TS3 Analytics (2)`), statt in den Backoff zu laufen

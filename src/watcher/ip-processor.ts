@@ -23,12 +23,35 @@ export interface IpProcessorDeps {
  */
 export class IpProcessor implements TrackerListener {
   private readonly pending = new Set<Promise<void>>();
+  /** Joins collected during a client-list sync; their IPs are fetched with one command (T2.9). */
+  private batch: { client: OnlineClient; at: number }[] | undefined;
 
   constructor(private readonly deps: IpProcessorDeps) {}
 
   onJoined(client: OnlineClient, _source: unknown, at: number): void {
-    const task = this.process(client, at).finally(() => this.pending.delete(task));
-    this.pending.add(task);
+    if (this.batch) {
+      this.batch.push({ client, at });
+      return;
+    }
+    this.track(this.processOne(client, at));
+  }
+
+  /** Starts collecting joins (e.g. the clients discovered by the initial sync). */
+  beginBatch(): void {
+    this.batch ??= [];
+  }
+
+  /** Processes collected joins: one `clientlist -ip` for several, `clientinfo` for a single one. */
+  endBatch(): void {
+    const batch = this.batch ?? [];
+    this.batch = undefined;
+    if (batch.length === 1 && batch[0]) this.track(this.processOne(batch[0].client, batch[0].at));
+    else if (batch.length > 1) this.track(this.processMany(batch));
+  }
+
+  private track(task: Promise<void>): void {
+    const tracked = task.finally(() => this.pending.delete(tracked));
+    this.pending.add(tracked);
   }
 
   /** Resolves when all started lookups are done (tests, shutdown). */
@@ -36,32 +59,47 @@ export class IpProcessor implements TrackerListener {
     await Promise.all([...this.pending]);
   }
 
-  private async process(client: OnlineClient, at: number): Promise<void> {
-    const { database, connection, countries, hmacSecret, logger } = this.deps;
+  private async processOne(client: OnlineClient, at: number): Promise<void> {
     try {
-      const raw = await connection.command((t) => t.clientIp(client.clid));
-      const ip = raw === undefined ? undefined : normalizeIp(raw);
-      if (!ip) {
-        logger.debug({ clid: client.clid }, 'No usable IP address for client');
-        return;
-      }
-      const country = countries.country(ip.address) ?? null;
-      const { ipHash, subnetHash } = hashIp(ip, hmacSecret);
-      database.sqlite.transaction(() => {
-        upsertIpSeen(database.db, {
-          userId: client.userId,
-          ipHash,
-          subnetHash,
-          country,
-          seenAt: at,
-        });
-        if (country) {
-          database.db.update(users).set({ country }).where(eq(users.id, client.userId)).run();
-        }
-      })();
+      const raw = await this.deps.connection.command((t) => t.clientIp(client.clid));
+      this.store(client, raw, at);
     } catch (error) {
       // The error never contains the address; messages are additionally scrubbed by the logger.
-      logger.warn({ err: error, clid: client.clid }, 'IP processing failed');
+      this.deps.logger.warn({ err: error, clid: client.clid }, 'IP processing failed');
     }
+  }
+
+  private async processMany(batch: readonly { client: OnlineClient; at: number }[]): Promise<void> {
+    try {
+      const ips = await this.deps.connection.command((t) => t.clientIps());
+      for (const { client, at } of batch) this.store(client, ips.get(client.clid), at);
+      ips.clear();
+    } catch (error) {
+      this.deps.logger.warn({ err: error, clients: batch.length }, 'IP processing failed');
+    }
+  }
+
+  /** Hashes and stores one address. `raw` must not outlive this call. */
+  private store(client: OnlineClient, raw: string | undefined, at: number): void {
+    const { database, countries, hmacSecret, logger } = this.deps;
+    const ip = raw === undefined ? undefined : normalizeIp(raw);
+    if (!ip) {
+      logger.debug({ clid: client.clid }, 'No usable IP address for client');
+      return;
+    }
+    const country = countries.country(ip.address) ?? null;
+    const { ipHash, subnetHash } = hashIp(ip, hmacSecret);
+    database.sqlite.transaction(() => {
+      upsertIpSeen(database.db, {
+        userId: client.userId,
+        ipHash,
+        subnetHash,
+        country,
+        seenAt: at,
+      });
+      if (country) {
+        database.db.update(users).set({ country }).where(eq(users.id, client.userId)).run();
+      }
+    })();
   }
 }

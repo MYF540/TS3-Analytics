@@ -144,6 +144,16 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
     return Promise.resolve([...this.server.channels.values()].map((c) => ({ ...c })));
   }
 
+  clientIps(): Promise<Map<number, string>> {
+    this.assertOpen('clientlist -ip');
+    const result = new Map<number, string>();
+    for (const clid of this.server.clients.keys()) {
+      const ip = this.server.ips.get(clid);
+      if (ip !== undefined) result.set(clid, ip);
+    }
+    return Promise.resolve(result);
+  }
+
   clientIp(clid: number): Promise<string | undefined> {
     this.assertOpen('clientinfo');
     return Promise.resolve(this.server.clients.has(clid) ? this.server.ips.get(clid) : undefined);

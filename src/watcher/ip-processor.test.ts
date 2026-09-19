@@ -105,6 +105,37 @@ async function join(uid: string, ip: string): Promise<number> {
 }
 
 describe('IP processing', () => {
+  it('fetches the IPs of clients found by a sync with a single command (T2.9)', async () => {
+    for (let i = 0; i < 10; i++) server.ips.set(100 + i, `192.0.2.${String(i + 1)}`);
+    for (let i = 0; i < 10; i++) {
+      server.clients.set(100 + i, {
+        clid: 100 + i,
+        dbid: 500 + i,
+        uid: `uid-${String(i)}`,
+        nickname: `n${String(i)}`,
+        type: 0,
+        channelId: 1,
+        idleMs: 0,
+        away: false,
+        inputMuted: false,
+        outputMuted: false,
+        serverGroups: [],
+        platform: '',
+        version: '',
+        country: undefined,
+      });
+    }
+    await watcher.sync();
+    await watcher.ip?.idle();
+    const commands = server.commandLog.map((c) => c.command);
+    expect(commands.filter((c) => c === 'clientlist -ip')).toHaveLength(1);
+    expect(commands.filter((c) => c === 'clientinfo')).toHaveLength(0);
+    expect(ipRows()).toHaveLength(10);
+
+    await join('late', IPV4_A); // a regular join still uses clientinfo
+    expect(server.commandLog.filter((c) => c.command === 'clientinfo')).toHaveLength(1);
+  });
+
   it('stores HMACs of IPv4 address and /24 plus the country', async () => {
     await join('alice', IPV4_A);
     const [row] = ipRows();

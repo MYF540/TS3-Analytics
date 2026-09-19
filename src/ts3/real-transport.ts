@@ -190,6 +190,18 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
     await this.connected().whoami();
   }
 
+  async clientIps(): Promise<Map<number, string>> {
+    const rows = await this.connected().execute<{ clid: string; connectionClientIp?: string }[]>(
+      'clientlist',
+      ['-ip'],
+    );
+    const result = new Map<number, string>();
+    for (const row of Array.isArray(rows) ? rows : [rows]) {
+      if (row.connectionClientIp) result.set(Number(row.clid), row.connectionClientIp);
+    }
+    return result;
+  }
+
   async clientIp(clid: number): Promise<string | undefined> {
     const [info] = await this.connected().clientInfo(String(clid));
     return info?.connectionClientIp || undefined;

@@ -20,6 +20,8 @@ export interface Ts3Transport extends EventEmitter<Ts3TransportEvents> {
    * log it (AGENTS.md rule 1).
    */
   clientIp(clid: number): Promise<string | undefined>;
+  /** IP addresses of all online clients in one command (`clientlist -ip`). Same rules apply. */
+  clientIps(): Promise<Map<number, string>>;
 }
 
 /** Creates a fresh transport for every connection attempt. */

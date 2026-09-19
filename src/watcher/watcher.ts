@@ -164,7 +164,12 @@ export class Watcher {
           'Sessions after restart resolved',
         );
       }
-      this.tracker.sync(clients, at, this.lostAt ?? at, touched);
+      this.ip?.beginBatch();
+      try {
+        this.tracker.sync(clients, at, this.lostAt ?? at, touched);
+      } finally {
+        this.ip?.endBatch();
+      }
       this.lostAt = undefined;
       this.activity.observe(clients, (clid) => this.tracker.get(clid), at, touched);
       recordServerMinute(database.db, at, this.tracker.onlineClients.length);
