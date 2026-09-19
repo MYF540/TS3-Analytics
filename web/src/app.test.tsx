@@ -1,41 +1,15 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiRequestError, api, buildUrl } from './api/client';
 import { errorMessage, formatDay, formatDuration, t } from './i18n';
-import { routes } from './routes';
-
-function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(<RouterProvider router={router} />);
-  return router;
-}
-
-function mockFetch(status: number, body: unknown) {
-  const fetchMock = vi.fn(() =>
-    Promise.resolve(
-      new Response(JSON.stringify(body), {
-        status,
-        headers: { 'content-type': 'application/json' },
-      }),
-    ),
-  );
-  vi.stubGlobal('fetch', fetchMock);
-  return fetchMock;
-}
+import { mockApi, renderAt } from './test-utils';
 
 beforeEach(() => {
-  mockFetch(200, {
-    status: 'ok',
-    uptimeS: 1,
-    db: { ok: true, latencyMs: 0.1 },
-    ts3: { state: 'connected', connected: true },
-  });
+  mockApi();
 });
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   delete document.documentElement.dataset.theme;
 });
 
@@ -94,7 +68,12 @@ describe('api client', () => {
   });
 
   it('translates API error codes', async () => {
-    mockFetch(404, { error: { code: 'USER_NOT_FOUND', message: 'User not found' } });
+    mockApi({
+      '/api/users/9': () => ({
+        status: 404,
+        body: { error: { code: 'USER_NOT_FOUND', message: 'User not found' } },
+      }),
+    });
     await expect(api.user(9)).rejects.toMatchObject({
       status: 404,
       code: 'USER_NOT_FOUND',

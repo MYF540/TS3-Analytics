@@ -46,6 +46,54 @@ export const de = {
   'error.NETWORK': 'Der Server ist nicht erreichbar.',
   'error.UNKNOWN': 'Unbekannter Fehler.',
 
+  'common.loading': 'Wird geladen …',
+  'common.range': 'Zeitraum',
+  'common.showTable': 'Als Tabelle anzeigen',
+
+  'range.24h': '24 Stunden',
+  'range.7d': '7 Tage',
+  'range.30d': '30 Tage',
+  'range.1y': '1 Jahr',
+  'range.all': 'Gesamt',
+
+  'kpi.onlineNow': 'Online jetzt',
+  'kpi.peakToday': 'Höchststand heute',
+  'kpi.peakInRange': 'Höchststand im Zeitraum',
+  'kpi.peakAllTime': 'Höchststand aller Zeiten',
+  'kpi.usersTotal': 'Spieler gesamt',
+  'kpi.usersNew': 'Neue Spieler im Zeitraum',
+
+  'chart.online.title': 'Online-Verlauf',
+  'chart.online.avg': 'Ø online',
+  'chart.online.max': 'Maximal gleichzeitig',
+  'chart.online.label':
+    'Liniendiagramm: durchschnittlich und maximal gleichzeitig online im gewählten Zeitraum',
+  'chart.empty': 'Für diesen Zeitraum liegen noch keine Daten vor.',
+  'chart.resolution': 'Auflösung: {value}',
+  'chart.heatmap.title': 'Wann ist am meisten los?',
+  'chart.heatmap.subtitle': 'Durchschnittlich online nach Wochentag und Uhrzeit (Berliner Zeit)',
+  'chart.heatmap.label': 'Heatmap: durchschnittlich online nach Wochentag und Stunde',
+  'chart.heatmap.legend': 'Ø online',
+  'chart.heatmap.high': 'viel',
+  'chart.heatmap.low': 'wenig',
+
+  'resolution.minutes': '{value} Minuten',
+  'resolution.hours': '{value} Std.',
+  'resolution.day': '1 Tag',
+  'resolution.week': '1 Woche',
+
+  'table.time': 'Zeitpunkt',
+  'table.weekday': 'Wochentag',
+
+  'weekday.mon': 'Mo',
+  'weekday.tue': 'Di',
+  'weekday.wed': 'Mi',
+  'weekday.thu': 'Do',
+  'weekday.fri': 'Fr',
+  'weekday.sat': 'Sa',
+  'weekday.sun': 'So',
+
+  'unit.clock': 'Uhr',
   'unit.hours': '{value} h',
   'unit.minutes': '{value} min',
 } as const;

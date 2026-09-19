@@ -297,49 +297,50 @@ export function onlineSeries(
     }
     bucket = HOUR_S;
   }
+  // Bucket starts follow Berlin calendar days/weeks for day and week buckets.
+  const startOf =
+    bucket === 86_400
+      ? (ts: number) => berlinDayStart(berlinDay(ts))
+      : bucket === 7 * 86_400
+        ? (ts: number) => berlinDayStart(weekOf(berlinDay(ts)))
+        : (ts: number) => ts - (ts % bucket);
+  const nextStart = (t: number): number => {
+    if (bucket === 86_400) return berlinDayStart(nextDay(berlinDay(t)));
+    if (bucket === 7 * 86_400) {
+      let day = berlinDay(t);
+      for (let i = 0; i < 7; i++) day = nextDay(day);
+      return berlinDayStart(day);
+    }
+    return t + bucket;
+  };
+
+  const first = startOf(from);
   const rows = prepared(
     sqlite,
     `SELECT hour, online_s, max_online FROM server_hourly WHERE hour >= ? AND hour < ? ORDER BY hour`,
   )
     .raw()
-    .all(from, to) as [number, number, number][];
-
-  const keyOf =
-    bucket === 86_400
-      ? (hour: number) => berlinDayStart(berlinDay(hour))
-      : bucket === 7 * 86_400
-        ? (hour: number) => berlinDayStart(weekOf(berlinDay(hour)))
-        : (hour: number) => hour - (hour % bucket);
-  const bucketLength = (start: number) =>
-    bucket === 86_400
-      ? berlinDayStart(nextDay(berlinDay(start))) - start
-      : bucket === 7 * 86_400
-        ? 7 * 86_400
-        : bucket;
-
-  const points: SeriesPoint[] = [];
-  let current: { t: number; onlineS: number; max: number } | undefined;
+    .all(first, to) as [number, number, number][];
+  const sums = new Map<number, { onlineS: number; max: number }>();
   for (const [hour, onlineS, maxOnline] of rows) {
-    const t = keyOf(hour);
-    if (current?.t !== t) {
-      if (current) {
-        points.push({
-          t: current.t,
-          avgOnline: current.onlineS / bucketLength(current.t),
-          maxOnline: current.max,
-        });
-      }
-      current = { t, onlineS: 0, max: 0 };
-    }
-    current.onlineS += onlineS;
-    current.max = Math.max(current.max, maxOnline);
+    const t = startOf(hour);
+    const sum = sums.get(t) ?? { onlineS: 0, max: 0 };
+    sum.onlineS += onlineS;
+    sum.max = Math.max(sum.max, maxOnline);
+    sums.set(t, sum);
   }
-  if (current) {
+
+  // Hours without any session have no row: they are real zeros, not missing data.
+  const points: SeriesPoint[] = [];
+  for (let t = first; t < to;) {
+    const next = nextStart(t);
+    const sum = sums.get(t);
     points.push({
-      t: current.t,
-      avgOnline: current.onlineS / bucketLength(current.t),
-      maxOnline: current.max,
+      t,
+      avgOnline: sum ? sum.onlineS / (next - t) : 0,
+      maxOnline: sum?.max ?? 0,
     });
+    t = next;
   }
   return { resolution: bucket, points };
 }

@@ -245,6 +245,9 @@ importers:
 
   web:
     dependencies:
+      echarts:
+        specifier: ^6.1.0
+        version: 6.1.0
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -1563,6 +1566,9 @@ packages:
       sqlite3:
         optional: true
 
+  echarts@6.1.0:
+    resolution: {integrity: sha512-q0yaFPggC9FUdsWH4blavRWFmxdrIodbkoKNAjJudAI6CA9gNPxHtV2RcZNEepZVlk4yvBYkOkbk6HIVpIyHZA==}
+
   electron-to-chromium@1.5.431:
     resolution: {integrity: sha512-AAVihz2YwJeOdAynX8MUtqpvjY0gaiARp/7+r4kwqgzqXMrfG1qDN7vwT80uxAoOQRPcZH8t73EI+CA/1OJN8A==}
 
@@ -2385,6 +2391,9 @@ packages:
   ts3-nodejs-library@3.5.3:
     resolution: {integrity: sha512-PHoWdqWnKixA5r6Q7GXHtEOs+sZOQzaK5W/pZPL/PekRh/6fxmy+BSYWecEglEERLzxAMrQSb61iQ+waBlHmwQ==}
 
+  tslib@2.3.0:
+    resolution: {integrity: sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg==}
+
   tsx@4.23.13:
     resolution: {integrity: sha512-BL5MGkRln6aDYhb0xbQlEAGw743BaZYWdbWtdJOBriYJboKgUUYCadFp2/FpBBZquBC/ezNBn7wMMPx7FDZUDw==}
     engines: {node: '>=18.0.0'}
@@ -2579,6 +2588,9 @@ packages:
 
   zod@4.6.5:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
+
+  zrender@6.1.0:
+    resolution: {integrity: sha512-oEGMDB6pOP2S6OwRR4PdVv610zrjnA3Bh+JnSG12fYJlBKjtNAoEb5fSUoCOOINlH96I2fU38/A2UpRKs67xYQ==}
 
 snapshots:
 
@@ -3531,6 +3543,11 @@ snapshots:
       '@types/better-sqlite3': 9.6.0
       better-sqlite3: 12.11.1
 
+  echarts@6.1.0:
+    dependencies:
+      tslib: 2.3.0
+      zrender: 6.1.0
+
   electron-to-chromium@1.5.431: {}
 
   end-of-stream@1.4.5:
@@ -4406,6 +4423,8 @@ snapshots:
       buffer-crc32: 0.2.13
       ssh2: 1.17.0
 
+  tslib@2.3.0: {}
+
   tsx@4.23.13:
     dependencies:
       esbuild: 0.28.2
@@ -4539,3 +4558,7 @@ snapshots:
       zod: 4.6.5
 
   zod@4.6.5: {}
+
+  zrender@6.1.0:
+    dependencies:
+      tslib: 2.3.0

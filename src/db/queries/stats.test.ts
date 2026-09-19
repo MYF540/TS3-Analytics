@@ -280,10 +280,36 @@ describe('onlineSeries', () => {
     const a = user('a', 'A');
     session(a, DAY1 + 10 * H, H);
     recordServerMinute(database.db, DAY1 + 5 * 86_400, 1); // minute data starts later
-    expect(onlineSeries(database.sqlite, DAY1, DAY1 + 86_400)).toEqual({
-      resolution: H,
-      points: [{ t: DAY1 + 10 * H, avgOnline: 1, maxOnline: 1 }],
-    });
+    const { resolution, points } = onlineSeries(database.sqlite, DAY1, DAY1 + 86_400);
+    expect(resolution).toBe(H);
+    expect(points).toHaveLength(24);
+    expect(points[10]).toEqual({ t: DAY1 + 10 * H, avgOnline: 1, maxOnline: 1 });
+  });
+
+  it('fills hours without sessions with zeros', () => {
+    const a = user('a', 'A');
+    session(a, DAY1 + 2 * H, H);
+    session(a, DAY1 + 5 * H, H);
+    const { points } = onlineSeries(database.sqlite, DAY1 + 30 * 60, DAY1 + 8 * H);
+    expect(points.map((p) => [(p.t - DAY1) / H, p.maxOnline])).toEqual([
+      [0, 0],
+      [1, 0],
+      [2, 1],
+      [3, 0],
+      [4, 0],
+      [5, 1],
+      [6, 0],
+      [7, 0],
+    ]);
+  });
+
+  it('uses the real length of weeks with a DST change', () => {
+    const a = user('a', 'A');
+    const week = berlinDayStart(20261019); // Monday; the week contains the switch back to CET
+    session(a, week, 169 * H); // online the whole (169 h) week
+    const { resolution, points } = onlineSeries(database.sqlite, week, week + 6 * 365 * 86_400);
+    expect(resolution).toBe(7 * 86_400);
+    expect(points[0]).toEqual({ t: week, avgOnline: 1, maxOnline: 1 });
   });
 
   it('aggregates hours into Berlin days for long ranges', () => {
@@ -292,10 +318,12 @@ describe('onlineSeries', () => {
     session(a, DAY1 + 86_400 + 10 * H, 6 * H); // 6h on day 2
     const { points, resolution } = onlineSeries(database.sqlite, DAY1, DAY1 + 400 * 86_400);
     expect(resolution).toBe(86_400);
-    expect(points).toEqual([
+    expect(points.slice(0, 3)).toEqual([
       { t: DAY1, avgOnline: 0.5, maxOnline: 1 },
       { t: DAY1 + 86_400, avgOnline: 0.25, maxOnline: 1 },
+      { t: DAY1 + 2 * 86_400, avgOnline: 0, maxOnline: 0 },
     ]);
+    expect(points).toHaveLength(400);
   });
 });
 
