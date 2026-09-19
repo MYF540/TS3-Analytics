@@ -64,10 +64,11 @@ Aufgaben werden von oben nach unten abgearbeitet, jeweils eine pro Session. Eine
 
 ## Phase 2 – Watcher
 
-- [ ] **T2.1 TS3-Adapter & Verbindung** · `Watcher` · braucht: T0.3
+- [x] **T2.1 TS3-Adapter & Verbindung** · `Watcher` · braucht: T0.3
   - Interface `Ts3Adapter` mit echter Implementierung (`ts3-nodejs-library`, SSH-Query) und Fake für Tests
   - Reconnect mit exponentiellem Backoff, Keepalive, zentrale Befehls-Queue mit Rate-Limit
   - Fertig wenn: Verbindungsabbruch im Fake führt zu Reconnect; Queue hält das Limit nachweislich ein (Test)
+  - Notiz: `src/ts3/`: `Ts3Transport`-Interface (eine physische Verbindung) mit `RealTs3Transport` (ts3-nodejs-library, SSH, `useBySid` + Nickname, Events `server` und `channel 0`) und `FakeTs3Server`/`FakeTs3Transport` (simulierter Server: join/leave/move/update/dropConnection, failConnects, failPing, Befehlsprotokoll mit Zeitstempeln). `CommandQueue`: seriell, max. `floor(TS3_QUERY_RATE_LIMIT)` Starts pro gleitendem 1-s-Fenster (bei < 1/s entsprechend längeres Fenster), `clear()` verwirft wartende Befehle. `Ts3Connection`: Reconnect mit exponentiellem Backoff (1 s → max. 60 s, 20 % Jitter, Reset nach Erfolg), eigener Keepalive (`whoami` alle 60 s über die Queue; Fehlschlag erzwingt Reconnect), filtert Query-Clients (Regel 4), alle Befehle über `connection.command()`/Queue. Die Bibliotheks-eigenen Keepalives sind aus, `ignoreQueries` an. `Ts3Client` enthält bewusst keine IP (die Library liefert sie bei `clientlist` mit; wird beim Mapping verworfen) – T2.5 holt sie gezielt. main.ts startet die Verbindung und fährt bei SIGINT/SIGTERM sauber herunter. Offen: Verhalten bei belegtem Bot-Nickname (Fehler 513) – aktuell Verbindungsfehler + Backoff; ggf. Suffix anhängen. ssh2/cpu-features-Buildskripte bewusst deaktiviert (reines JS reicht).
 
 - [ ] **T2.2 Event-Tracking** · `Watcher` · braucht: T1.2, T2.1
   - Join, Leave und Channelwechsel verarbeiten → Users, Nicknames, Sessions

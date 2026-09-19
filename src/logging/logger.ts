@@ -131,3 +131,8 @@ export function createLogger(logging: Config['logging']): Logger {
   });
   return pino(loggerOptions(logging.level), transport);
 }
+
+/** Logger that discards everything; for tests. */
+export function createSilentLogger(): Logger {
+  return pino({ level: 'silent' });
+}
