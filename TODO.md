@@ -321,9 +321,10 @@ Ziel: Historie aus mehreren GB alter TS3-Serverlogs und der Datenbank des bisher
   - Nicht auflösbare DB-IDs als Platzhalter-User anlegen (später verknüpfbar über T5.3)
   - Fertig wenn: Test mit Beispiel-DB; Bericht über Anzahl nicht auflösbarer IDs
 
-- [ ] **T8.4 Streaming-Log-Parser** · `Watcher` · braucht: T8.1
+- [x] **T8.4 Streaming-Log-Parser** · `Watcher` · braucht: T8.1
   - Reine Parser-Funktion pro Zeile plus Datei-Reader, der zeilenweise streamt (kein Laden ganzer Dateien), Dateien chronologisch sortiert, Encoding-Fehler toleriert
   - Fertig wenn: Unit-Tests für jeden Zeilentyp aus T8.1; ein Test mit 1 Mio. generierten Zeilen bleibt unter 200 MB RAM
+  - Notiz: `src/import/log-parser.ts` (rein: `parseLogLine` liefert `connect`, `disconnect`, `group`, `serverStart`, `serverStop`, `ignored` oder `unparsed`; dazu `orderLogFiles` für die chronologische Reihenfolge und `toUnix` für die Zeitzone der Logs) und `src/import/log-reader.ts` (`splitLines` arbeitet auf Buffern und liefert je Zeile den exakten Byte-Offset für `import_runs`; CRLF, geteilte Mehrbyte-Zeichen, fehlende letzte Zeilenumbrüche und ungültige Bytes sind abgedeckt, überlange Zeilen werden bei 64 KB gekappt). Der Parser wurde gegen die echte Beispieldatei laufen gelassen: 214.279 Zeilen, 2.768 Verbindungen, 2.768 Trennungen, 178 Gruppenänderungen, Start und Stopp – exakt die Zahlen aus der Analyse, 0 unbekannte Zeilen. Der Speichertest läuft über 1 Mio. erzeugte Zeilen.
 
 - [ ] **T8.5 Session-Rekonstruktion** · `Watcher` · braucht: T8.4
   - Reine Funktion in `/domain`: Connect/Disconnect paaren
