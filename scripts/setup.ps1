@@ -86,15 +86,47 @@ function Assert-Admin([string]$What) {
 # --- Werkzeuge -------------------------------------------------------------
 
 function Get-NodePath {
+    # Erst über PATH suchen. Direkt nach einer Node-Installation kennt eine schon offene
+    # Sitzung den neuen PATH noch nicht – deshalb die üblichen Installationsorte als Rückfall,
+    # damit kein Neustart nötig ist (Hinweis aus dem Produktivbetrieb).
     $node = Get-Command node.exe -ErrorAction SilentlyContinue
-    if (-not $node) { Stop-WithError 'Node.js wurde nicht gefunden. Node 22 LTS installieren (64 Bit).' }
-    $version = (& $node.Source --version).TrimStart('v')
+    $nodePath = if ($node) { $node.Source } else { $null }
+
+    if (-not $nodePath) {
+        $roots = @(
+            $env:ProgramFiles,
+            [Environment]::GetEnvironmentVariable('ProgramFiles(x86)'),
+            [Environment]::GetEnvironmentVariable('ProgramW6432'),
+            (Join-Path $env:LOCALAPPDATA 'Programs')
+        ) | Where-Object { $_ }
+        foreach ($root in $roots) {
+            $candidate = Join-Path $root 'nodejs\node.exe'
+            if (Test-Path -LiteralPath $candidate) {
+                $nodePath = (Resolve-Path -LiteralPath $candidate).Path
+                break
+            }
+        }
+    }
+
+    if (-not $nodePath) {
+        Stop-WithError 'Node.js wurde nicht gefunden. Node 22 LTS oder neuer installieren (64 Bit).'
+    }
+
+    # Den Ordner für diesen Prozess in den PATH nehmen: corepack und pnpm liegen daneben.
+    $nodeDir = (Split-Path -Parent $nodePath).TrimEnd('\')
+    $inPath = @($env:Path -split ';' | ForEach-Object { $_.Trim().TrimEnd('\') }) -contains $nodeDir
+    if (-not $inPath) {
+        $env:Path = "$nodeDir;$env:Path"
+        Write-Note "Node-Verzeichnis für diesen Lauf zum PATH ergänzt: $nodeDir"
+    }
+
+    $version = (& $nodePath --version).TrimStart('v')
     $major = [int]($version -split '\.')[0]
     if ($major -lt $MinNodeMajor) {
         Stop-WithError "Node $version ist zu alt, gebraucht wird mindestens $MinNodeMajor (LTS)."
     }
-    Write-Note "Node ${version}: $($node.Source)"
-    return $node.Source
+    Write-Note "Node ${version}: $nodePath"
+    return $nodePath
 }
 
 function Get-NssmPath {

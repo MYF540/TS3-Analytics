@@ -5,6 +5,7 @@ Kurzfassung für Installation, Dienst, Updates und Wartung. Sicherung und Wieder
 ## Voraussetzungen
 
 - Windows Server (getestet wird gegen Windows 11 / Server 2016), Node.js 22 LTS (64 Bit)
+  – frisch installiert? Das Setup-Skript findet Node auch dann, wenn der PATH der offenen Sitzung noch veraltet ist
 - pnpm über Corepack: `corepack enable`
 - [NSSM](https://nssm.cc/) für den Dienst – `nssm.exe` in den PATH legen oder dem Setup-Skript mit `-Nssm <pfad>` nennen
 - Zugriff auf den TeamSpeak-Server: ServerQuery über **SSH** (Standardport 10022)
