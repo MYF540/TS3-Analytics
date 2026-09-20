@@ -61,12 +61,12 @@ describe('rankingTimes', () => {
     expect(rankingTimes(database.sqlite, 'online', { cutoffDay: 0 }).get(a)).toBe(11 * H);
     expect(rankingTimes(database.sqlite, 'active', { cutoffDay: 0 }).get(a)).toBe(7 * H);
     expect(rankingTimes(database.sqlite, 'online', { cutoffDay: 20260201 }).get(a)).toBe(5 * H);
-    expect(
-      rankingTimes(database.sqlite, 'online', {
-        cutoffDay: 20260201,
-        legacyS: new Map([[a, 100 * H]]),
-      }).get(a),
-    ).toBe(105 * H);
+    // Time taken over from the old ranking system counts on top (T8.9).
+    database.sqlite.prepare(`UPDATE users SET legacy_seconds = ? WHERE id = ?`).run(100 * H, a);
+    expect(rankingTimes(database.sqlite, 'online', { cutoffDay: 20260201 }).get(a)).toBe(105 * H);
+    expect(rankingTimes(database.sqlite, 'online', { cutoffDay: 20260201 }, [a]).get(a)).toBe(
+      105 * H,
+    );
   });
 
   it('reads the legacy cutoff setting', () => {

@@ -136,3 +136,34 @@ würde dieselbe Zeit doppelt zählen.
 - Keine Channel- oder Serverinformationen.
 - Keine Angabe, welchen Rang ein Nutzer tatsächlich hatte – er ergibt sich nur aus dem Zeitwert
   und der Konfiguration. Wer in einer ausgenommenen Gruppe war, hatte trotz Zeit keinen Rang.
+
+## So läuft der Import
+
+```
+pnpm backup
+pnpm import:ranking <kopie der sinusbot-datenbank> --dry-run
+pnpm import:ranking <kopie der sinusbot-datenbank> --cutoff 2026-09-01 --map rangmap.json
+```
+
+Der Probelauf zeigt den Bestand, die alte Rangleiter samt Verteilung und – sobald eine eigene
+Rangleiter eingerichtet ist – welchen Rang unsere Regeln daraus machen würden.
+
+| Option                | Wirkung                                                         |
+| --------------------- | --------------------------------------------------------------- |
+| `--dry-run`           | nur Bericht, keine Änderung                                     |
+| `--cutoff JJJJ-MM-TT` | Stichtag der Umstellung, Vorgabe: jetzt                         |
+| `--map <datei.json>`  | alte Servergruppe → unsere Rang-ID, z. B. `{"135": 1, "59": 2}` |
+| `--min-minutes <n>`   | Einträge unter dieser Zeit überspringen                         |
+| `--yes`               | ohne Rückfrage übernehmen                                       |
+
+Mit `--map` steht im Bericht zusätzlich, wie viele Spieler mit unserer Rangleiter denselben,
+einen höheren oder einen niedrigeren Rang bekämen. Wer absteigen würde, sollte vor dem
+Abschalten des Probemodus auffallen – entweder die Schwellen anpassen oder den Rang einfrieren.
+
+Der Import schreibt `users.legacy_seconds` und `users.legacy_rank` sowie die Einstellung
+`legacy.cutoff`. Er **setzt** die Werte, addiert sie also nicht: Ein zweiter Lauf ändert nichts.
+Spieler, die es hier noch nicht gibt, werden angelegt; ohne Sitzungen tauchen sie weder in
+Leaderboards noch (mit der Standard-Mindestspielzeit) in der Spielerliste auf.
+
+Die Rang-Engine rechnet danach: `legacy_seconds` + selbst erfasste Zeit **ab** dem Stichtag. Aus
+Logs importierte Zeit (`unknown_s`) bleibt außen vor – sonst zählte dieselbe Stunde doppelt.

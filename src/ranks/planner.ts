@@ -22,8 +22,6 @@ export interface RankPlanEntry {
 export interface RankPlanOptions {
   /** Days (Berlin, YYYYMMDD) before this are covered by the legacy ranking time (Phase 8). */
   cutoffDay: number;
-  /** Legacy ranking seconds per user (Phase 8); empty until the import exists. */
-  legacyS?: ReadonlyMap<number, number>;
 }
 
 /**
@@ -50,7 +48,18 @@ export function rankingTimes(
     )
     .all(...params) as { userId: number; seconds: number }[];
   const times = new Map(rows.map((r) => [r.userId, Math.max(0, r.seconds)]));
-  for (const [userId, seconds] of options.legacyS ?? []) {
+  // Time taken over from the old ranking system (T8.9). It covers everything before the cutoff,
+  // which is why the query above starts there – otherwise the same hours would count twice.
+  const legacy = sqlite
+    .prepare(
+      `SELECT id AS userId, legacy_seconds AS seconds FROM users
+       WHERE legacy_seconds > 0 ${userIds ? 'AND id IN (SELECT value FROM json_each(?))' : ''}`,
+    )
+    .all(...(userIds ? [JSON.stringify(userIds)] : [])) as {
+    userId: number;
+    seconds: number;
+  }[];
+  for (const { userId, seconds } of legacy) {
     times.set(userId, (times.get(userId) ?? 0) + seconds);
   }
   return times;

@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadLegacy, saveLegacy } from '../../import/settings.js';
 import type { AppDatabase } from '../client.js';
 import { createTestDatabase } from '../testing.js';
 import {
@@ -142,14 +141,6 @@ describe('import runs', () => {
         NOW,
       );
     }).toThrow();
-  });
-});
-
-describe('legacy settings', () => {
-  it('starts empty and stores the cutoff', () => {
-    expect(loadLegacy(database.db)).toEqual({ cutoff: null, importedAt: null });
-    saveLegacy(database.db, { cutoff: NOW, importedAt: NOW + 1 }, NOW);
-    expect(loadLegacy(database.db)).toEqual({ cutoff: NOW, importedAt: NOW + 1 });
   });
 });
 
