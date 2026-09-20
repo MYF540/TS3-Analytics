@@ -2,12 +2,14 @@ import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { vi } from 'vitest';
 import type {
+  ChannelUsage,
   Health,
   Heatmap,
   Note,
   OnlineSeries,
   Overview,
   Paged,
+  UnusedChannels,
   UserDetail,
   UserListItem,
 } from './api/types';
@@ -44,6 +46,52 @@ export const sampleSeries: OnlineSeries = {
 export const sampleHeatmap: Heatmap = {
   range: '30d',
   values: Array.from({ length: 7 }, (_, d) => Array.from({ length: 24 }, (_, h) => d + h / 10)),
+};
+
+export const sampleChannelUsage: ChannelUsage = {
+  range: '30d',
+  from: 1_787_208_000,
+  to: 1_789_800_000,
+  total: 3,
+  totalSeconds: 36_000,
+  items: [
+    {
+      channelId: 3,
+      name: 'Gaming',
+      seconds: 25_200,
+      users: 7,
+      visits: 31,
+      lastUsed: 1_789_790_000,
+      present: true,
+    },
+    {
+      channelId: 9,
+      name: 'AFK',
+      seconds: 9000,
+      users: 4,
+      visits: 12,
+      lastUsed: 1_789_700_000,
+      present: true,
+    },
+    {
+      channelId: 12,
+      name: 'Turnier 2025',
+      seconds: 1800,
+      users: 2,
+      visits: 2,
+      lastUsed: 1_788_000_000,
+      present: false,
+    },
+  ],
+};
+
+export const sampleUnusedChannels: UnusedChannels = {
+  days: 30,
+  since: 1_787_208_000,
+  items: [
+    { channelId: 4, name: 'Support', lastSeen: 1_789_800_000 },
+    { channelId: 5, name: 'Musik', lastSeen: 1_789_799_000 },
+  ],
 };
 
 export const sampleUsers: Paged<UserListItem> = {
@@ -183,6 +231,8 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
         },
       ],
     },
+    '/api/channels/usage': sampleChannelUsage,
+    '/api/channels/unused': sampleUnusedChannels,
     '/api/users': sampleUsers,
     '/api/users/1': sampleUser,
     '/api/users/1/notes': { notes: sampleNotes },

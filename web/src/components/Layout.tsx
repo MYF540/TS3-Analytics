@@ -9,6 +9,7 @@ const NAV: { to: string; label: string; end: boolean; role?: AdminRole }[] = [
   { to: '/', label: t('nav.dashboard'), end: true },
   { to: '/spieler', label: t('nav.players'), end: false },
   { to: '/leaderboards', label: t('nav.leaderboards'), end: false },
+  { to: '/channels', label: t('nav.channels'), end: false },
   { to: '/hinweise', label: t('nav.flags'), end: false, role: 'moderator' },
   { to: '/raenge', label: t('nav.ranks'), end: false, role: 'admin' },
   { to: '/protokoll', label: t('nav.audit'), end: false, role: 'admin' },

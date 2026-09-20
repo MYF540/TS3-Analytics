@@ -3,6 +3,7 @@ import { AuthProvider, RequireAuth, RequireRole } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { AuditPage } from './pages/AuditPage';
+import { ChannelsPage } from './pages/ChannelsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FlagsPage } from './pages/FlagsPage';
 import { LeaderboardsPage } from './pages/LeaderboardsPage';
@@ -32,6 +33,7 @@ export const routes: RouteObject[] = [
               { path: 'spieler', element: <PlayersPage /> },
               { path: 'spieler/:id', element: <PlayerPage /> },
               { path: 'leaderboards', element: <LeaderboardsPage /> },
+              { path: 'channels', element: <ChannelsPage /> },
               {
                 element: <RequireRole role="moderator" />,
                 children: [{ path: 'hinweise', element: <FlagsPage /> }],

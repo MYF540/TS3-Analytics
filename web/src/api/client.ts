@@ -9,6 +9,8 @@ import type {
   AuditFilters,
   AuthResponse,
   BotStatus,
+  ChannelRange,
+  ChannelUsage,
   FlagLevel,
   FlagsResponse,
   FlagStatus,
@@ -38,6 +40,7 @@ import type {
   TagColor,
   TagWithUsage,
   TimeRange,
+  UnusedChannels,
   UserDetail,
   UserListItem,
   UserSort,
@@ -165,6 +168,10 @@ export const api = {
   ) => apiGet<OnlineSeries>('/stats/online', query, signal),
   heatmap: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>('/stats/heatmap', { range }, signal),
+  channelUsage: (range: ChannelRange, signal?: AbortSignal) =>
+    apiGet<ChannelUsage>('/channels/usage', { range }, signal),
+  unusedChannels: (days: number, signal?: AbortSignal) =>
+    apiGet<UnusedChannels>('/channels/unused', { days }, signal),
   users: (
     query: {
       search?: string | undefined;

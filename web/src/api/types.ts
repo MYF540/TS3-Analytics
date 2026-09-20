@@ -157,6 +157,32 @@ export interface OnlineNow {
   }[];
 }
 
+/** Only short ranges: channel time comes from the raw segments (see routes/channels.ts). */
+export type ChannelRange = '24h' | '7d' | '30d';
+
+export interface ChannelUsage {
+  range: ChannelRange;
+  from: number;
+  to: number;
+  total: number;
+  totalSeconds: number;
+  items: {
+    channelId: number | null;
+    name: string | null;
+    seconds: number;
+    users: number;
+    visits: number;
+    lastUsed: number;
+    present: boolean;
+  }[];
+}
+
+export interface UnusedChannels {
+  days: number;
+  since: number;
+  items: { channelId: number; name: string; lastSeen: number }[];
+}
+
 export type TagColor = 'blue' | 'orange' | 'green' | 'red' | 'purple' | 'gray';
 
 export interface Tag {

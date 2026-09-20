@@ -9,6 +9,7 @@ import { existsSync } from 'node:fs';
 import { cpus, totalmem } from 'node:os';
 import { parseArgs } from 'node:util';
 import { openDatabase } from '../db/client.js';
+import { channelUsage, unusedChannels } from '../db/queries/channels.js';
 import {
   countLeaderboardForDays,
   leaderboardAllTime,
@@ -157,6 +158,25 @@ function main(): void {
       measure('Suche Nick (Teilstring, 4 Zeichen)', runs, () => searchUsers(sqlite, 'hunt')),
       measure('Suche Nick (2 Zeichen, Präfix)', runs, () => searchUsers(sqlite, 'Sh')),
       measure('Suche UID-Präfix', runs, () => searchUsers(sqlite, 'aB')),
+      measure('Channel-Nutzung 30 Tage', runs, () =>
+        channelUsage(sqlite, {
+          from: since(30),
+          to: now,
+          limit: 100,
+          presentSince: now - 86_400,
+        }),
+      ),
+      measure('Channel-Nutzung 24 h', runs, () =>
+        channelUsage(sqlite, {
+          from: now - 86_400,
+          to: now,
+          limit: 100,
+          presentSince: now - 86_400,
+        }),
+      ),
+      measure('Ungenutzte Channels (90 Tage)', runs, () =>
+        unusedChannels(sqlite, { since: since(90), now, presentSince: now - 86_400 }),
+      ),
     ];
 
     const fmt = (n: number) => n.toFixed(1);

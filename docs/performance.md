@@ -85,6 +85,18 @@ Allzeit-Leaderboards lesen nicht mehr direkt den sortierten Index von `user_tota
 
 Erster Ansatz (verworfen): Der Join auf die Personen-Tabellen direkt über alle Zeilen von `user_daily_stats` brauchte für „Leaderboard frei“ 272 ms. Jetzt wird zuerst pro Nutzer aggregiert und erst das Ergebnis (höchstens ein paar tausend Zeilen) auf Personen abgebildet.
 
+### Nachmessung T7.4 (2026-09-20, Channel-Statistik)
+
+Die Channel-Statistik liest `activity_segments` direkt; es gibt kein Aggregat je Channel. Gleicher Datensatz (2,19 Mio. Segmente), 10 Läufe je Abfrage.
+
+| Abfrage                       | Median (ms) | p95 (ms) | Max (ms) | Budget |
+| ----------------------------- | ----------: | -------: | -------: | :----: |
+| Channel-Nutzung 24 h          |         1.2 |      1.4 |      1.4 |   ✅   |
+| Channel-Nutzung 30 Tage       |        20.9 |     21.7 |     21.7 |   ✅   |
+| Ungenutzte Channels (90 Tage) |        27.2 |     27.8 |     27.8 |   ✅   |
+
+Deshalb bietet die Seite nur 24 Stunden, 7 und 30 Tage an: „1 Jahr“ lag bei 351 ms (Median), weil dabei fast alle Segmente gelesen werden. Ein Tages-Aggregat je Channel wäre die Lösung für lange Zeiträume – dann ließe sich die Anzahl unterschiedlicher Spieler allerdings nicht mehr über mehrere Tage summieren, ohne sie doppelt zu zählen. Bis dafür Bedarf besteht, bleibt die Frage „welche Channels werden genutzt?“ auf kurze Zeiträume beschränkt.
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

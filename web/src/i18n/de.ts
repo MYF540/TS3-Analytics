@@ -15,6 +15,7 @@ export const de = {
   'nav.status': 'Bot-Status',
   'nav.flags': 'Hinweise',
   'nav.ranks': 'Ränge',
+  'nav.channels': 'Channels',
 
   'theme.toggle': 'Farbschema wechseln',
   'theme.light': 'Hell',
@@ -40,6 +41,9 @@ export const de = {
   'page.ranks.title': 'Ränge',
   'page.ranks.intro':
     'Rangleiter nach Spielzeit. Der Rang-Job setzt die passende Servergruppe und entfernt andere Ranggruppen; alle anderen Gruppen bleiben unberührt.',
+  'page.channels.title': 'Channels',
+  'page.channels.intro':
+    'Wie viel Zeit in welchem Channel verbracht wird und welche Channels seit Längerem leer stehen.',
   'page.status.title': 'Bot-Status',
   'page.status.intro':
     'Zustand des Dienstes, der TeamSpeak-Verbindung und der Datenbank. Aktualisiert sich alle 30 Sekunden.',
@@ -104,6 +108,30 @@ export const de = {
   'error.DUPLICATE_GROUP': 'Jede Servergruppe darf nur für einen Rang verwendet werden.',
   'error.NOT_ASCENDING': 'Zwei Ränge haben dieselbe benötigte Zeit.',
   'error.TS3_ERROR': 'Der TeamSpeak-Server hat den Befehl abgelehnt (Details im Server-Log).',
+
+  'channels.usage.title': 'Zeit je Channel',
+  'channels.usage.empty': 'In diesem Zeitraum war niemand in einem Channel.',
+  'channels.column.channel': 'Channel',
+  'channels.column.time': 'Zeit',
+  'channels.column.share': 'Anteil',
+  'channels.column.players': 'Spieler',
+  'channels.column.visits': 'Besuche',
+  'channels.column.lastUsed': 'Zuletzt genutzt',
+  'channels.deleted': 'Channel #{id} (gelöscht)',
+  'channels.gone': 'Nicht mehr auf dem Server',
+  'channels.more':
+    'Angezeigt werden die {shown} Channels mit der meisten Zeit von insgesamt {total}.',
+  'channels.total': 'Zeit im Zeitraum insgesamt: {time}',
+  'channels.unused.title': 'Ungenutzte Channels',
+  'channels.unused.intro':
+    'Channels, die es noch gibt, in denen aber im gewählten Zeitraum niemand war. Länger als die Aufbewahrung der Aktivitätsdaten kann nicht zurückgeschaut werden.',
+  'channels.unused.period': 'Zeitraum ohne Nutzung',
+  'channels.unused.days': 'seit {days} Tagen',
+  'channels.unused.empty': 'Jeder Channel wurde in diesem Zeitraum genutzt.',
+  'channels.unused.count': 'Ungenutzte Channels: {count}',
+  'channels.unused.lastSeen': 'Zuletzt in der Channelliste gesehen: {time}',
+  'channels.hint':
+    'Gezählt wird die Zeit, die Spieler in einem Channel waren – verknüpfte Accounts zählen als eine Person.',
 
   'common.loading': 'Wird geladen …',
   'common.range': 'Zeitraum',

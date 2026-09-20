@@ -290,8 +290,9 @@ Entscheidungen (20.09.2026):
   - NSSM-Einrichtung, Logs, Update-Ablauf, Allowlist-Eintrag, GeoLite2-Update in `/docs` beschreiben
   - Notiz: `docs/betrieb.md` – Voraussetzungen, Installation (`pnpm build` → `dist/` + `web/dist/`, Start `node dist/main.js`), Rechte des Query-Accounts als Tabelle, Anti-Flood-Allowlist, NSSM-Dienst (`AppDirectory` ist Pflicht, sonst wird `.env` und `./data` nicht gefunden), Logs, Update-Ablauf, GeoLite2-Update, Liste der automatischen Jobs mit ihren Intervallen. Der Produktionspfad wurde einmal durchgespielt: Build, `node dist/main.js`, `/api/health` und die ausgelieferte Weboberfläche antworten. Offen bis zur Installation auf dem Server: die genauen Rechtenamen der Query-Gruppe und ob NSSM `AppExit Default Restart` hier wie gewünscht wirkt.
 
-- [ ] **T7.4 Channel-Statistik** · `Backend` `Frontend` · braucht: T3.2
+- [x] **T7.4 Channel-Statistik** · `Backend` `Frontend` · braucht: T3.2
   - Nutzung pro Channel, ungenutzte Channels der letzten X Tage
+  - Notiz: Seite „Channels“ (alle angemeldeten Rollen) mit zwei Karten. „Zeit je Channel“ (`GET /api/channels/usage`) summiert die Aktivitätssegmente je Channel: Zeit, Anteil, Spieler (verknüpfte UIDs als eine Person), Besuche, zuletzt genutzt; Channels, die nicht mehr in der Channelliste stehen, sind als solche markiert. „Ungenutzte Channels“ (`GET /api/channels/unused?days=7|14|30|60|90`) listet Channels, die es noch gibt, in denen aber niemand war. Es gibt bewusst kein Aggregat je Channel: Die Abfragen lesen `activity_segments` direkt, deshalb nur 24 h / 7 / 30 Tage – ein Jahr lag bei 351 ms gegen das Budget von 100 ms (Messwerte in `docs/performance.md`). Offene Segmente zählen mit, sonst sähe ein gerade besetzter Channel ungenutzt aus. Wie weit zurückgeschaut werden kann, hängt an `SEGMENT_RETENTION_MONTHS`.
 
 - [ ] **T7.5 Öffentliche Leaderboard-Seite (optional)** · `Backend` `Frontend` `Security` · braucht: T4.1, T3.6
   - Eigener, getrennter HTTP-Listener (eigener Host/Port in der Config, Standard: aus), der ausschließlich eine schreibgeschützte Leaderboard-Ansicht ausliefert – ohne Login, ohne UIDs, ohne Links auf Spielerdetails
