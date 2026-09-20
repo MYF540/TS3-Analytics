@@ -304,10 +304,11 @@ Entscheidungen (20.09.2026):
 
 Ziel: Historie aus mehreren GB alter TS3-Serverlogs und der Datenbank des bisherigen Rankingsystems übernehmen, ohne Doppelzählung und ohne Klar-IPs zu speichern. Importe laufen als eigene CLI-Befehle, nicht im Bot-Prozess.
 
-- [ ] **T8.1 Log-Format-Analyse** · `Watcher` · braucht: T0.1
+- [x] **T8.1 Log-Format-Analyse** · `Watcher` · braucht: T0.1
   - Beispiel-Logs aus `/data/import/samples` untersuchen, alle relevanten Ereignisse erfassen (Connect, Disconnect inkl. Grund, Serverstart/-stopp, Bans, Gruppenänderungen)
   - Ergebnis: `/docs/import-logs.md` mit Zeilenformaten, Regex je Ereignis, Sonderfällen und einer Liste, was die Logs **nicht** enthalten (z. B. Channelwechsel, Idle)
   - Fertig wenn: das Dokument deckt alle Zeilentypen der Samples ab; unbekannte Zeilen sind aufgelistet
+  - Notiz: `docs/import-logs.md`. Ausgewertet wurde die vorhandene Beispieldatei (214.279 Zeilen, Sep–Nov 2019) mit Wegwerf-Skripten; jeder Zeilentyp ist zugeordnet, die drei unbekannten Formen sind aufgelistet. Wichtigste Punkte: Die ID in den Zeilen ist die **Client-Datenbank-ID**, keine UID (deshalb T8.3); Nicknames enthalten `|` (307-mal) und `'`, die Zeile darf also nicht an `|` zerlegt werden; 95 % der Zeilen sind Query-Clients und werden per Vorfilter übersprungen; Logs enthalten keinen Channel, keine Aktivität und keine Bans; im Sample 9 doppelte Verbindungen desselben Accounts, 25 Sitzungen über 24 h (längste 52 Tage), 2 beschädigte Zeilen. Offen: Die Zeitzone der Logs ist nicht notiert – die Tagesverteilung spricht für UTC, der Import bekommt dafür eine Option und der Dry-Run zeigt die Verteilung je Stunde. Die Beispieldaten selbst bleiben lokal, im Dokument stehen nur nachgebaute Zeilen.
 
 - [ ] **T8.2 Schema-Erweiterung Import** · `DB` · braucht: T1.1, T6.1
   - `sessions.source` (`live` / `import`), Aktivitätszustand `unknown` für importierte Zeiten
