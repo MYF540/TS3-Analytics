@@ -286,8 +286,9 @@ Entscheidungen (20.09.2026):
   - Alle Daten einer UID exportieren (JSON) oder löschen
   - Notiz: Karte „Datenschutz“ auf der Spielerseite (nur Admin). `GET /api/users/:id/export` liefert alles zur UID als JSON-Download (ohne IP-Prüfsummen, nur Anzahl/Länder/Zeiträume). `POST /api/users/:id/anonymize` verlangt die UID als Bestätigung und wird abgelehnt, solange der Spieler online ist. Neue Spalte `users.anonymized_at` (Migration 0011); anonymisierte Spieler sind aus Leaderboards, Spielerliste, Suche und Rangberechnung ausgeblendet, die Spielerseite antwortet 410 `USER_ANONYMIZED`. Audit ohne UID. Grenzen (Server-Ban, Protokoll, ältere Sicherungen) stehen in `docs/datenschutz.md`.
 
-- [ ] **T7.3 Windows-Dienst & Doku** · `Ops` · braucht: T3.1
+- [x] **T7.3 Windows-Dienst & Doku** · `Ops` · braucht: T3.1
   - NSSM-Einrichtung, Logs, Update-Ablauf, Allowlist-Eintrag, GeoLite2-Update in `/docs` beschreiben
+  - Notiz: `docs/betrieb.md` – Voraussetzungen, Installation (`pnpm build` → `dist/` + `web/dist/`, Start `node dist/main.js`), Rechte des Query-Accounts als Tabelle, Anti-Flood-Allowlist, NSSM-Dienst (`AppDirectory` ist Pflicht, sonst wird `.env` und `./data` nicht gefunden), Logs, Update-Ablauf, GeoLite2-Update, Liste der automatischen Jobs mit ihren Intervallen. Der Produktionspfad wurde einmal durchgespielt: Build, `node dist/main.js`, `/api/health` und die ausgelieferte Weboberfläche antworten. Offen bis zur Installation auf dem Server: die genauen Rechtenamen der Query-Gruppe und ob NSSM `AppExit Default Restart` hier wie gewünscht wirkt.
 
 - [ ] **T7.4 Channel-Statistik** · `Backend` `Frontend` · braucht: T3.2
   - Nutzung pro Channel, ungenutzte Channels der letzten X Tage
