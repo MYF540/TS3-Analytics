@@ -166,7 +166,7 @@ function Initialize-EnvFile {
     $values = Read-EnvFile
     if (-not $values.ContainsKey('HMAC_SECRET') -or -not $values['HMAC_SECRET']) {
         $secret = New-Secret
-        $content = Get-Content -LiteralPath $EnvFile
+        $content = @(Get-Content -LiteralPath $EnvFile)
         $written = $false
         $content = $content | ForEach-Object {
             if ($_ -match '^\s*HMAC_SECRET\s*=' -and -not $written) {
@@ -187,6 +187,8 @@ function Get-MissingSettings {
     foreach ($name in @('TS3_QUERY_USER', 'TS3_QUERY_PASSWORD', 'HMAC_SECRET')) {
         if (-not $values.ContainsKey($name) -or -not $values[$name]) { $missing += $name }
     }
+    # Callers wrap this in @(): PowerShell unwraps a single-element array into a plain string,
+    # and `$missing.Count` on a string fails under Set-StrictMode.
     return $missing
 }
 
@@ -309,7 +311,7 @@ function Invoke-Install {
     Write-Step 'Dienst einrichten'
     Install-Service -NssmPath $nssmPath -NodePath $nodePath
 
-    $missing = Get-MissingSettings
+    $missing = @(Get-MissingSettings)
     if ($missing.Count -gt 0) {
         Write-Host ''
         Write-Warn "In .env fehlen noch Werte: $($missing -join ', ')"
@@ -411,7 +413,7 @@ function Invoke-Status {
         Write-Host "Dienst ${ServiceName}: nicht installiert"
     }
 
-    $missing = Get-MissingSettings
+    $missing = @(Get-MissingSettings)
     if (-not (Test-Path $EnvFile)) {
         Write-Warn '.env fehlt noch.'
     }
