@@ -30,33 +30,34 @@ Beim Start führt der Dienst alle ausstehenden Migrationen aus (`runMigrations()
 
 ## Tabellen (Überblick)
 
-| Tabelle                     | Zweck                                                                      |
-| --------------------------- | -------------------------------------------------------------------------- |
-| `users`                     | Ein Eintrag pro UID                                                        |
-| `nicknames`                 | Nickverlauf, dazu FTS5-Index `nicknames_fts` (Trigram, Teilstring-Suche)   |
-| `channels`                  | Channel-Namen nach TS3-cid                                                 |
-| `sessions`                  | Verbindungen (`source` = `live` oder `import`)                             |
-| `activity_segments`         | Zusammenhängende Abschnitte gleichen Zustands und Channels                 |
-| `user_daily_stats`          | Tagesaggregat pro Nutzer                                                   |
-| `user_totals`               | Allzeit-Aggregat pro Nutzer (Leaderboards)                                 |
-| `server_minutely`           | Online-Zahl pro Minute (kurzfristig)                                       |
-| `server_hourly`             | Stundenaggregat (dauerhaft); Ø online = `online_s / 3600`                  |
-| `ip_seen`                   | IP- und Subnetz-Hashes pro Nutzer                                          |
-| `settings`                  | Schlüssel/JSON-Wert                                                        |
-| `admin_users`               | Konten des Webinterfaces (Rolle, argon2-Hash)                              |
-| `admin_sessions`            | Login-Sessions (nur Hash des Tokens)                                       |
-| `audit_log`                 | Protokoll aller Änderungen und Anmeldungen                                 |
-| `player_notes`              | Notizen zu Spielern (weich gelöscht über `deleted_at`)                     |
-| `player_note_revisions`     | Frühere Fassungen von Notizen                                              |
-| `tags`, `user_tags`         | Frei definierbare Tags und ihre Zuordnung zu Spielern                      |
-| `bans`                      | Spiegel der Banliste; aufgehobene Bans behalten `removed_at`               |
-| `flags`                     | Hinweise auf Zweitaccounts/Ban-Umgehung, ein Eintrag pro Paar (`pair_key`) |
-| `persons`, `person_members` | Verknüpfte UIDs einer Person mit Haupt-Account                             |
-| `group_changes`             | Servergruppen-Änderungen aus dem Server-Log (nur geparste Felder)          |
-| `ranks`                     | Rangleiter (Reihenfolge, benötigte Zeit, Servergruppe)                     |
-| `rank_overrides`            | Eingefroren, Bonuszeit, ausgeschlossen pro Nutzer                          |
-| `rank_state`                | Vom Rang-Job bestimmter Rang pro Nutzer, `pending` bis zum nächsten Join   |
-| `rank_history`              | Jede Rangänderung (auch im Dry-Run)                                        |
+| Tabelle                     | Zweck                                                                       |
+| --------------------------- | --------------------------------------------------------------------------- |
+| `users`                     | Ein Eintrag pro UID, inkl. `legacy_seconds`/`legacy_rank` aus dem Altsystem |
+| `nicknames`                 | Nickverlauf, dazu FTS5-Index `nicknames_fts` (Trigram, Teilstring-Suche)    |
+| `channels`                  | Channel-Namen nach TS3-cid                                                  |
+| `sessions`                  | Verbindungen (`source` = `live` oder `import`)                              |
+| `activity_segments`         | Zusammenhängende Abschnitte gleichen Zustands und Channels                  |
+| `user_daily_stats`          | Tagesaggregat pro Nutzer                                                    |
+| `user_totals`               | Allzeit-Aggregat pro Nutzer (Leaderboards)                                  |
+| `server_minutely`           | Online-Zahl pro Minute (kurzfristig)                                        |
+| `server_hourly`             | Stundenaggregat (dauerhaft); Ø online = `online_s / 3600`                   |
+| `ip_seen`                   | IP- und Subnetz-Hashes pro Nutzer                                           |
+| `settings`                  | Schlüssel/JSON-Wert                                                         |
+| `admin_users`               | Konten des Webinterfaces (Rolle, argon2-Hash)                               |
+| `admin_sessions`            | Login-Sessions (nur Hash des Tokens)                                        |
+| `audit_log`                 | Protokoll aller Änderungen und Anmeldungen                                  |
+| `player_notes`              | Notizen zu Spielern (weich gelöscht über `deleted_at`)                      |
+| `player_note_revisions`     | Frühere Fassungen von Notizen                                               |
+| `tags`, `user_tags`         | Frei definierbare Tags und ihre Zuordnung zu Spielern                       |
+| `bans`                      | Spiegel der Banliste; aufgehobene Bans behalten `removed_at`                |
+| `flags`                     | Hinweise auf Zweitaccounts/Ban-Umgehung, ein Eintrag pro Paar (`pair_key`)  |
+| `persons`, `person_members` | Verknüpfte UIDs einer Person mit Haupt-Account                              |
+| `group_changes`             | Servergruppen-Änderungen aus dem Server-Log (nur geparste Felder)           |
+| `ranks`                     | Rangleiter (Reihenfolge, benötigte Zeit, Servergruppe)                      |
+| `rank_overrides`            | Eingefroren, Bonuszeit, ausgeschlossen pro Nutzer                           |
+| `rank_state`                | Vom Rang-Job bestimmter Rang pro Nutzer, `pending` bis zum nächsten Join    |
+| `rank_history`              | Jede Rangänderung (auch im Dry-Run)                                         |
+| `import_runs`               | Fortschritt und Zähler je importierter Datei (Phase 8)                      |
 
 Das maßgebliche Schema steht in `src/db/schema.ts`.
 

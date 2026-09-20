@@ -310,10 +310,11 @@ Ziel: Historie aus mehreren GB alter TS3-Serverlogs und der Datenbank des bisher
   - Fertig wenn: das Dokument deckt alle Zeilentypen der Samples ab; unbekannte Zeilen sind aufgelistet
   - Notiz: `docs/import-logs.md`. Ausgewertet wurde die vorhandene Beispieldatei (214.279 Zeilen, Sep–Nov 2019) mit Wegwerf-Skripten; jeder Zeilentyp ist zugeordnet, die drei unbekannten Formen sind aufgelistet. Wichtigste Punkte: Die ID in den Zeilen ist die **Client-Datenbank-ID**, keine UID (deshalb T8.3); Nicknames enthalten `|` (307-mal) und `'`, die Zeile darf also nicht an `|` zerlegt werden; 95 % der Zeilen sind Query-Clients und werden per Vorfilter übersprungen; Logs enthalten keinen Channel, keine Aktivität und keine Bans; im Sample 9 doppelte Verbindungen desselben Accounts, 25 Sitzungen über 24 h (längste 52 Tage), 2 beschädigte Zeilen. Offen: Die Zeitzone der Logs ist nicht notiert – die Tagesverteilung spricht für UTC, der Import bekommt dafür eine Option und der Dry-Run zeigt die Verteilung je Stunde. Die Beispieldaten selbst bleiben lokal, im Dokument stehen nur nachgebaute Zeilen.
 
-- [ ] **T8.2 Schema-Erweiterung Import** · `DB` · braucht: T1.1, T6.1
+- [x] **T8.2 Schema-Erweiterung Import** · `DB` · braucht: T1.1, T6.1
   - `sessions.source` (`live` / `import`), Aktivitätszustand `unknown` für importierte Zeiten
   - Tabelle `import_runs` (Quelle, Datei, Byte-Offset, Status, Zähler) für Fortsetzen und Idempotenz
   - `users.legacy_seconds`, `users.legacy_rank`, globale Einstellung `legacy_cutoff` (Zeitpunkt der Umstellung)
+  - Notiz: `sessions.source` und der Zustand `unknown` gab es schon seit T1.1. Neu (Migration 0012): Tabelle `import_runs` mit Byte-Offset, Status und Zählern je Datei – eindeutig über (Quelle, Datei); eine gewachsene Datei wird fortgesetzt, eine geschrumpfte oder abgebrochene von vorn gelesen (`startImportRun`, `isImportDone` in `src/db/repositories/imports.ts`). Dazu `users.legacy_seconds` (Standard 0) und `users.legacy_rank` (alte Servergruppen-ID) sowie die Einstellung `legacy` mit `cutoff` und `importedAt` (`src/import/settings.ts`). Ein CHECK verhindert einen Offset größer als die Datei.
 
 - [ ] **T8.3 DB-ID → UID-Mapping** · `DB` · braucht: T8.2
   - Logs enthalten nur Client-DB-IDs. Mapping aus einer **Kopie** von `ts3server.sqlitedb` (Tabelle `clients`) lesen, Fallback `clientdblist` per Query

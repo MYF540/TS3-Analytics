@@ -40,6 +40,10 @@ export const users = sqliteTable(
     serverGroups: text('server_groups'),
     /** Set when the player's personal data was removed (GDPR, T7.2); playtime stays anonymous. */
     anonymizedAt: integer('anonymized_at'),
+    /** Ranking time taken over from the old ranking system, seconds (T8.9). */
+    legacySeconds: integer('legacy_seconds').notNull().default(0),
+    /** Server group id the old ranking system had given this player, for the first rank run. */
+    legacyRank: integer('legacy_rank'),
   },
   (t) => [
     uniqueIndex('users_uid_unique').on(t.uid),
@@ -547,4 +551,45 @@ export const rankHistory = sqliteTable(
     outcome: text('outcome', { enum: ['applied', 'pending', 'dry_run', 'failed'] }).notNull(),
   },
   (t) => [index('rank_history_user_idx').on(t.userId, t.at), index('rank_history_at_idx').on(t.at)],
+);
+
+export const IMPORT_SOURCES = ['logs', 'ranking'] as const;
+export type ImportSource = (typeof IMPORT_SOURCES)[number];
+
+export const IMPORT_STATUSES = ['running', 'done', 'failed'] as const;
+export type ImportStatus = (typeof IMPORT_STATUSES)[number];
+
+/**
+ * One row per imported file (T8.2). Holds the byte offset so an interrupted run continues where
+ * it stopped, and the counters the dry-run report is made of. `size` guards against a file that
+ * changed after it was read.
+ */
+export const importRuns = sqliteTable(
+  'import_runs',
+  {
+    id: integer('id').primaryKey(),
+    source: text('source', { enum: IMPORT_SOURCES }).notNull(),
+    /** File name as given to the CLI; unique per source. */
+    file: text('file').notNull(),
+    /** Size in bytes when the file was last read. */
+    size: integer('size').notNull(),
+    /** Bytes already processed; the point a resumed run starts at. */
+    offset: integer('offset').notNull().default(0),
+    status: text('status', { enum: IMPORT_STATUSES }).notNull(),
+    startedAt: integer('started_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+    linesRead: integer('lines_read').notNull().default(0),
+    linesSkipped: integer('lines_skipped').notNull().default(0),
+    sessionsWritten: integer('sessions_written').notNull().default(0),
+    /** Lines that did not parse, sessions that were dropped – details go to the report. */
+    problems: integer('problems').notNull().default(0),
+    /** Last error of a failed run. */
+    error: text('error'),
+  },
+  (t) => [
+    uniqueIndex('import_runs_file_unique').on(t.source, t.file),
+    check('import_runs_source_check', sql`${t.source} IN ('logs', 'ranking')`),
+    check('import_runs_status_check', sql`${t.status} IN ('running', 'done', 'failed')`),
+    check('import_runs_offset_check', sql`${t.offset} >= 0 AND ${t.offset} <= ${t.size}`),
+  ],
 );
