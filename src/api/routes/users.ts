@@ -190,6 +190,9 @@ export function userRoutes(context: ApiContext): FastifyPluginAsyncZod {
           daysBefore(today, request.query.days - 1),
         );
         if (!detail) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+        if (detail.user.anonymized_at !== null) {
+          throw new ApiError(410, 'USER_ANONYMIZED', 'The data of this player was anonymized');
+        }
         const u = detail.user;
         const t = detail.totals;
         return {

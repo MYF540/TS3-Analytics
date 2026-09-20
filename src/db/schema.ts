@@ -38,6 +38,8 @@ export const users = sqliteTable(
     country: text('country'),
     /** Server group ids as JSON array, as last seen online (rank preview, excluded groups). */
     serverGroups: text('server_groups'),
+    /** Set when the player's personal data was removed (GDPR, T7.2); playtime stays anonymous. */
+    anonymizedAt: integer('anonymized_at'),
   },
   (t) => [
     uniqueIndex('users_uid_unique').on(t.uid),

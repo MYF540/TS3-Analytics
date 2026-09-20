@@ -43,7 +43,9 @@ export function rankingTimes(
   const rows = sqlite
     .prepare(
       `SELECT user_id AS userId, ${expression} AS seconds FROM user_daily_stats
-       WHERE day >= ? ${filter} GROUP BY user_id`,
+       WHERE day >= ? ${filter}
+         AND user_id NOT IN (SELECT id FROM users WHERE anonymized_at IS NOT NULL)
+       GROUP BY user_id`,
     )
     .all(...params) as { userId: number; seconds: number }[];
   const times = new Map(rows.map((r) => [r.userId, Math.max(0, r.seconds)]));

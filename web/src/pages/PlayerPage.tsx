@@ -11,6 +11,7 @@ import { PlayerAccounts } from '../components/PlayerAccounts';
 import { PlayerFlagsNotice } from '../components/PlayerFlagsNotice';
 import { PlayerNotes } from '../components/PlayerNotes';
 import { PlayerRankCard } from '../components/PlayerRankCard';
+import { PrivacyCard } from '../components/PrivacyCard';
 import { PlayerTags } from '../components/PlayerTags';
 import { RangePicker } from '../components/RangePicker';
 import { useApi } from '../hooks/useApi';
@@ -298,6 +299,17 @@ export function PlayerPage() {
           }}
         />
       </section>
+      {hasRole(user, 'admin') && (
+        <section className="card">
+          <h2>{t('privacy.title')}</h2>
+          <PrivacyCard
+            key={id}
+            userId={id}
+            uid={data.user.uid}
+            name={data.user.nickname ?? data.user.uid}
+          />
+        </section>
+      )}
       <section className="card">
         <h2>{t('notes.title')}</h2>
         <PlayerNotes key={id} userId={id} />

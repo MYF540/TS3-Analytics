@@ -211,6 +211,13 @@ export const api = {
   ) => apiGet<FlagsResponse>('/flags', query, signal),
   setFlagStatus: (id: number, status: FlagStatus) =>
     apiPost<{ id: number; status: FlagStatus }>(`/flags/${String(id)}/status`, { status }),
+  /** Link for the GDPR export download (T7.2). */
+  exportUrl: (userId: number) => `/api/users/${String(userId)}/export`,
+  anonymizeUser: (userId: number, confirmUid: string) =>
+    apiPost<{ nicknames: number; ipSeen: number; notes: number; flags: number }>(
+      `/users/${String(userId)}/anonymize`,
+      { confirmUid },
+    ),
   playerRank: (userId: number, signal?: AbortSignal) =>
     apiGet<PlayerRank>(`/users/${String(userId)}/rank`, {}, signal),
   setRankOverride: (

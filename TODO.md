@@ -282,8 +282,9 @@ Entscheidungen (20.09.2026):
   - Tägliches SQLite-Online-Backup nach `/data/backups`, Rotation (z. B. 14 Stück)
   - Notiz: Job „backup“ (täglich) und `pnpm backup` (manuell), `src/jobs/backup.ts`. SQLite-Online-Backup in eine `.partial`-Datei, Umstellung auf `journal_mode=DELETE` (eine eigenständige Datei), `quick_check`, erst dann Umbenennen; Rotation behält die neuesten `BACKUP_KEEP` (Standard 14) in `BACKUP_DIR` (Standard `./data/backups`). Der JobRunner kann jetzt asynchrone Jobs (nie doppelt parallel, Fehler auf der Bot-Status-Seite). 240-MB-Datenbank: ca. 2 s. Wiederherstellung in `docs/backup.md`.
 
-- [ ] **T7.2 DSGVO-Funktionen** · `Backend` · braucht: T4.2
+- [x] **T7.2 DSGVO-Funktionen** · `Backend` · braucht: T4.2
   - Alle Daten einer UID exportieren (JSON) oder löschen
+  - Notiz: Karte „Datenschutz“ auf der Spielerseite (nur Admin). `GET /api/users/:id/export` liefert alles zur UID als JSON-Download (ohne IP-Prüfsummen, nur Anzahl/Länder/Zeiträume). `POST /api/users/:id/anonymize` verlangt die UID als Bestätigung und wird abgelehnt, solange der Spieler online ist. Neue Spalte `users.anonymized_at` (Migration 0011); anonymisierte Spieler sind aus Leaderboards, Spielerliste, Suche und Rangberechnung ausgeblendet, die Spielerseite antwortet 410 `USER_ANONYMIZED`. Audit ohne UID. Grenzen (Server-Ban, Protokoll, ältere Sicherungen) stehen in `docs/datenschutz.md`.
 
 - [ ] **T7.3 Windows-Dienst & Doku** · `Ops` · braucht: T3.1
   - NSSM-Einrichtung, Logs, Update-Ablauf, Allowlist-Eintrag, GeoLite2-Update in `/docs` beschreiben

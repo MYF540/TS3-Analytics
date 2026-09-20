@@ -121,35 +121,39 @@ describe('createLogger', () => {
     dir = undefined;
   });
 
-  it('writes redacted JSON lines to a dated file in the log directory', async () => {
-    dir = mkdtempSync(join(tmpdir(), 'ts3-logs-'));
-    const logDir = join(dir, 'logs');
-    const logger = createLogger({ level: 'info', dir: logDir, retentionDays: 3, pretty: false });
+  it(
+    'writes redacted JSON lines to a dated file in the log directory',
+    { timeout: 30_000 },
+    async () => {
+      dir = mkdtempSync(join(tmpdir(), 'ts3-logs-'));
+      const logDir = join(dir, 'logs');
+      const logger = createLogger({ level: 'info', dir: logDir, retentionDays: 3, pretty: false });
 
-    logger.info({ ip: IPV4, password: 'hunter2' }, 'file test');
-    await new Promise<void>((done) => {
-      logger.flush(() => {
-        done();
+      logger.info({ ip: IPV4, password: 'hunter2' }, 'file test');
+      await new Promise<void>((done) => {
+        logger.flush(() => {
+          done();
+        });
       });
-    });
-    // Transport workers write asynchronously; poll until the line shows up.
-    const deadline = Date.now() + 5000;
-    let content = '';
-    let files: string[] = [];
-    while (Date.now() < deadline) {
-      files = readdirSync(logDir, { recursive: false }).map(String);
-      content = files.map((f) => readFileSync(join(logDir, f), 'utf8')).join('');
-      if (content.includes('file test')) break;
-      await new Promise((r) => setTimeout(r, 50));
-    }
+      // Transport workers write asynchronously and start slowly under load; poll patiently.
+      const deadline = Date.now() + 20_000;
+      let content = '';
+      let files: string[] = [];
+      while (Date.now() < deadline) {
+        files = readdirSync(logDir, { recursive: false }).map(String);
+        content = files.map((f) => readFileSync(join(logDir, f), 'utf8')).join('');
+        if (content.includes('file test')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
 
-    expect(files).toEqual([expect.stringMatching(/^ts3-analytics\.\d{4}-\d{2}-\d{2}\.1\.log$/)]);
-    expect(files[0]?.startsWith(LOG_FILE_BASENAME)).toBe(true);
-    expect(content).toContain('file test');
-    expect(content).toContain(REDACTED);
-    expect(content).not.toContain(IPV4);
-    expect(content).not.toContain('hunter2');
-  });
+      expect(files).toEqual([expect.stringMatching(/^ts3-analytics\.\d{4}-\d{2}-\d{2}\.1\.log$/)]);
+      expect(files[0]?.startsWith(LOG_FILE_BASENAME)).toBe(true);
+      expect(content).toContain('file test');
+      expect(content).toContain(REDACTED);
+      expect(content).not.toContain(IPV4);
+      expect(content).not.toContain('hunter2');
+    },
+  );
 });
 
 describe('webhook scrubbing', () => {

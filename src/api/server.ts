@@ -24,6 +24,7 @@ import { moderationRoutes } from './routes/moderation.js';
 import { noteRoutes } from './routes/notes.js';
 import { personRoutes } from './routes/persons.js';
 import { playerRankRoutes } from './routes/player-rank.js';
+import { privacyRoutes } from './routes/privacy.js';
 import { rankRoutes } from './routes/ranks.js';
 import { settingsRoutes } from './routes/settings.js';
 import { statusRoutes } from './routes/status.js';
@@ -124,6 +125,7 @@ export async function buildServer(
       await api.register(groupRoutes(context));
       await api.register(rankRoutes(context));
       await api.register(playerRankRoutes(context));
+      await api.register(privacyRoutes(context));
     },
     { prefix: '/api' },
   );
