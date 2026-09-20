@@ -12,6 +12,7 @@ const NAV: { to: string; label: string; end: boolean; role?: AdminRole }[] = [
   { to: '/channels', label: t('nav.channels'), end: false },
   { to: '/hinweise', label: t('nav.flags'), end: false, role: 'moderator' },
   { to: '/raenge', label: t('nav.ranks'), end: false, role: 'admin' },
+  { to: '/abgleich', label: t('nav.import'), end: false, role: 'admin' },
   { to: '/protokoll', label: t('nav.audit'), end: false, role: 'admin' },
   { to: '/status', label: t('nav.status'), end: false, role: 'admin' },
   { to: '/einstellungen', label: t('nav.settings'), end: false, role: 'admin' },

@@ -26,6 +26,7 @@ import type {
 import type { playerRankResponse } from './routes/player-rank.js';
 import type { moderationAction } from '../moderation/actions.js';
 import type { onlineResponse } from './routes/online.js';
+import type { importComparisonResponse } from './routes/import.js';
 import type { channelUsageResponse, unusedChannelsResponse } from './routes/channels.js';
 import type {
   heatmapResponse,
@@ -54,6 +55,7 @@ export type Contract = [
   Assert<Equals<z.output<typeof onlineResponse>, Web.OnlineNow>>,
   Assert<Equals<z.output<typeof channelUsageResponse>, Web.ChannelUsage>>,
   Assert<Equals<z.output<typeof unusedChannelsResponse>, Web.UnusedChannels>>,
+  Assert<Equals<z.output<typeof importComparisonResponse>, Web.ImportComparison>>,
   Assert<Equals<z.output<typeof authResponse>, Web.AuthResponse>>,
   Assert<Equals<z.output<typeof auditEntry>, Web.AuditEntry>>,
   Assert<Equals<z.output<typeof auditFiltersResponse>, Web.AuditFilters>>,

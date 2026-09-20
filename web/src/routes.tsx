@@ -6,6 +6,7 @@ import { AuditPage } from './pages/AuditPage';
 import { ChannelsPage } from './pages/ChannelsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FlagsPage } from './pages/FlagsPage';
+import { ImportPage } from './pages/ImportPage';
 import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
@@ -43,6 +44,7 @@ export const routes: RouteObject[] = [
                 children: [
                   { path: 'protokoll', element: <AuditPage /> },
                   { path: 'raenge', element: <RanksPage /> },
+                  { path: 'abgleich', element: <ImportPage /> },
                   { path: 'status', element: <StatusPage /> },
                   { path: 'einstellungen', element: <SettingsPage /> },
                 ],

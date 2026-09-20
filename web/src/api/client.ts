@@ -19,6 +19,7 @@ import type {
   GroupSettings,
   Health,
   Heatmap,
+  ImportComparison,
   Leaderboard,
   LeaderboardMetric,
   LeaderboardPeriod,
@@ -170,6 +171,17 @@ export const api = {
   heatmap: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>('/stats/heatmap', { range }, signal),
   dataSources: (signal?: AbortSignal) => apiGet<DataSources>('/stats/sources', {}, signal),
+  importComparison: (
+    query: { page: number; pageSize: number; both: boolean },
+    signal?: AbortSignal,
+  ) =>
+    apiGet<ImportComparison>(
+      '/import/comparison',
+      { page: query.page, pageSize: query.pageSize, both: query.both ? '1' : '0' },
+      signal,
+    ),
+  decideImport: (userId: number, use: 'logs' | 'legacy') =>
+    apiPost<{ legacyS: number }>(`/import/comparison/${String(userId)}`, { use }),
   channelUsage: (range: ChannelRange, signal?: AbortSignal) =>
     apiGet<ChannelUsage>('/channels/usage', { range }, signal),
   unusedChannels: (days: number, signal?: AbortSignal) =>

@@ -16,6 +16,7 @@ export const de = {
   'nav.flags': 'Hinweise',
   'nav.ranks': 'Ränge',
   'nav.channels': 'Channels',
+  'nav.import': 'Abgleich',
 
   'theme.toggle': 'Farbschema wechseln',
   'theme.light': 'Hell',
@@ -44,6 +45,9 @@ export const de = {
   'page.channels.title': 'Channels',
   'page.channels.intro':
     'Wie viel Zeit in welchem Channel verbracht wird und welche Channels seit Längerem leer stehen.',
+  'page.import.title': 'Abgleich der Importdaten',
+  'page.import.intro':
+    'Für jeden Spieler die Zeit aus den alten Serverlogs neben dem Wert des alten Rangsystems. Größte Abweichung zuerst. Was hier als Rangzeit gilt, entscheidest du pro Spieler.',
   'page.status.title': 'Bot-Status',
   'page.status.intro':
     'Zustand des Dienstes, der TeamSpeak-Verbindung und der Datenbank. Aktualisiert sich alle 30 Sekunden.',
@@ -132,6 +136,21 @@ export const de = {
   'channels.unused.lastSeen': 'Zuletzt in der Channelliste gesehen: {time}',
   'channels.hint':
     'Gezählt wird die Zeit, die Spieler in einem Channel waren – verknüpfte Accounts zählen als eine Person.',
+
+  'import.summary':
+    'Spieler mit Daten aus mindestens einer Quelle: {total}. Davon liegen {matching} innerhalb der Toleranz von {tolerance}.',
+  'import.empty': 'Es gibt keine Importdaten zum Vergleichen.',
+  'import.col.player': 'Spieler',
+  'import.col.logs': 'Laut Serverlogs',
+  'import.col.legacy': 'Laut altem Rangsystem',
+  'import.col.diff': 'Abweichung',
+  'import.col.decision': 'Gilt als Rangzeit',
+  'import.useLogs': 'Logzeit übernehmen',
+  'import.keep': 'Wert behalten',
+  'import.placeholder': 'Platzhalter',
+  'import.onlyBoth': 'Nur Spieler, die beide Quellen kennen',
+  'import.confirmLower':
+    'Damit sinkt die Rangzeit von „{name}“ von {from} auf {to}. Die Serverlogs reichen möglicherweise nicht weit genug zurück. Trotzdem übernehmen?',
 
   'common.loading': 'Wird geladen …',
   'common.range': 'Zeitraum',
@@ -350,6 +369,7 @@ export const de = {
   'audit.action.rank.override': 'Rang-Ausnahme geändert',
   'audit.action.privacy.export': 'Daten eines Spielers exportiert',
   'audit.action.privacy.anonymize': 'Spieler anonymisiert',
+  'audit.action.import.decision': 'Rangzeit aus dem Import entschieden',
   'audit.action.moderation.poke': 'Spieler angestupst',
   'audit.action.moderation.message': 'Nachricht an Spieler',
   'audit.action.moderation.move': 'Spieler verschoben',

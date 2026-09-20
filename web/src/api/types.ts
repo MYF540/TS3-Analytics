@@ -157,6 +157,21 @@ export interface OnlineNow {
   }[];
 }
 
+/** Log time against the value of the old ranking system, per player (T8.10). */
+export interface ImportComparison {
+  items: {
+    userId: number;
+    nickname: string | null;
+    placeholder: boolean;
+    logS: number;
+    legacyS: number;
+    diffS: number;
+  }[];
+  total: number;
+  matching: number;
+  toleranceS: number;
+}
+
 /** Where the numbers of a period come from: imported logs or live tracking (T8.7). */
 export interface DataSources {
   importedFrom: number | null;
