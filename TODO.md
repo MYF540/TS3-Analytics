@@ -316,10 +316,11 @@ Ziel: Historie aus mehreren GB alter TS3-Serverlogs und der Datenbank des bisher
   - `users.legacy_seconds`, `users.legacy_rank`, globale Einstellung `legacy_cutoff` (Zeitpunkt der Umstellung)
   - Notiz: `sessions.source` und der Zustand `unknown` gab es schon seit T1.1. Neu (Migration 0012): Tabelle `import_runs` mit Byte-Offset, Status und Zählern je Datei – eindeutig über (Quelle, Datei); eine gewachsene Datei wird fortgesetzt, eine geschrumpfte oder abgebrochene von vorn gelesen (`startImportRun`, `isImportDone` in `src/db/repositories/imports.ts`). Dazu `users.legacy_seconds` (Standard 0) und `users.legacy_rank` (alte Servergruppen-ID) sowie die Einstellung `legacy` mit `cutoff` und `importedAt` (`src/import/settings.ts`). Ein CHECK verhindert einen Offset größer als die Datei.
 
-- [ ] **T8.3 DB-ID → UID-Mapping** · `DB` · braucht: T8.2
+- [x] **T8.3 DB-ID → UID-Mapping** · `DB` · braucht: T8.2
   - Logs enthalten nur Client-DB-IDs. Mapping aus einer **Kopie** von `ts3server.sqlitedb` (Tabelle `clients`) lesen, Fallback `clientdblist` per Query
   - Nicht auflösbare DB-IDs als Platzhalter-User anlegen (später verknüpfbar über T5.3)
   - Fertig wenn: Test mit Beispiel-DB; Bericht über Anzahl nicht auflösbarer IDs
+  - Notiz: `src/import/client-map.ts`. `readClientMap` liest `clients` einer Kopie von `ts3server.sqlitedb` read-only (`client_id` ist genau die ID aus den Logzeilen, gefiltert auf den virtuellen Server, ohne Query-Konten). `DbidResolver` legt Nutzer beim ersten Auftreten an und merkt sie sich im Speicher, damit ein Lauf über Millionen Zeilen die Datenbank einmal je Spieler anfasst; unbekannte IDs bekommen die UID `unknown-dbid-<id>` und stehen im Bericht. **Wichtiger Befund:** Von den 326 Datenbank-IDs im Beispiel-Log von 2019 stehen nur 190 noch in der Serverdatenbank – 41,7 % sind nicht auflösbar, weil TeamSpeak inaktive Accounts aus seiner Datenbank räumt. Über mehrere Jahre Logs entstehen damit sehr viele Platzhalter-Spieler; wie sie in Spielerliste und Leaderboards behandelt werden, ist in T8.6 zu klären. Der Query-Fallback `clientdblist` ist noch offen – er hilft nur bei IDs, die der Server noch kennt, also genau nicht bei den gelöschten.
 
 - [x] **T8.4 Streaming-Log-Parser** · `Watcher` · braucht: T8.1
   - Reine Parser-Funktion pro Zeile plus Datei-Reader, der zeilenweise streamt (kein Laden ganzer Dateien), Dateien chronologisch sortiert, Encoding-Fehler toleriert
