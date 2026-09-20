@@ -157,6 +157,13 @@ export interface OnlineNow {
   }[];
 }
 
+/** Where the numbers of a period come from: imported logs or live tracking (T8.7). */
+export interface DataSources {
+  importedFrom: number | null;
+  importedTo: number | null;
+  liveSince: number | null;
+}
+
 /** Only short ranges: channel time comes from the raw segments (see routes/channels.ts). */
 export type ChannelRange = '24h' | '7d' | '30d';
 

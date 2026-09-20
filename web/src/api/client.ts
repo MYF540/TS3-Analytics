@@ -11,6 +11,7 @@ import type {
   BotStatus,
   ChannelRange,
   ChannelUsage,
+  DataSources,
   FlagLevel,
   FlagsResponse,
   FlagStatus,
@@ -168,6 +169,7 @@ export const api = {
   ) => apiGet<OnlineSeries>('/stats/online', query, signal),
   heatmap: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>('/stats/heatmap', { range }, signal),
+  dataSources: (signal?: AbortSignal) => apiGet<DataSources>('/stats/sources', {}, signal),
   channelUsage: (range: ChannelRange, signal?: AbortSignal) =>
     apiGet<ChannelUsage>('/channels/usage', { range }, signal),
   unusedChannels: (days: number, signal?: AbortSignal) =>

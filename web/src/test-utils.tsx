@@ -210,6 +210,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/stats/overview': sampleOverview,
     '/api/stats/online': sampleSeries,
     '/api/stats/heatmap': sampleHeatmap,
+    '/api/stats/sources': { importedFrom: null, importedTo: null, liveSince: 1_700_000_000 },
     '/api/online': {
       connected: true,
       items: [

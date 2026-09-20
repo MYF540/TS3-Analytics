@@ -113,6 +113,20 @@ Echte Beispieldatei zum Vergleich: 27 MB, 214.279 Zeilen, 2.765 Sitzungen, rund 
 
 Verworfener erster Ansatz: Der Import hat jede Sitzung einzeln über `finalizeSession` in die Aggregate eingerechnet. Das schreibt `server_hourly` für dieselben Stunden immer wieder neu und war nach zehn Minuten noch nicht mit 1 GB durch. Jetzt schreibt der Import nur Sitzungen und rechnet die Aggregate am Ende einmal neu (`rebuildAggregates`, T8.7) – dabei wird jede Sitzung genau einmal gelesen.
 
+### Nachmessung T8.7 (2026-09-20, mit Importdaten)
+
+Gleicher Datensatz wie oben, zusätzlich 232.520 importierte Sitzungen aus 1 GB erzeugter Logs (Bestand danach: 8.620 Nutzer, 809.527 Sitzungen, 459.567 Tageszeilen). Alle Abfragen bleiben im Budget; die Werte steigen dort, wo über alle Tage gerechnet wird:
+
+| Abfrage                                        | vorher (Median) | mit Import (Median) |     p95 | Budget |
+| ---------------------------------------------- | --------------: | ------------------: | ------: | :----: |
+| Leaderboard frei (gesamter Zeitraum über Tage) |         33,6 ms |             48,4 ms | 52,8 ms |   ✅   |
+| Leaderboard Jahr                               |          9,4 ms |             12,5 ms | 19,6 ms |   ✅   |
+| Online-Verlauf gesamt                          |         19,4 ms |             20,8 ms | 27,1 ms |   ✅   |
+| Heatmap gesamt                                 |         13,0 ms |             14,3 ms | 16,1 ms |   ✅   |
+| Nutzerliste (Standardfilter)                   |          1,6 ms |              1,9 ms |  2,1 ms |   ✅   |
+
+Die Platzhalter-Spieler des Imports tauchen in Leaderboards und Nutzerliste nicht auf, ihre Zeit steckt aber in `server_hourly` – die Serverkurven werden also länger, die Ranglisten nicht.
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

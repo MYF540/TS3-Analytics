@@ -271,6 +271,10 @@ export const de = {
   'notes.replaced': 'Ersetzt {time} von {editor}',
   'notes.hint': 'Nur für angemeldete Personen sichtbar. Bitte keine sensiblen Daten eintragen.',
 
+  'lb.imported':
+    'Zeiten von {from} bis {to} stammen aus den alten Serverlogs. Für sie gibt es nur Online-Zeit, keine Aufteilung in aktiv, inaktiv und AFK.',
+  'lb.importedActive':
+    'Aktive Zeit wird erst seit {live} erfasst. Die aus den alten Serverlogs übernommenen Zeiten ({from} bis {to}) zählen hier nicht mit – dort ist nur bekannt, wer online war.',
   'lb.tabs': 'Leaderboard-Art',
   'lb.tab.total': 'Gesamt',
   'lb.tab.active': 'Aktiv',

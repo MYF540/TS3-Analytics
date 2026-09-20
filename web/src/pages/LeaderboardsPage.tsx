@@ -3,7 +3,14 @@ import { api, buildUrl } from '../api/client';
 import type { LeaderboardMetric, LeaderboardPeriod } from '../api/types';
 import { Pagination } from '../components/Pagination';
 import { useApi } from '../hooks/useApi';
-import { formatDay, formatDuration, formatNumber, t, type MessageKey } from '../i18n';
+import {
+  formatDateTime,
+  formatDay,
+  formatDuration,
+  formatNumber,
+  t,
+  type MessageKey,
+} from '../i18n';
 import { PageHeader } from './pages';
 
 const PAGE_SIZE = 25;
@@ -67,6 +74,25 @@ function useLeaderboardParams() {
   return { tab: tab as Tab, metric, page, from, to, update } as const;
 }
 
+/**
+ * Imported log time is online time only (T8.7): there is no activity data before live tracking
+ * started, so an "active" leaderboard covering that period would be misleading.
+ */
+function ImportNotice({ metric }: { metric: LeaderboardMetric }) {
+  const { data } = useApi((signal) => api.dataSources(signal), []);
+  if (!data || data.importedFrom === null) return null;
+  const key = metric === 'active' ? 'lb.importedActive' : 'lb.imported';
+  return (
+    <p className="muted small">
+      {t(key, {
+        from: formatDateTime(data.importedFrom),
+        to: formatDateTime(data.importedTo ?? data.importedFrom),
+        live: data.liveSince === null ? '–' : formatDateTime(data.liveSince),
+      })}
+    </p>
+  );
+}
+
 export function LeaderboardsPage() {
   const { tab, metric, page, from, to, update } = useLeaderboardParams();
   const customReady = DATE.test(from) && DATE.test(to);
@@ -113,6 +139,8 @@ export function LeaderboardsPage() {
           </button>
         ))}
       </div>
+
+      <ImportNotice metric={metric} />
 
       <div
         className="card stack"

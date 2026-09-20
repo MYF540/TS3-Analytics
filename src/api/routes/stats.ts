@@ -34,15 +34,39 @@ export const seriesResponse = z.object({
   points: z.array(z.object({ t: z.number().int(), avgOnline: z.number(), maxOnline: z.number() })),
 });
 
+export const sourcesResponse = z.object({
+  /** First and last imported session (T8.6), null when nothing was imported. */
+  importedFrom: z.number().int().nullable(),
+  importedTo: z.number().int().nullable(),
+  /** First session the watcher recorded itself; only from here on there is activity data. */
+  liveSince: z.number().int().nullable(),
+});
+
 export const heatmapResponse = z.object({
   range: z.enum(TIME_RANGES),
   /** 7 rows (Monday first) × 24 hours, average users online (Berlin time). */
   values: z.array(z.array(z.number())),
 });
 
+/** Where the data of a period comes from. Rarely changes, so one lookup per minute is enough. */
+function dataSources(context: ApiContext): z.output<typeof sourcesResponse> {
+  const { sqlite } = context.database;
+  const edge = (source: 'import' | 'live', order: 'ASC' | 'DESC') =>
+    (sqlite
+      .prepare(`SELECT join_at FROM sessions WHERE source = ? ORDER BY join_at ${order} LIMIT 1`)
+      .pluck()
+      .get(source) as number | undefined) ?? null;
+  return {
+    importedFrom: edge('import', 'ASC'),
+    importedTo: edge('import', 'DESC'),
+    liveSince: edge('live', 'ASC'),
+  };
+}
+
 export function statsRoutes(context: ApiContext): FastifyPluginAsyncZod {
   return (app) => {
     const { sqlite } = context.database;
+    let cached: { at: number; value: z.output<typeof sourcesResponse> } | undefined;
 
     app.get(
       '/stats/overview',
@@ -77,6 +101,12 @@ export function statsRoutes(context: ApiContext): FastifyPluginAsyncZod {
         return { from, to, ...onlineSeries(sqlite, from, to) };
       },
     );
+
+    app.get('/stats/sources', { schema: { response: { 200: sourcesResponse } } }, () => {
+      const now = context.now();
+      if (!cached || now - cached.at > 60) cached = { at: now, value: dataSources(context) };
+      return cached.value;
+    });
 
     app.get(
       '/stats/heatmap',

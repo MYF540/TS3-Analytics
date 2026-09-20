@@ -28,6 +28,33 @@ function board(url: URL): { body: Leaderboard } {
 const last = (fetchMock: ReturnType<typeof mockApi>) =>
   Object.fromEntries(requested(fetchMock, '/api/leaderboards').at(-1)?.searchParams ?? []);
 
+describe('imported time', () => {
+  const sources = {
+    importedFrom: 1_500_000_000,
+    importedTo: 1_600_000_000,
+    liveSince: 1_700_000_000,
+  };
+
+  it('says nothing when there is no imported data', async () => {
+    mockApi({ '/api/leaderboards': board });
+    renderAt('/leaderboards');
+    await screen.findByRole('table');
+    expect(screen.queryByText(/alten Serverlogs/)).not.toBeInTheDocument();
+  });
+
+  it('explains imported online time', async () => {
+    mockApi({ '/api/leaderboards': board, '/api/stats/sources': sources });
+    renderAt('/leaderboards');
+    expect(await screen.findByText(/stammen aus den alten Serverlogs/)).toBeInTheDocument();
+  });
+
+  it('warns that active time only exists since live tracking', async () => {
+    mockApi({ '/api/leaderboards': board, '/api/stats/sources': sources });
+    renderAt('/leaderboards?art=aktiv');
+    expect(await screen.findByText(/Aktive Zeit wird erst seit/)).toBeInTheDocument();
+  });
+});
+
 describe('LeaderboardsPage', () => {
   it('shows the all-time ranking with links to the players', async () => {
     const fetchMock = mockApi({ '/api/leaderboards': board });
