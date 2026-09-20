@@ -26,6 +26,10 @@ Darunter zeigt dieselbe Seite, wann dieser Spieler üblicherweise online ist:
 | ------------------------------------ | ------------------------------------------ |
 | ![Ränge](docs/screenshots/ranks.png) | ![Channels](docs/screenshots/channels.png) |
 
+Wer verbringt Zeit mit wem? Das Netzwerk verbindet Spieler, die gemeinsam im selben Channel waren:
+
+![Spieler-Netzwerk](docs/screenshots/network.png)
+
 ## Funktionen
 
 - **Zeiterfassung** pro Spieler: Online-Zeit, aktive Zeit, inaktiv, AFK; Sessions, Nickname-Verlauf,
@@ -39,6 +43,8 @@ Darunter zeigt dieselbe Seite, wann dieser Spieler üblicherweise online ist:
   mit Ausnahmen, Bonuszeit, eingefrorenen Rängen und Aufstiegsnachricht. Startet im Probelauf.
 - **Admin-Werkzeuge**: Hinweise auf Zweitaccounts und Ban-Umgehung, Notizen, Tags, Banlisten-Spiegel,
   Moderation (kicken, bannen, anstupsen, verschieben, Nachricht), Audit-Log, Discord-Benachrichtigungen.
+- **Spieler-Netzwerk**: Kraft-gerichteter Graph, wer häufig mit wem im selben Channel ist –
+  AFK-Zeiten und ausgewählte Channels bleiben außen vor. Wird einmal täglich berechnet.
 - **Datenschutz**: Auskunft als JSON-Export und Anonymisierung pro Spieler.
 - **Import der Historie**: alte Serverlogs und die Datenbank des früheren Rangsystems.
 
@@ -178,8 +184,8 @@ Erfassung danach – nie beides.
   Wiederherstellung: [docs/backup.md](docs/backup.md).
 - **Logs** liegen in `data/logs`, eine Datei pro Tag. Passwörter, Tokens und IP-Adressen werden
   geschwärzt. Die letzten Warnungen stehen auch auf der Seite „Bot-Status“.
-- **Automatische Jobs**: Hinweis-Erkennung (15 min), abgelaufene Logins (stündlich), Sicherung und
-  Aufbewahrung (täglich), Datenbank-Wartung (wöchentlich).
+- **Automatische Jobs**: Hinweis-Erkennung (15 min), abgelaufene Logins (stündlich), Sicherung,
+  Aufbewahrung und Spieler-Netzwerk (täglich), Datenbank-Wartung (wöchentlich).
 - Alles Weitere: [docs/betrieb.md](docs/betrieb.md).
 
 ## Entwicklung

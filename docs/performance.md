@@ -153,6 +153,8 @@ Verworfener erster Ansatz: Die beiden Abfragen haben `persons` mitgejoint und ü
 
 Bei einem Jahr sind fast alle möglichen Paare der 200 Kandidaten vorhanden (19.849 von 19.900). Ein Graph mit 20.000 Kanten ist nicht lesbar – die Seite (T9.2) muss die Anzahl der gezeigten Verbindungen begrenzen.
 
+Die Seite selbst liest nur noch: `GET /api/network` braucht mit 200 gezeigten Verbindungen 28 ms und mit 1.500 rund 33 ms (jeweils einschließlich HTTP, gemessen über die laufende Anwendung).
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

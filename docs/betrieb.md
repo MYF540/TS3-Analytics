@@ -139,12 +139,12 @@ Fehlt die Datei, läuft alles andere normal weiter; es werden dann nur keine Lä
 
 Diese Jobs laufen im Dienst selbst; ihr letzter Lauf steht auf der Seite „Bot-Status“.
 
-| Wann            | Was                                                            |
-| --------------- | -------------------------------------------------------------- |
-| Alle 15 Minuten | Hinweis-Erkennung (`flag-detection`)                           |
-| Stündlich       | Abgelaufene Logins entfernen (`expired-sessions`)              |
-| Täglich         | Sicherung (`backup`), Aufbewahrung von IP-Daten (`retention`)  |
-| Wöchentlich     | Datenbank-Wartung (`maintenance`: `optimize`, WAL verkleinern) |
+| Wann            | Was                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| Alle 15 Minuten | Hinweis-Erkennung (`flag-detection`)                                                        |
+| Stündlich       | Abgelaufene Logins entfernen (`expired-sessions`)                                           |
+| Täglich         | Sicherung (`backup`), Aufbewahrung von IP-Daten (`retention`), Spieler-Netzwerk (`network`) |
+| Wöchentlich     | Datenbank-Wartung (`maintenance`: `optimize`, WAL verkleinern)                              |
 
 Von Hand:
 

@@ -157,6 +157,28 @@ export interface OnlineNow {
   }[];
 }
 
+/** Windows the player network is computed for (T9.1). */
+export type NetworkRange = '30d' | '90d' | '1y' | 'all';
+
+/** The stored player network of one window (T9.2). */
+export interface NetworkGraph {
+  range: NetworkRange;
+  computedAt: number | null;
+  from: number | null;
+  to: number | null;
+  nodes: { userId: number; nickname: string | null; seconds: number; accounts: number }[];
+  edges: {
+    a: number;
+    b: number;
+    seconds: number;
+    encounters: number;
+    shareA: number;
+    shareB: number;
+  }[];
+  edgesTotal: number;
+  strongestS: number;
+}
+
 /** Settings of the player network and the result of the last daily run (T9.1). */
 export interface NetworkSettings {
   settings: {

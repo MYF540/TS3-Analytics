@@ -25,6 +25,8 @@ import type {
   LeaderboardPeriod,
   ModerationAction,
   ModerationSettings,
+  NetworkGraph,
+  NetworkRange,
   NetworkSettings,
   Note,
   NoteRevision,
@@ -172,6 +174,8 @@ export const api = {
   heatmap: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>('/stats/heatmap', { range }, signal),
   dataSources: (signal?: AbortSignal) => apiGet<DataSources>('/stats/sources', {}, signal),
+  network: (query: { range: NetworkRange; limit: number }, signal?: AbortSignal) =>
+    apiGet<NetworkGraph>('/network', query, signal),
   networkSettings: (signal?: AbortSignal) =>
     apiGet<NetworkSettings>('/settings/network', {}, signal),
   saveNetworkSettings: (settings: NetworkSettings['settings']) =>

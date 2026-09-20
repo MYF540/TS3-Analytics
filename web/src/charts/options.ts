@@ -300,3 +300,89 @@ export function playtimeChartOption(
     })),
   };
 }
+
+export interface NetworkChartInput {
+  nodes: { userId: number; nickname: string | null; seconds: number }[];
+  edges: { a: number; b: number; seconds: number }[];
+}
+
+/**
+ * Force-directed graph of who spends time with whom (T9.2). Node size is the counted time,
+ * edge width the time two players spent together. Only the biggest nodes carry a label – with
+ * two hundred names the picture would be unreadable, the table below lists them all.
+ */
+export function networkChartOption(
+  data: NetworkChartInput,
+  palette: ChartPalette,
+  labelled = 15,
+): ChartOption {
+  const maxSeconds = Math.max(1, ...data.nodes.map((node) => node.seconds));
+  const maxEdge = Math.max(1, ...data.edges.map((edge) => edge.seconds));
+  const names = new Map(
+    data.nodes.map((node) => [node.userId, node.nickname ?? `#${String(node.userId)}`]),
+  );
+  const withLabel = new Set(
+    [...data.nodes]
+      .sort((a, b) => b.seconds - a.seconds)
+      .slice(0, labelled)
+      .map((node) => node.userId),
+  );
+
+  return {
+    animation: false,
+    tooltip: {
+      trigger: 'item',
+      ...tooltipStyle(palette),
+      formatter: (params: { dataType: string; data: Record<string, unknown> }) => {
+        if (params.dataType === 'edge') {
+          const edge = params.data as { source: string; target: string; seconds: number };
+          return `${names.get(Number(edge.source)) ?? ''} ↔ ${names.get(Number(edge.target)) ?? ''}<br/>${t('network.tooltip.together')}: <b>${formatDuration(edge.seconds)}</b>`;
+        }
+        const node = params.data as { id: string; seconds: number; degree: number };
+        return `${names.get(Number(node.id)) ?? ''}<br/>${t('network.tooltip.time')}: <b>${formatDuration(node.seconds)}</b><br/>${t('network.tooltip.partners')}: <b>${formatNumber(node.degree)}</b>`;
+      },
+    },
+    series: [
+      {
+        type: 'graph',
+        layout: 'force',
+        roam: true,
+        draggable: true,
+        // Repulsion and edge length scale with the number of nodes so small and large
+        // networks both stay readable.
+        force: {
+          repulsion: Math.max(60, 1200 / Math.max(1, Math.sqrt(data.nodes.length))),
+          edgeLength: [30, 120],
+          gravity: 0.08,
+          friction: 0.2,
+        },
+        emphasis: { focus: 'adjacency', label: { show: true } },
+        label: {
+          show: true,
+          position: 'right',
+          color: palette.text,
+          formatter: (params: { data: { id: string } }) =>
+            withLabel.has(Number(params.data.id)) ? (names.get(Number(params.data.id)) ?? '') : '',
+        },
+        itemStyle: { color: palette.series[0], borderColor: palette.surface, borderWidth: 2 },
+        // Muted ink, not the grid colour: the lines carry the structure and must be visible.
+        lineStyle: { color: palette.muted, opacity: 0.35, curveness: 0 },
+        data: data.nodes.map((node) => ({
+          id: String(node.userId),
+          name: names.get(node.userId) ?? '',
+          seconds: node.seconds,
+          degree: data.edges.filter((edge) => edge.a === node.userId || edge.b === node.userId)
+            .length,
+          // Area, not radius, carries the value: 8 px for the smallest, 46 px for the largest.
+          symbolSize: 8 + 38 * Math.sqrt(node.seconds / maxSeconds),
+        })),
+        links: data.edges.map((edge) => ({
+          source: String(edge.a),
+          target: String(edge.b),
+          seconds: edge.seconds,
+          lineStyle: { width: 0.6 + 4.4 * (edge.seconds / maxEdge) },
+        })),
+      },
+    ],
+  };
+}

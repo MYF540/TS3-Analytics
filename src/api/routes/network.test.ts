@@ -5,10 +5,12 @@ import type { AppDatabase } from '../../db/client.js';
 import {
   openSegment,
   openSession,
+  recordNickname,
   upsertChannels,
   upsertUser,
 } from '../../db/repositories/index.js';
 import { createTestDatabase } from '../../db/testing.js';
+import { runNetworkJob } from '../../network/job.js';
 import { loadNetworkSettings } from '../../network/settings.js';
 import { loadActivitySettings, saveActivitySettings } from '../../watcher/settings.js';
 import { buildServer } from '../server.js';
@@ -84,6 +86,86 @@ describe('GET /api/settings/network', () => {
     expect((await get(moderator)).statusCode).toBe(403);
     const res = await app.inject({ method: 'GET', url: '/api/settings/network' });
     expect(res.statusCode).toBe(401);
+  });
+});
+
+describe('GET /api/network', () => {
+  /** Three players: a and b spend a lot of time together, c only briefly with a. */
+  function network(): { a: number; b: number; c: number } {
+    const a = upsertUser(database.db, { uid: 'uid-a', seenAt: NOW - 10 * 86_400 });
+    const b = upsertUser(database.db, { uid: 'uid-b', seenAt: NOW - 10 * 86_400 });
+    const c = upsertUser(database.db, { uid: 'uid-c', seenAt: NOW - 10 * 86_400 });
+    recordNickname(database.db, a, 'Alice', NOW);
+    recordNickname(database.db, b, 'Bob', NOW);
+    visit(a, 1, NOW - 86_400, 10 * H);
+    visit(b, 1, NOW - 86_400, 10 * H);
+    visit(c, 1, NOW - 86_400, 2 * H);
+    return { a, b, c };
+  }
+
+  it('returns the strongest connections with nicknames and shares', async () => {
+    const { a, b } = network();
+    runNetworkJob(database, NOW);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/network?range=30d',
+      headers: { cookie: admin },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{
+      computedAt: number;
+      edges: { a: number; b: number; seconds: number; shareA: number }[];
+      nodes: { userId: number; nickname: string | null; seconds: number }[];
+      edgesTotal: number;
+      strongestS: number;
+    }>();
+    expect(body.computedAt).toBe(NOW);
+    expect(body.edges[0]).toMatchObject({ a: Math.min(a, b), b: Math.max(a, b), seconds: 10 * H });
+    expect(body.edges[0]?.shareA).toBeCloseTo(1);
+    expect(body.nodes.map((n) => n.nickname)).toContain('Alice');
+    expect(body.edgesTotal).toBe(3);
+    expect(body.strongestS).toBe(10 * H);
+  });
+
+  it('draws only as many connections as the slider asks for', async () => {
+    network();
+    runNetworkJob(database, NOW);
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/network?range=30d&limit=10',
+      headers: { cookie: admin },
+    });
+    const body = res.json<{ edges: unknown[]; edgesTotal: number }>();
+    expect(body.edges).toHaveLength(3);
+    expect(body.edgesTotal).toBe(3);
+  });
+
+  it('answers with an empty graph while the job never ran', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/network',
+      headers: { cookie: admin },
+    });
+    expect(res.json()).toMatchObject({ computedAt: null, nodes: [], edges: [], edgesTotal: 0 });
+  });
+
+  it('refuses a window it does not know', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/network?range=7d',
+      headers: { cookie: admin },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('is admin only', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/network',
+      headers: { cookie: moderator },
+    });
+    expect(res.statusCode).toBe(403);
   });
 });
 

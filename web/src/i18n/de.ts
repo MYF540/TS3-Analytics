@@ -16,6 +16,7 @@ export const de = {
   'nav.flags': 'Hinweise',
   'nav.ranks': 'Ränge',
   'nav.channels': 'Channels',
+  'nav.network': 'Netzwerk',
   'nav.import': 'Abgleich',
 
   'theme.toggle': 'Farbschema wechseln',
@@ -45,6 +46,9 @@ export const de = {
   'page.channels.title': 'Channels',
   'page.channels.intro':
     'Wie viel Zeit in welchem Channel verbracht wird und welche Channels seit Längerem leer stehen.',
+  'page.network.title': 'Spieler-Netzwerk',
+  'page.network.intro':
+    'Wer verbringt Zeit mit wem? Zwei Spieler sind verbunden, wenn sie gleichzeitig im selben Channel waren. Je dicker die Linie, desto mehr gemeinsame Zeit; je größer der Punkt, desto mehr Zeit insgesamt.',
   'page.import.title': 'Abgleich der Importdaten',
   'page.import.intro':
     'Für jeden Spieler die Zeit aus den alten Serverlogs neben dem Wert des alten Rangsystems. Größte Abweichung zuerst. Was hier als Rangzeit gilt, entscheidest du pro Spieler.',
@@ -152,6 +156,28 @@ export const de = {
   'import.confirmLower':
     'Damit sinkt die Rangzeit von „{name}“ von {from} auf {to}. Die Serverlogs reichen möglicherweise nicht weit genug zurück. Trotzdem übernehmen?',
 
+  'network.limit': 'Gezeigte Verbindungen: {count}',
+  'network.recompute': 'Jetzt neu berechnen',
+  'network.computedAt': 'Berechnet am {time}',
+  'network.never': 'Das Netz wurde noch nicht berechnet.',
+  'network.counts': '{nodes} Spieler, {edges} von {total} Verbindungen gezeigt',
+  'network.empty':
+    'Für diesen Zeitraum gibt es keine Verbindungen. Entweder war niemand gemeinsam in einem Channel, oder das Netz wurde noch nicht berechnet.',
+  'network.label': 'Netzwerkdiagramm: Spieler und ihre gemeinsame Zeit',
+  'network.hint':
+    'Punkte lassen sich ziehen, mit dem Mausrad wird gezoomt. Ein Klick in der Tabelle führt zur Spielerseite.',
+  'network.showTable': 'Stärkste Paare als Tabelle anzeigen',
+  'network.col.pair': 'Paar',
+  'network.col.together': 'Gemeinsame Zeit',
+  'network.col.encounters': 'Begegnungen',
+  'network.col.share': 'Anteil der eigenen Zeit',
+  'network.shareValue': '{a} % / {b} %',
+  'network.tooltip.together': 'Gemeinsam',
+  'network.tooltip.time': 'Gezählte Zeit',
+  'network.tooltip.partners': 'Verbindungen',
+  'network.caveats':
+    'Gezählt wird nur selbst erfasste Zeit – aus alten Logs importierte Zeiten fehlen, weil dort der Channel nicht bekannt ist. AFK-Zeiten und die in den Einstellungen ausgeschlossenen Channels zählen nicht mit. Verknüpfte Accounts sind ein Punkt. Gleicher Channel heißt nicht zwangsläufig, dass miteinander geredet wurde.',
+
   'common.loading': 'Wird geladen …',
   'common.range': 'Zeitraum',
   'common.showTable': 'Als Tabelle anzeigen',
@@ -160,6 +186,7 @@ export const de = {
   'range.24h': '24 Stunden',
   'range.7d': '7 Tage',
   'range.30d': '30 Tage',
+  'range.90d': '90 Tage',
   'range.1y': '1 Jahr',
   'range.all': 'Gesamt',
 
