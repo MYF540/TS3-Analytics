@@ -347,9 +347,10 @@ Ziel: Historie aus mehreren GB alter TS3-Serverlogs und der Datenbank des bisher
   - Frontend kennzeichnet Zeiträume mit Importdaten („nur Online-Zeit, keine Aktivitätsdaten“); Leaderboards „aktiv“ weisen darauf hin, dass sie erst ab Live-Tracking gelten
   - Fertig wenn: Benchmark aus T1.4 bleibt mit den echten Importdaten im Budget
 
-- [ ] **T8.8 Analyse Alt-Ranking-DB** · `DB` · braucht: T0.1
+- [x] **T8.8 Analyse Alt-Ranking-DB** · `DB` · braucht: T0.1
   - Die Alt-DB ist SQLite. Eine Kopie unter `/data/import` mit `sqlite3` bzw. `better-sqlite3` read-only öffnen, Schema, Tabellen und Beispielwerte untersuchen; Bedeutung der Felder klären (Zeit online/aktiv, Einheit, Rang, Gruppen-IDs, Zeitstempel, UID oder DB-ID)
   - Ergebnis: `/docs/import-legacy-ranking.md` mit Feld-Mapping auf das neue Schema
+  - Notiz: `docs/import-legacy-ranking.md`. Die Daten liegen in der SinusBot-Datenbank in der Schlüssel-Wert-Tabelle `scriptdata`: `timetrak<UID>` sind **Sekunden** reine Online-Zeit, `startTime<UID>` ist nur der Beginn des laufenden Messintervalls (nicht „zuerst gesehen“). Die Schlüssel enthalten die UID direkt, ein DB-ID-Mapping ist also nicht nötig. Die acht alten Ränge und ihre Schwellen (15 min bis 112 Tage, Minuten in der Konfiguration) stehen in `instances.config`, ebenso sieben ausgenommene Gruppen; Mute/Deaf/AFK waren nicht ausgeschlossen, der Wert entspricht also unserer Online-Zeit. Bestand: 11.469 Nutzer, zusammen 548.804 h, Median 1,5 h, Höchstwert 8,2 Jahre (dauerhaft verbundener Bot – Fall für T8.10). Unter dem früheren Skriptnamen liegt ein zweiter Bestand mit 174 Werten, bei 28 Nutzern ist der alte Wert größer; Vorschlag: je UID das Maximum nehmen und beide Zahlen ausweisen.
 
 - [ ] **T8.9 Import-CLI Alt-Ranking** · `DB` `Backend` · braucht: T8.8, T8.2
   - `pnpm import:ranking <pfad> [--dry-run]`
