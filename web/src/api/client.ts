@@ -171,6 +171,8 @@ export const api = {
   heatmap: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>('/stats/heatmap', { range }, signal),
   dataSources: (signal?: AbortSignal) => apiGet<DataSources>('/stats/sources', {}, signal),
+  playerHeatmap: (userId: number, range: TimeRange, signal?: AbortSignal) =>
+    apiGet<Heatmap>(`/users/${String(userId)}/heatmap`, { range }, signal),
   importComparison: (
     query: { page: number; pageSize: number; both: boolean },
     signal?: AbortSignal,

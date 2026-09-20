@@ -24,6 +24,7 @@ import {
   pickBucket,
   searchUsers,
   userDetail,
+  userWeekdayHourHeatmap,
   weekdayHourHeatmap,
 } from './stats.js';
 
@@ -412,6 +413,70 @@ describe('weekdayHourHeatmap', () => {
     expect(heatmap[0]?.[19]).toBe(0);
     expect(heatmap[1]?.[20]).toBe(0);
     expect(heatmap.flat().reduce((x, y) => x + y, 0)).toBe(1);
+  });
+});
+
+describe('userWeekdayHourHeatmap', () => {
+  const week = 7 * 86_400;
+
+  it('reports the share of each weekday hour the player was online', () => {
+    const a = user('a', 'A');
+    // Monday 20:00–22:00 Berlin, on two of four weeks.
+    session(a, DAY1 + 20 * H, 2 * H);
+    session(a, DAY1 + 2 * week + 20 * H, 2 * H);
+    const heatmap = userWeekdayHourHeatmap(database.sqlite, a, DAY1, DAY1 + 4 * week);
+    expect(heatmap).toHaveLength(7);
+    expect(heatmap[0]?.[20]).toBe(50);
+    expect(heatmap[0]?.[21]).toBe(50);
+    expect(heatmap[0]?.[19]).toBe(0);
+    expect(heatmap[1]?.[20]).toBe(0);
+  });
+
+  it('counts a part of an hour proportionally', () => {
+    const a = user('a', 'A');
+    session(a, DAY1 + 20 * H, 15 * 60); // a quarter of the 20:00 hour, one week in the window
+    expect(userWeekdayHourHeatmap(database.sqlite, a, DAY1, DAY1 + week)[0]?.[20]).toBe(25);
+  });
+
+  it('splits a session that runs over midnight', () => {
+    const a = user('a', 'A');
+    session(a, DAY1 + 23 * H, 2 * H); // Monday 23:00 to Tuesday 01:00
+    const heatmap = userWeekdayHourHeatmap(database.sqlite, a, DAY1, DAY1 + week);
+    expect(heatmap[0]?.[23]).toBe(100);
+    expect(heatmap[1]?.[0]).toBe(100);
+    expect(heatmap[1]?.[1]).toBe(0);
+  });
+
+  it('counts all accounts of a person (T5.3)', () => {
+    const a = user('a', 'A');
+    const b = user('b', 'B');
+    linkUsers(database.sqlite, a, b, 'test', DAY1);
+    session(b, DAY1 + 10 * H, H);
+    expect(userWeekdayHourHeatmap(database.sqlite, a, DAY1, DAY1 + week)[0]?.[10]).toBe(100);
+  });
+
+  it('never exceeds 100 percent when two linked accounts overlap', () => {
+    const a = user('a', 'A');
+    const b = user('b', 'B');
+    linkUsers(database.sqlite, a, b, 'test', DAY1);
+    session(a, DAY1 + 10 * H, H);
+    session(b, DAY1 + 10 * H, H);
+    expect(userWeekdayHourHeatmap(database.sqlite, a, DAY1, DAY1 + week)[0]?.[10]).toBe(100);
+  });
+
+  it('is empty without sessions', () => {
+    const a = user('a', 'A');
+    const heatmap = userWeekdayHourHeatmap(database.sqlite, a, DAY1, DAY1 + week);
+    expect(heatmap.flat().every((value) => value === 0)).toBe(true);
+  });
+
+  it('ignores time outside the window', () => {
+    const a = user('a', 'A');
+    session(a, DAY1 - 2 * H, 4 * H); // starts before the window and reaches into it
+    const heatmap = userWeekdayHourHeatmap(database.sqlite, a, DAY1, DAY1 + week);
+    expect(heatmap[0]?.[0]).toBe(100);
+    expect(heatmap[0]?.[1]).toBe(100);
+    expect(heatmap[0]?.[2]).toBe(0);
   });
 });
 

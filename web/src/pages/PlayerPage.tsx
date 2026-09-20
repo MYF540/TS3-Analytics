@@ -8,6 +8,7 @@ import { CHART_PALETTES } from '../charts/palette';
 import { hasRole, useCurrentUser } from '../auth/context';
 import { ModerationCard } from '../components/ModerationCard';
 import { PlayerAccounts } from '../components/PlayerAccounts';
+import { HeatmapCard } from '../components/HeatmapCard';
 import { PlayerFlagsNotice } from '../components/PlayerFlagsNotice';
 import { PlayerNotes } from '../components/PlayerNotes';
 import { PlayerRankCard } from '../components/PlayerRankCard';
@@ -19,6 +20,9 @@ import { formatDateTime, formatDay, formatDuration, formatNumber, t } from '../i
 import { useCurrentTheme } from '../theme/useCurrentTheme';
 import { addDays, berlinToday } from '../util/days';
 import { NotFoundPage } from './pages';
+
+/** Short ranges make no sense for a weekday grid: every slot would occur only once. */
+const HEATMAP_RANGES = ['30d', '1y', 'all'] as const;
 
 const DAYS = { '30d': 30, '1y': 365 } as const;
 type DaysRange = keyof typeof DAYS;
@@ -258,6 +262,17 @@ export function PlayerPage() {
         </header>
         <PlaytimeChart detail={data} fromDay={fromDay} toDay={toDay} />
       </section>
+      <HeatmapCard
+        key={id}
+        title={t('player.heatmap.title')}
+        subtitle={t('player.heatmap.subtitle')}
+        label={t('player.heatmap.label')}
+        legend={t('player.heatmap.legend')}
+        ranges={HEATMAP_RANGES}
+        initialRange="1y"
+        load={(heatmapRange, signal) => api.playerHeatmap(id, heatmapRange, signal)}
+        format={(value) => t('unit.percent', { value: formatNumber(Math.round(value)) })}
+      />
       <div className="grid-2">
         <section className="card">
           <h2>{t('player.sessions.title')}</h2>

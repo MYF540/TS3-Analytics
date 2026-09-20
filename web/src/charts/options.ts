@@ -151,7 +151,20 @@ export function onlineChartOption(
 }
 
 /** Weekday × hour heatmap (Monday first, Berlin time) on the sequential ramp. */
-export function heatmapOption(values: readonly number[][], palette: ChartPalette): ChartOption {
+export interface HeatmapLabels {
+  /** Name of the value in the tooltip. */
+  legend?: string | undefined;
+  /** How a cell value is written; the default rounds to one decimal. */
+  format?: ((value: number) => string) | undefined;
+}
+
+export function heatmapOption(
+  values: readonly number[][],
+  palette: ChartPalette,
+  labels: HeatmapLabels = {},
+): ChartOption {
+  const legend = labels.legend ?? t('chart.heatmap.legend');
+  const format = labels.format ?? ((value: number) => formatNumber(round1(value)));
   const hours = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'));
   const days = WEEKDAY_KEYS.map((key) => t(key));
   const data: [number, number, number][] = [];
@@ -170,7 +183,7 @@ export function heatmapOption(values: readonly number[][], palette: ChartPalette
       ...tooltipStyle(palette),
       formatter: (p: { value: [number, number, number] }) => {
         const [hour, day, value] = p.value;
-        return `${days[day] ?? ''}, ${hours[hour] ?? ''}–${String(hour + 1).padStart(2, '0')} ${t('unit.clock')}<br/>${t('chart.heatmap.legend')}: <b>${formatNumber(value)}</b>`;
+        return `${days[day] ?? ''}, ${hours[hour] ?? ''}–${String(hour + 1).padStart(2, '0')} ${t('unit.clock')}<br/>${legend}: <b>${format(value)}</b>`;
       },
     },
     xAxis: {
@@ -201,7 +214,7 @@ export function heatmapOption(values: readonly number[][], palette: ChartPalette
     },
     series: [
       {
-        name: t('chart.heatmap.legend'),
+        name: legend,
         type: 'heatmap',
         data,
         // 2px surface gap between cells.

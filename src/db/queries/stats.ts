@@ -431,6 +431,62 @@ export function weekdayHourHeatmap(
   return sums.map((row, d) => row.map((sum, h) => sum / Math.max(1, counts[d]?.[h] ?? 1)));
 }
 
+/**
+ * When one player is usually online: share of each weekday-hour slot they spent connected,
+ * in percent (T-Ergänzung zur Server-Heatmap). Counts all sessions of the person, including
+ * imported ones – for "when is this player around" the origin of the time does not matter.
+ *
+ * Two linked accounts online at the same time would exceed 100 %, so the value is capped.
+ */
+export function userWeekdayHourHeatmap(
+  sqlite: Database.Database,
+  userId: number,
+  from: number,
+  to: number,
+): number[][] {
+  const seconds = Array.from({ length: 7 }, () => new Array<number>(24).fill(0));
+  const slots = Array.from({ length: 7 }, () => new Array<number>(24).fill(0));
+
+  // How often each weekday-hour occurs in the window; partial hours at the edges are ignored.
+  const first = Math.ceil(from / HOUR_S) * HOUR_S;
+  for (let hour = first; hour + HOUR_S <= to; hour += HOUR_S) {
+    const local = new Date((hour + berlinOffset(hour)) * 1000);
+    const weekday = (local.getUTCDay() + 6) % 7;
+    const h = local.getUTCHours();
+    (slots[weekday] as number[])[h] = ((slots[weekday] as number[])[h] ?? 0) + 1;
+  }
+
+  const rows = prepared(
+    sqlite,
+    `SELECT join_at, leave_at FROM sessions
+     WHERE user_id IN (SELECT value FROM json_each(?))
+       AND leave_at IS NOT NULL AND join_at < ? AND leave_at > ?`,
+  )
+    .raw()
+    .all(JSON.stringify(personIds(sqlite, userId)), to, from) as [number, number][];
+
+  for (const [joinAt, leaveAt] of rows) {
+    const start = Math.max(joinAt, from);
+    const end = Math.min(leaveAt, to);
+    for (let hour = Math.floor(start / HOUR_S) * HOUR_S; hour < end; hour += HOUR_S) {
+      const overlap = Math.min(end, hour + HOUR_S) - Math.max(start, hour);
+      if (overlap <= 0) continue;
+      const local = new Date((hour + berlinOffset(hour)) * 1000);
+      const weekday = (local.getUTCDay() + 6) % 7;
+      const h = local.getUTCHours();
+      (seconds[weekday] as number[])[h] = ((seconds[weekday] as number[])[h] ?? 0) + overlap;
+    }
+  }
+
+  return seconds.map((row, d) =>
+    row.map((sum, h) => {
+      const count = slots[d]?.[h] ?? 0;
+      if (count === 0) return 0;
+      return Math.min(100, (sum / (count * HOUR_S)) * 100);
+    }),
+  );
+}
+
 export interface SearchHit {
   userId: number;
   uid: string;

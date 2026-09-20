@@ -127,6 +127,15 @@ Gleicher Datensatz wie oben, zusätzlich 232.520 importierte Sitzungen aus 1 GB 
 
 Die Platzhalter-Spieler des Imports tauchen in Leaderboards und Nutzerliste nicht auf, ihre Zeit steckt aber in `server_hourly` – die Serverkurven werden also länger, die Ranglisten nicht.
 
+### Spieler-Heatmap (2026-09-20)
+
+Das Wochentag-×-Stunde-Raster gibt es jetzt auch je Spieler. Es liest die Sessions der Person direkt (der aktivste Nutzer im Datensatz hat 4.643 davon), nicht die Stunden-Aggregate:
+
+| Abfrage                | Median (ms) | p95 (ms) | Budget |
+| ---------------------- | ----------: | -------: | :----: |
+| Spieler-Heatmap 1 Jahr |         1,6 |      1,8 |   ✅   |
+| Spieler-Heatmap gesamt |         6,1 |      6,6 |   ✅   |
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

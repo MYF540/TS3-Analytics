@@ -18,6 +18,10 @@ Spielerseite mit Spielzeit pro Tag, Sessions, meistgenutzten Channels, Tags und 
 
 ![Spielerseite](docs/screenshots/player.png)
 
+Darunter zeigt dieselbe Seite, wann dieser Spieler üblicherweise online ist:
+
+![Heatmap eines Spielers](docs/screenshots/player-heatmap.png)
+
 | Rangsystem                           | Channel-Statistik                          |
 | ------------------------------------ | ------------------------------------------ |
 | ![Ränge](docs/screenshots/ranks.png) | ![Channels](docs/screenshots/channels.png) |
@@ -29,6 +33,8 @@ Spielerseite mit Spielzeit pro Tag, Sessions, meistgenutzten Channels, Tags und 
 - **Leaderboards**: gesamt, aktiv, Woche, Monat, Jahr, längste Session, freier Zeitraum, CSV-Export.
 - **Server-Statistik**: Online-Verlauf, Höchststände, Heatmap nach Wochentag und Uhrzeit,
   Nutzung je Channel und Liste der Channels, in denen länger niemand war.
+- **Wann ist wer da?** Dasselbe Wochentag-Raster gibt es je Spieler: Anteil jeder Stunde, in der
+  dieser Spieler verbunden war – auf einen Blick zu sehen, wann sich jemand antreffen lässt.
 - **Rangsystem**: Rangleiter im Webinterface konfigurierbar, vergibt Servergruppen nach Spielzeit,
   mit Ausnahmen, Bonuszeit, eingefrorenen Rängen und Aufstiegsnachricht. Startet im Probelauf.
 - **Admin-Werkzeuge**: Hinweise auf Zweitaccounts und Ban-Umgehung, Notizen, Tags, Banlisten-Spiegel,

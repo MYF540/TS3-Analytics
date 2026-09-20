@@ -2,14 +2,9 @@ import { useMemo, useState } from 'react';
 import { api } from '../api/client';
 import type { Overview, TimeRange } from '../api/types';
 import { EChart } from '../charts/EChart';
-import {
-  formatBucket,
-  formatResolution,
-  heatmapOption,
-  onlineChartOption,
-  WEEKDAY_KEYS,
-} from '../charts/options';
+import { formatBucket, formatResolution, onlineChartOption } from '../charts/options';
 import { CHART_PALETTES } from '../charts/palette';
+import { HeatmapCard } from '../components/HeatmapCard';
 import { OnlineNow } from '../components/OnlineNow';
 import { RangePicker } from '../components/RangePicker';
 import { useApi } from '../hooks/useApi';
@@ -94,56 +89,17 @@ function OnlineHistory({ range }: { range: TimeRange }) {
 }
 
 function ActivityHeatmap() {
-  const theme = useCurrentTheme();
-  const [range, setRange] = useState<(typeof HEATMAP_RANGES)[number]>('30d');
-  const { data, error, loading } = useApi((signal) => api.heatmap(range, signal), [range]);
-  const option = useMemo(
-    () => (data ? heatmapOption(data.values, CHART_PALETTES[theme]) : undefined),
-    [data, theme],
-  );
   return (
-    <section className="card chart-card" aria-busy={loading}>
-      <header className="chart-card__header">
-        <div>
-          <h2>{t('chart.heatmap.title')}</h2>
-          <p className="muted">{t('chart.heatmap.subtitle')}</p>
-        </div>
-        <RangePicker value={range} options={HEATMAP_RANGES} onChange={setRange} />
-      </header>
-      {error && <p className="alert">{error}</p>}
-      {option && data && (
-        <>
-          <EChart option={option} label={t('chart.heatmap.label')} height={300} />
-          <details className="table-view">
-            <summary>{t('common.showTable')}</summary>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">{t('table.weekday')}</th>
-                    {Array.from({ length: 24 }, (_, h) => (
-                      <th scope="col" key={h}>
-                        {String(h).padStart(2, '0')}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.values.map((row, day) => (
-                    <tr key={day}>
-                      <th scope="row">{t(WEEKDAY_KEYS[day] ?? 'weekday.mon')}</th>
-                      {row.map((value, hour) => (
-                        <td key={hour}>{formatNumber(Math.round(value * 10) / 10)}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </details>
-        </>
-      )}
-    </section>
+    <HeatmapCard
+      title={t('chart.heatmap.title')}
+      subtitle={t('chart.heatmap.subtitle')}
+      label={t('chart.heatmap.label')}
+      legend={t('chart.heatmap.legend')}
+      ranges={HEATMAP_RANGES}
+      initialRange="30d"
+      load={(range, signal) => api.heatmap(range, signal)}
+      format={(value) => formatNumber(Math.round(value * 10) / 10)}
+    />
   );
 }
 

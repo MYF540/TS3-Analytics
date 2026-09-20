@@ -186,6 +186,23 @@ describe('with hand-made data', () => {
     expect(missing.body).toMatchObject({ error: { code: 'USER_NOT_FOUND' } });
   });
 
+  it('GET /api/users/:id/heatmap shows when the player is usually online', async () => {
+    const { status, body } = await get(`/api/users/${String(bob)}/heatmap?range=30d`);
+    expect(status).toBe(200);
+    expect(body.range).toBe('30d');
+    const values = body.values as number[][];
+    expect(values).toHaveLength(7);
+    expect(values[0]).toHaveLength(24);
+    // Bob was online Tuesday and Wednesday from 19:00 to 21:00, on one of the last 30 days each.
+    expect(values[1]?.[19]).toBeGreaterThan(0);
+    expect(values[2]?.[20]).toBeGreaterThan(0);
+    expect(values[0]?.[19]).toBe(0);
+    expect(Math.max(...values.flat())).toBeLessThanOrEqual(100);
+
+    const missing = await get('/api/users/9999/heatmap');
+    expect(missing.status).toBe(404);
+  });
+
   it('GET /api/leaderboards for all periods and metrics', async () => {
     const all = await get('/api/leaderboards');
     expect(all.body).toMatchObject({ period: 'all', metric: 'online', total: 3, fromDay: null });

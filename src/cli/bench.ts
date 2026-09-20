@@ -19,6 +19,7 @@ import {
   overview,
   searchUsers,
   userDetail,
+  userWeekdayHourHeatmap,
   weekdayHourHeatmap,
 } from '../db/queries/stats.js';
 import { berlinDay, berlinDayStart } from '../domain/time.js';
@@ -124,6 +125,12 @@ function main(): void {
       measure('Heatmap 30 Tage', runs, () => weekdayHourHeatmap(sqlite, since(30), now)),
       measure('Heatmap 1 Jahr', runs, () => weekdayHourHeatmap(sqlite, since(365), now)),
       measure('Heatmap gesamt', runs, () => weekdayHourHeatmap(sqlite, firstHour, now)),
+      measure('Spieler-Heatmap 1 Jahr', runs, () =>
+        userWeekdayHourHeatmap(sqlite, heavyUser, since(365), now),
+      ),
+      measure('Spieler-Heatmap gesamt', runs, () =>
+        userWeekdayHourHeatmap(sqlite, heavyUser, firstHour, now),
+      ),
       measure('Leaderboard Jahr, Anzahl (Paginierung)', runs, () =>
         countLeaderboardForDays(sqlite, 'online', daysBack(364), today),
       ),

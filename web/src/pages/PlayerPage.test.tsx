@@ -17,6 +17,41 @@ describe('PlayerPage', () => {
     expect(kpi('Sessions')).toBe('42');
   });
 
+  it('shows when the player is usually online and switches the range', async () => {
+    const fetchMock = mockApi();
+    renderAt('/spieler/1');
+    const card = await screen.findByRole('heading', {
+      level: 2,
+      name: 'Wann ist dieser Spieler online?',
+    });
+    const section = within(card.closest('section') as HTMLElement);
+    expect(await section.findByRole('img', { name: /Heatmap/ })).toBeInTheDocument();
+    await userEvent.click(section.getByRole('radio', { name: '30 Tage' }));
+    await waitFor(() => {
+      expect(
+        requested(fetchMock, '/api/users/1/heatmap').map((url) => url.searchParams.get('range')),
+      ).toEqual(['1y', '30d']);
+    });
+  });
+
+  it('writes the share as a percentage in the table view', async () => {
+    mockApi({
+      '/api/users/1/heatmap': {
+        range: '1y',
+        values: Array.from({ length: 7 }, (_, d) => Array.from({ length: 24 }, () => d * 10)),
+      },
+    });
+    renderAt('/spieler/1');
+    const card = await screen.findByRole('heading', {
+      level: 2,
+      name: 'Wann ist dieser Spieler online?',
+    });
+    const section = within(card.closest('section') as HTMLElement);
+    await userEvent.click(await section.findByText('Als Tabelle anzeigen'));
+    const row = section.getByRole('row', { name: /^Mi/ });
+    expect(within(row).getAllByRole('cell')[0]).toHaveTextContent('20 %');
+  });
+
   it('explains a placeholder from the log import (T8.3)', async () => {
     const { sampleUser } = await import('../test-utils');
     mockApi({
@@ -47,7 +82,8 @@ describe('PlayerPage', () => {
       'Unbekannt (Import)',
     ]);
     expect(new Set(option.series.map((s) => s.stack)).size).toBe(1);
-    await userEvent.click(screen.getByRole('radio', { name: '1 Jahr' }));
+    const chartCard = within(chart.closest('section') as HTMLElement);
+    await userEvent.click(chartCard.getByRole('radio', { name: '1 Jahr' }));
     await waitFor(() => {
       expect(requested(fetchMock, '/api/users/1').at(-1)?.searchParams.get('days')).toBe('365');
     });

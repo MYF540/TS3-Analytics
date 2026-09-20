@@ -1,9 +1,14 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { listUsers, USER_SORTS, userDetail } from '../../db/queries/stats.js';
+import {
+  listUsers,
+  USER_SORTS,
+  userDetail,
+  userWeekdayHourHeatmap,
+} from '../../db/queries/stats.js';
 import { getPersonOfUser, getUserTags } from '../../db/repositories/index.js';
 import { tag } from './notes.js';
-import { daysBefore } from '../../domain/periods.js';
+import { daysBefore, rangeSeconds, TIME_RANGES } from '../../domain/periods.js';
 import { berlinDay } from '../../domain/time.js';
 import type { ApiContext } from '../context.js';
 import { ApiError } from '../errors.js';
@@ -32,6 +37,12 @@ export const userListItem = z.object({
   lastSeen: z.number().int(),
   country: z.string().nullable(),
   online: z.boolean(),
+});
+
+export const playerHeatmapResponse = z.object({
+  range: z.enum(TIME_RANGES),
+  /** 7 rows (Monday first) × 24 hours, share of that hour spent online in percent. */
+  values: z.array(z.array(z.number())),
 });
 
 export const userDetailResponse = z.object({
@@ -223,6 +234,32 @@ export function userRoutes(context: ApiContext): FastifyPluginAsyncZod {
           countries: detail.countries as z.infer<typeof userDetailResponse>['countries'],
           tags: getUserTags(context.database.db, request.params.id),
           person: getPersonOfUser(sqlite, request.params.id) ?? null,
+        };
+      },
+    );
+
+    // When is this player usually around? Same grid as the server heatmap, but per person.
+    app.get(
+      '/users/:id/heatmap',
+      {
+        schema: {
+          params: z.object({ id: z.coerce.number().int().positive() }),
+          querystring: z.object({ range: z.enum(TIME_RANGES).default('1y') }),
+          response: { 200: playerHeatmapResponse },
+        },
+      },
+      (request) => {
+        const { id } = request.params;
+        const firstSeen = sqlite
+          .prepare(`SELECT first_seen FROM users WHERE id = ?`)
+          .pluck()
+          .get(id) as number | undefined;
+        if (firstSeen === undefined) throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
+        const now = context.now();
+        const { from, to } = rangeSeconds(request.query.range, now, firstSeen);
+        return {
+          range: request.query.range,
+          values: userWeekdayHourHeatmap(sqlite, id, from, to),
         };
       },
     );

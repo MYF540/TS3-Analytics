@@ -34,7 +34,7 @@ import type {
   seriesResponse,
   sourcesResponse,
 } from './routes/stats.js';
-import type { userDetailResponse, userListItem } from './routes/users.js';
+import type { playerHeatmapResponse, userDetailResponse, userListItem } from './routes/users.js';
 
 // Standard exact type equality check; the single-use type parameters are the point of the trick.
 /* eslint-disable @typescript-eslint/no-unnecessary-type-parameters */
@@ -48,6 +48,7 @@ export type Contract = [
   Assert<Equals<z.output<typeof overviewResponse>, Web.Overview>>,
   Assert<Equals<z.output<typeof seriesResponse>, Web.OnlineSeries>>,
   Assert<Equals<z.output<typeof heatmapResponse>, Web.Heatmap>>,
+  Assert<Equals<z.output<typeof playerHeatmapResponse>, Web.Heatmap>>,
   Assert<Equals<z.output<typeof sourcesResponse>, Web.DataSources>>,
   Assert<Equals<z.output<typeof userListItem>, Web.UserListItem>>,
   Assert<Equals<z.output<typeof userDetailResponse>, Web.UserDetail>>,

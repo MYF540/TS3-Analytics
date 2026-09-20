@@ -236,6 +236,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/channels/unused': sampleUnusedChannels,
     '/api/users': sampleUsers,
     '/api/users/1': sampleUser,
+    '/api/users/1/heatmap': { range: '1y', values: sampleHeatmap.values },
     '/api/users/1/notes': { notes: sampleNotes },
     '/api/tags': {
       tags: [

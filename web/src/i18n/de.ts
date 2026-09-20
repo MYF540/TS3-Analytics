@@ -233,6 +233,11 @@ export const de = {
   'player.kpi.longest': 'Längste Session',
   'player.kpi.firstSeen': 'Erstmals gesehen',
   'player.kpi.lastSeen': 'Zuletzt gesehen',
+  'player.heatmap.title': 'Wann ist dieser Spieler online?',
+  'player.heatmap.subtitle':
+    'Anteil der Stunde, in der dieser Spieler verbunden war (Berliner Zeit). Zählt alle verknüpften Accounts und auch importierte Zeiten.',
+  'player.heatmap.label': 'Heatmap: Anteil der Zeit online nach Wochentag und Stunde',
+  'player.heatmap.legend': 'Anteil online',
   'player.chart.title': 'Spielzeit pro Tag',
   'player.chart.label': 'Gestapeltes Balkendiagramm: Spielzeit pro Tag nach Zustand',
   'player.state.active': 'Aktiv',
@@ -707,6 +712,7 @@ export const de = {
   'player.flagsLink': 'Anzeigen',
 
   'unit.clock': 'Uhr',
+  'unit.percent': '{value} %',
   'unit.hours': '{value} h',
   'unit.minutes': '{value} min',
   'unit.day': '{value} Tag',
