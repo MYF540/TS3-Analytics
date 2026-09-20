@@ -166,3 +166,45 @@ Dry-Run-Bericht weist sie aus.
   davor; fehlt `stopped`, ist das Dateiende die Grenze.
 - Jede verworfene Zeile und jede gekappte Sitzung bekommt einen Grund und wird gezählt – der
   Dry-Run-Bericht besteht aus diesen Zählern.
+
+## So läuft der Import
+
+```
+pnpm backup                                  # vorher sichern
+nssm stop ts3-analytics                      # Dienst anhalten
+pnpm import:logs <ordner> --dry-run --clients <kopie von ts3server.sqlitedb>
+pnpm import:logs <ordner> --clients <kopie von ts3server.sqlitedb>
+nssm start ts3-analytics
+```
+
+Der Probelauf schreibt nichts und gibt denselben Bericht aus wie der echte Lauf. Wichtig darin:
+
+- **Verbindungen je Stunde**: Liegt das Maximum am Abend, stimmt die angenommene Zeitzone. Sonst
+  den Lauf mit `--zone utc` wiederholen.
+- **Platzhalter**: Datenbank-IDs, zu denen der Server keinen Account mehr kennt. Sie bekommen die
+  UID `unknown-dbid-<id>`, ihre Zeit zählt in der Serverstatistik, in Spielerliste, Suche und
+  Leaderboards tauchen sie nicht auf. Über „Accounts verknüpfen“ lassen sie sich einem Spieler
+  zuordnen.
+- **Unbekannte Zeilen**: Tauchen viele auf, hat der Server ein neues Format – dann erst die
+  Muster oben ergänzen.
+
+Optionen:
+
+| Option                    | Wirkung                                                            |
+| ------------------------- | ------------------------------------------------------------------ |
+| `--dry-run`               | nur Bericht, keine Änderung                                        |
+| `--clients <datei>`       | Kopie von `ts3server.sqlitedb` für die Zuordnung der IDs zu UIDs   |
+| `--from`, `--to`          | Zeitraum (Berliner Tage). Ohne `--to`: bis zur ersten Live-Sitzung |
+| `--zone berlin\|utc`      | Zeitzone der Logzeitstempel, Vorgabe `berlin`                      |
+| `--server <id>`           | virtueller Server, Vorgabe aus `TS3_SERVER_ID`                     |
+| `--max-session <stunden>` | kappt überlange Sitzungen (Vorgabe: keine Grenze)                  |
+| `--no-rebuild`            | Tageswerte nicht am Ende neu berechnen                             |
+| `--yes`                   | ohne Rückfrage starten                                             |
+
+Zweimal derselbe Ordner ist unproblematisch: Jede Datei ist in `import_runs` vermerkt und wird
+übersprungen, solange sie unverändert ist. Ein abgebrochener Lauf hinterlässt nichts – eine
+Datei zählt erst als importiert, wenn ihre Transaktion abgeschlossen ist.
+
+Importierte Zeit ist **nur Online-Zeit** (Zustand `unknown`); sie fließt in Statistiken und
+Leaderboards, aber nicht in die Ränge – die rechnen mit `legacy_seconds` aus dem alten
+Rangsystem plus der live erfassten Zeit (siehe [import-legacy-ranking.md](import-legacy-ranking.md)).

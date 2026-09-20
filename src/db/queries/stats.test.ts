@@ -248,6 +248,40 @@ describe('listUsers', () => {
   });
 });
 
+describe('hidden players', () => {
+  /** Placeholders of the log import (T8.3) and anonymized players (T7.2) stay out of sight. */
+  it('leaves placeholders and anonymized players out of lists, search and leaderboards', () => {
+    const alice = user('uid-alice', 'Alice', DAY1);
+    const ghost = user('unknown-dbid-4711', 'Geist', DAY1);
+    const gone = user('uid-gone', 'Weg', DAY1);
+    session(alice, DAY1 + 10 * H, 3 * H);
+    session(ghost, DAY1 + 10 * H, 9 * H);
+    session(gone, DAY1 + 10 * H, 8 * H);
+    database.sqlite.prepare(`UPDATE users SET anonymized_at = ? WHERE id = ?`).run(DAY1, gone);
+
+    expect(leaderboardAllTime(database.sqlite, 'online', page).map((e) => e.nickname)).toEqual([
+      'Alice',
+    ]);
+    const list = listUsers(database.sqlite, {
+      sort: 'online',
+      order: 'desc',
+      limit: 10,
+      offset: 0,
+      minOnlineS: 0,
+    });
+    expect(list.items.map((i) => i.nickname)).toEqual(['Alice']);
+    expect(searchUsers(database.sqlite, 'Geist')).toEqual([]);
+  });
+
+  it('keeps their time in the server statistics', () => {
+    const ghost = user('unknown-dbid-4711', 'Geist', DAY1);
+    session(ghost, DAY1 + 10 * H, 2 * H);
+    expect(
+      database.sqlite.prepare(`SELECT sum(online_s) FROM user_daily_stats`).pluck().get(),
+    ).toBe(2 * H);
+  });
+});
+
 describe('userDetail', () => {
   it('returns totals, nicks, sessions, daily series and top channels', () => {
     const id = user('uid-a', 'First');

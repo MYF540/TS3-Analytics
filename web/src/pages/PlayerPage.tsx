@@ -244,6 +244,9 @@ export function PlayerPage() {
           )}{' '}
           {t('player.uid')}: <code className="uid">{data.user.uid}</code>
         </p>
+        {data.user.uid.startsWith('unknown-dbid-') && (
+          <p className="muted small">{t('player.placeholder')}</p>
+        )}
         <PlayerTags key={id} userId={id} tags={data.tags} />
       </header>
       <PlayerFlagsNotice userId={id} />

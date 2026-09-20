@@ -57,16 +57,24 @@ function bySubject(metric: LeaderboardMetric, perUser: string): string {
           HAVING value > 0`;
 }
 
-/** Anonymized players (GDPR, T7.2) are not ranked or listed; their playtime stays in totals. */
-const NOT_ANONYMIZED = 'user_id NOT IN (SELECT id FROM users WHERE anonymized_at IS NOT NULL)';
+/**
+ * Players who are not shown: anonymized ones (GDPR, T7.2) and the placeholders the log import
+ * creates for database ids TeamSpeak has already deleted (T8.3). Their playtime stays in the
+ * server statistics, only they themselves are out of lists, search, leaderboards and ranks.
+ */
+export const HIDDEN_USERS = `SELECT id FROM users
+  WHERE anonymized_at IS NOT NULL OR uid LIKE 'unknown-dbid-%'`;
+const VISIBLE = `user_id NOT IN (${HIDDEN_USERS})`;
+/** Same condition where the row is a `users` row aliased `u`. */
+export const VISIBLE_USER = `u.anonymized_at IS NULL AND u.uid NOT LIKE 'unknown-dbid-%'`;
 
 const totalsPerUser = (metric: LeaderboardMetric) =>
   `SELECT user_id, ${TOTALS_COLUMN[metric]} AS value FROM user_totals
-   WHERE ${TOTALS_COLUMN[metric]} > 0 AND ${NOT_ANONYMIZED}`;
+   WHERE ${TOTALS_COLUMN[metric]} > 0 AND ${VISIBLE}`;
 
 const daysPerUser = (metric: LeaderboardMetric) =>
   `SELECT user_id, ${DAILY_EXPRESSION[metric]} AS value FROM user_daily_stats
-   WHERE day BETWEEN ? AND ? AND ${NOT_ANONYMIZED} GROUP BY user_id`;
+   WHERE day BETWEEN ? AND ? AND ${VISIBLE} GROUP BY user_id`;
 
 const ACCOUNTS_SUBQUERY = `max(1, (SELECT count(*) FROM person_members m
   JOIN person_members me ON me.person_id = m.person_id WHERE me.user_id = u.id))`;
@@ -461,7 +469,7 @@ export function searchUsers(sqlite: Database.Database, term: string, limit = 20)
     sqlite,
     `SELECT u.id AS userId, u.uid, ${NICKNAME_SUBQUERY} AS nickname, u.last_seen AS lastSeen
      FROM users u
-     WHERE u.anonymized_at IS NULL AND ${condition.sql}
+     WHERE ${VISIBLE_USER} AND ${condition.sql}
      ORDER BY u.last_seen DESC
      LIMIT @limit`,
   ).all({ ...condition.params, limit }) as SearchHit[];
@@ -515,7 +523,7 @@ export function listUsers(
   options: UserListOptions,
 ): { items: UserListItem[]; total: number } {
   const search = options.search?.trim() ? searchCondition(options.search) : undefined;
-  const where = `u.anonymized_at IS NULL AND coalesce(t.online_s, 0) >= @minOnlineS${search ? ` AND ${search.sql}` : ''}`;
+  const where = `${VISIBLE_USER} AND coalesce(t.online_s, 0) >= @minOnlineS${search ? ` AND ${search.sql}` : ''}`;
   const params = { ...search?.params, minOnlineS: options.minOnlineS };
   const from = `FROM users u LEFT JOIN user_totals t ON t.user_id = u.id WHERE ${where}`;
   const direction = options.order === 'asc' ? 'ASC' : 'DESC';

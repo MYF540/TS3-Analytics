@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3';
 import { z } from 'zod';
 import { getSetting, listRanks, type DbExecutor, type Rank } from '../db/repositories/index.js';
+import { HIDDEN_USERS } from '../db/queries/stats.js';
 import { berlinDay } from '../domain/time.js';
 import { decideRank, mergeOverrides, type RankDecision } from '../domain/ranks.js';
 import type { RankSettings } from './settings.js';
@@ -44,7 +45,7 @@ export function rankingTimes(
     .prepare(
       `SELECT user_id AS userId, ${expression} AS seconds FROM user_daily_stats
        WHERE day >= ? ${filter}
-         AND user_id NOT IN (SELECT id FROM users WHERE anonymized_at IS NOT NULL)
+         AND user_id NOT IN (${HIDDEN_USERS})
        GROUP BY user_id`,
     )
     .all(...params) as { userId: number; seconds: number }[];

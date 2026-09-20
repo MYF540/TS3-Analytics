@@ -17,6 +17,22 @@ describe('PlayerPage', () => {
     expect(kpi('Sessions')).toBe('42');
   });
 
+  it('explains a placeholder from the log import (T8.3)', async () => {
+    const { sampleUser } = await import('../test-utils');
+    mockApi({
+      '/api/users/1': { ...sampleUser, user: { ...sampleUser.user, uid: 'unknown-dbid-4711' } },
+    });
+    renderAt('/spieler/1');
+    expect(await screen.findByText(/^Platzhalter aus dem Log-Import/)).toBeInTheDocument();
+  });
+
+  it('shows no such note for a normal player', async () => {
+    mockApi();
+    renderAt('/spieler/1');
+    await screen.findByRole('heading', { level: 1, name: 'Alice' });
+    expect(screen.queryByText(/^Platzhalter aus dem Log-Import/)).not.toBeInTheDocument();
+  });
+
   it('draws play time per day by state and switches the range', async () => {
     const fetchMock = mockApi();
     renderAt('/spieler/1');

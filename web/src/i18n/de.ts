@@ -204,6 +204,8 @@ export const de = {
 
   'player.back': 'Zur Spielerliste',
   'player.uid': 'UID',
+  'player.placeholder':
+    'Platzhalter aus dem Log-Import: Zu dieser Client-Datenbank-ID kennt der TeamSpeak-Server keinen Account mehr, die UID ist also unbekannt. Die Zeiten zählen in der Serverstatistik, in Spielerliste und Leaderboards taucht der Eintrag nicht auf. Über „Accounts verknüpfen“ lässt er sich einem Spieler zuordnen.',
   'player.onlineSince': 'Online seit {time}',
   'player.offline': 'Offline',
   'player.kpi.online': 'Spielzeit gesamt',

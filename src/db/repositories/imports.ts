@@ -1,6 +1,7 @@
 /**
- * Bookkeeping for the import CLIs (T8.2): one row per file, so an interrupted run continues at
- * the byte offset it stopped at and a second run does not write the same sessions twice.
+ * Bookkeeping for the import CLIs (T8.2): one row per file, so a second run skips what is
+ * already imported and only reads what a file gained since. The offset also feeds the progress
+ * display while a file is being read.
  */
 import type Database from 'better-sqlite3';
 import type { ImportSource, ImportStatus } from '../schema.js';
@@ -52,8 +53,11 @@ export function listImportRuns(sqlite: Database.Database, source?: ImportSource)
 }
 
 /**
- * Marks a file as being imported and returns the row to continue from. A file whose size shrank
- * is treated as a different file: the old progress cannot be trusted, so it starts over.
+ * Marks a file as being imported and returns the row to continue from.
+ *
+ * Only a finished file that has grown since is continued at its offset – everything a file
+ * contributes is written in one transaction, so an interrupted or failed run left nothing
+ * behind and has to be read again from the start. A file that shrank is a different file.
  */
 export function startImportRun(
   sqlite: Database.Database,
@@ -61,7 +65,7 @@ export function startImportRun(
   now: number,
 ): ImportRun {
   const existing = findImportRun(sqlite, run.source, run.file);
-  if (existing && existing.size <= run.size && existing.status !== 'failed') {
+  if (existing && existing.size <= run.size && existing.status === 'done') {
     sqlite
       .prepare(`UPDATE import_runs SET size = ?, status = 'running', updated_at = ? WHERE id = ?`)
       .run(run.size, now, existing.id);

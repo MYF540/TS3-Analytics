@@ -72,6 +72,22 @@ describe('import runs', () => {
     expect(second).toMatchObject({ id: first.id, offset: 0, size: 500, linesRead: 0 });
   });
 
+  it('reads an interrupted file again from the start', () => {
+    const first = startImportRun(database.sqlite, file(1000), NOW);
+    updateImportRun(
+      database.sqlite,
+      first.id,
+      { offset: 600, linesRead: 20, linesSkipped: 0, sessionsWritten: 4, problems: 0 },
+      NOW,
+    );
+    // No finishImportRun: the run was cut short, so its transaction never landed.
+    expect(startImportRun(database.sqlite, file(1000), NOW + 60)).toMatchObject({
+      offset: 0,
+      linesRead: 0,
+      sessionsWritten: 0,
+    });
+  });
+
   it('starts over after a failed run', () => {
     const first = startImportRun(database.sqlite, file(1000), NOW);
     updateImportRun(

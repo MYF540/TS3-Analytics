@@ -97,6 +97,22 @@ Die Channel-Statistik liest `activity_segments` direkt; es gibt kein Aggregat je
 
 Deshalb bietet die Seite nur 24 Stunden, 7 und 30 Tage an: „1 Jahr“ lag bei 351 ms (Median), weil dabei fast alle Segmente gelesen werden. Ein Tages-Aggregat je Channel wäre die Lösung für lange Zeiträume – dann ließe sich die Anzahl unterschiedlicher Spieler allerdings nicht mehr über mehrere Tage summieren, ohne sie doppelt zu zählen. Bis dafür Bedarf besteht, bleibt die Frage „welche Channels werden genutzt?“ auf kurze Zeiträume beschränkt.
 
+### Log-Import T8.6 (2026-09-20)
+
+Gemessen auf demselben Rechner, erzeugte Logdateien im Format des echten Servers (95 % Query-Clients wie im Original), SQLite mit `synchronous = OFF`:
+
+| Menge                | Zeilen     | Sitzungen | Dauer  | Durchsatz         |
+| -------------------- | ---------- | --------- | ------ | ----------------- |
+| 1 GB (1 Datei)       | 9.302.000  | 232.520   | 4,6 s  | 2,0 Mio. Zeilen/s |
+| 5 GB (5 Dateien)     | 46.510.000 | 1.162.600 | 21,0 s | 2,2 Mio. Zeilen/s |
+| Aggregate danach neu | –          | 1.162.600 | 3,6 s  | –                 |
+
+Der Speicherverbrauch bleibt konstant: Beim 5-GB-Lauf lag der Heap bei höchstens 84 MB, der gesamte Prozess (RSS) bei 302 MB – darin stecken der SQLite-Cache (64 MB) und die Speicherabbildung der Datenbank. Jede Datei brauchte zwischen 4,1 und 4,4 s, unabhängig davon, wie viele schon importiert waren. Die entstandene Datenbank war 88 MB groß.
+
+Echte Beispieldatei zum Vergleich: 27 MB, 214.279 Zeilen, 2.765 Sitzungen, rund 1 s einschließlich Datenbankschreiben.
+
+Verworfener erster Ansatz: Der Import hat jede Sitzung einzeln über `finalizeSession` in die Aggregate eingerechnet. Das schreibt `server_hourly` für dieselben Stunden immer wieder neu und war nach zehn Minuten noch nicht mit 1 GB durch. Jetzt schreibt der Import nur Sitzungen und rechnet die Aggregate am Ende einmal neu (`rebuildAggregates`, T8.7) – dabei wird jede Sitzung genau einmal gelesen.
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.
