@@ -6,13 +6,33 @@ Kurzfassung für Installation, Dienst, Updates und Wartung. Sicherung und Wieder
 
 - Windows Server (getestet wird gegen Windows 11 / Server 2016), Node.js 22 LTS (64 Bit)
 - pnpm über Corepack: `corepack enable`
-- [NSSM](https://nssm.cc/) für den Dienst
+- [NSSM](https://nssm.cc/) für den Dienst – `nssm.exe` in den PATH legen oder dem Setup-Skript mit `-Nssm <pfad>` nennen
 - Zugriff auf den TeamSpeak-Server: ServerQuery über **SSH** (Standardport 10022)
 
 ## Installation
 
+Alles Weitere erledigt das Setup-Skript. PowerShell **als Administrator** öffnen (einen Dienst anzulegen geht nicht ohne):
+
 ```
 cd C:\apps\ts3-analytics
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 install
+```
+
+Das Skript prüft Node und NSSM, installiert die Abhängigkeiten, legt `.env` aus `.env.example` an, erzeugt ein `HMAC_SECRET`, baut die Anwendung und richtet den Dienst ein. Fehlen danach noch Werte in `.env` – Query-Benutzer und -Passwort –, sagt es das und startet den Dienst noch nicht.
+
+| Befehl                     | Was passiert                                                 |
+| -------------------------- | ------------------------------------------------------------ |
+| `setup.ps1 install`        | Abhängigkeiten, `.env`, Build, Dienst einrichten und starten |
+| `setup.ps1 update`         | Anhalten, sichern, neue Version holen, bauen, starten        |
+| `setup.ps1 start` / `stop` | Dienst starten bzw. anhalten                                 |
+| `setup.ps1 status`         | Dienst, `.env`, Datenbank und Health auf einen Blick         |
+| `setup.ps1 uninstall`      | Dienst entfernen; Daten und `.env` bleiben erhalten          |
+
+Optionen: `-ServiceName <name>` (Vorgabe `ts3-analytics`), `-Nssm <pfad>`, falls `nssm.exe` nicht im PATH liegt, `-Yes` ohne Rückfragen, `-SkipBackup` beim Update und `-PurgeData` beim Deinstallieren (löscht Datenbank, Logs und Sicherungen, fragt vorher zusätzlich nach).
+
+Von Hand wären es diese Schritte:
+
+```
 pnpm install --frozen-lockfile
 copy .env.example .env      # danach .env ausfüllen
 pnpm build
@@ -57,6 +77,8 @@ Der Dienst begrenzt seine Abfragen zusätzlich selbst (`TS3_QUERY_RATE_LIMIT`, S
 
 ## Dienst mit NSSM
 
+`setup.ps1 install` setzt genau diese Werte. Von Hand:
+
 ```
 nssm install ts3-analytics "C:\Program Files\nodejs\node.exe" "C:\apps\ts3-analytics\dist\main.js"
 nssm set ts3-analytics AppDirectory C:\apps\ts3-analytics
@@ -80,6 +102,12 @@ nssm start ts3-analytics
 - `LOG_LEVEL` (Standard `info`) vorübergehend auf `debug` setzen, wenn ein Problem eingegrenzt werden muss.
 
 ## Update
+
+```
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 update
+```
+
+Das Skript hält den Dienst an, legt eine Sicherung an, holt die neue Version (`git pull --ff-only`), installiert, baut und startet wieder. Von Hand:
 
 ```
 nssm stop ts3-analytics
