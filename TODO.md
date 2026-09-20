@@ -370,6 +370,47 @@ Ziel: Historie aus mehreren GB alter TS3-Serverlogs und der Datenbank des bisher
   - Admin kann pro Nutzer entscheiden, welcher Wert gilt (landet im Audit-Log)
   - Notiz: Seite „Abgleich“ (nur Admin, `/abgleich`) mit `GET /api/import/comparison` und `POST /api/import/comparison/:id` (`use: logs|legacy`, Audit `import.decision` mit Vorher-/Nachher-Wert, ohne UID). Standardmäßig werden nur Spieler gezeigt, die beide Quellen kennen – sonst stehen dort tausende Einträge, die sich gar nicht vergleichen lassen; abschaltbar über den Filter. „Logzeit übernehmen“ setzt `users.legacy_seconds` auf die Zeit aus den Logs und fragt vorher nach, wenn dadurch Zeit verloren ginge (die Logs reichen oft nicht weit genug zurück). Lauf gegen die echten Daten: 11.671 Spieler mit Daten, 4.756 innerhalb der Toleranz von 1 h; ganz oben stehen erwartungsgemäß die Dauerläufer (SinusBot-Instanz und Musikbot mit 72.169 h bzw. 62.782 h laut Altsystem gegenüber rund 1.258 h aus den Logs) – genau die Fälle, die T8.8 als unplausibel vermerkt hatte.
 
+## Phase 9 – Spieler-Netzwerk
+
+Ziel: Ein Kraft-gerichteter Graph zeigt, welche Spieler häufig zusammen im selben Channel sind. Knoten = Person, Kante = gemeinsam verbrachte Zeit.
+
+Entscheidungen (20.09.2026):
+
+- Seite **nur für Admins**.
+- Gezählt wird Zeit im selben Channel mit überlappenden Aktivitätssegmenten. Zustand `afk` zählt nicht, `idle` **zählt mit** (jemand sitzt im Channel und hört zu).
+- Kantengewicht sind **gemeinsame Stunden**; ein Umschalter auf „Anteil an der eigenen Zeit“ kann später folgen (die API liefert beide Werte von Anfang an).
+- Auszuschließende Channels (Lobby, Warteraum, AFK) sind **in den Einstellungen auswählbar**, wie die AFK-Channel der Aktivitätserkennung.
+- Zeiträume **30 Tage, 90 Tage, 1 Jahr, gesamt**. Das Netz muss **nicht live** sein: Ein Job rechnet es **einmal täglich** und legt das Ergebnis ab; die Seite liest nur noch.
+
+Messung vorab (Prototyp gegen `data/synthetic.sqlite`, 8.500 Spieler, 2,19 Mio. Segmente, Sweep-Line über die Segmente der aktivsten 200 Spieler):
+
+| Zeitraum | Segmente  |  Paare | Lesen  | Rechnen | Summe   |
+| -------- | --------: | -----: | -----: | ------: | ------: |
+| 30 Tage  |    21.979 | 12.563 |  12 ms |    6 ms |   18 ms |
+| 90 Tage  |    65.973 | 18.601 |  38 ms |   20 ms |   58 ms |
+| 1 Jahr   |   269.237 | 19.898 | 212 ms |   72 ms |  284 ms |
+| Gesamt   | 1.184.558 | 19.869 | 847 ms |  218 ms | 1.065 ms |
+
+Auf Abruf wären 1 Jahr und gesamt damit über dem 100-ms-Budget – als Tagesjob sind alle vier Zeiträume zusammen rund 1,5 s und völlig unkritisch.
+
+- [ ] **T9.1 Netzwerk berechnen und speichern** · `DB` `Backend` · braucht: T1.1, T5.3
+  - Reine Funktion in `/domain`: Sweep-Line über nach `start_at` sortierte Segmente, je Channel die offenen Segmente mitführen, Überlappung je Paar aufsummieren. Verknüpfte UIDs vorher auf ihre Person abbilden (keine Selbstkanten), anonymisierte und Platzhalter-Spieler raus (`HIDDEN_USERS`), Mindestdauer je Begegnung und je Paar konfigurierbar
+  - Kandidaten je Lauf: die aktivsten N Personen des Zeitraums (Vorgabe 200), sonst wächst die Paarzahl quadratisch mit der Spielerzahl
+  - Ausgeschlossen: Zustand `afk`, Channels aus der neuen Einstellung, Channels die heute als AFK-Channel eingetragen sind
+  - Schema: Tabellen für Knoten und Kanten je Zeitraum (`30d`, `90d`, `1y`, `all`), Migration von Hand auf `STRICT`/`WITHOUT ROWID` ergänzen; Zeitpunkt des letzten Laufs und Zähler in den Einstellungen
+  - Einstellung `network`: auszuschließende Channels, Anzahl Kandidaten, Mindestzeit; Channel-Auswahl auf der Einstellungsseite wie bei den AFK-Channeln (Audit-Eintrag beim Speichern)
+  - Job alle 24 h im `JobRunner` (wie Sicherung und Aufbewahrung), zusätzlich „jetzt berechnen“ für Admins – nötig, wenn die ausgeschlossenen Channels geändert wurden
+  - Fertig wenn: Tests für Überlappung, Berührung (Ende = Anfang ergibt keine Kante), mehrere Channels gleichzeitig, verknüpfte Accounts, Mindestdauer, Zeitraumgrenzen und ausgeschlossene Channels; `pnpm bench` misst 30 Tage und 90 Tage; Laufzeit des Jobs in `docs/performance.md`
+- [ ] **T9.2 Netzwerk-Seite** · `Backend` `Frontend` · braucht: T9.1
+  - `GET /api/network?range=30d|90d|1y|all` (nur Admin) liefert Knoten (Person, Nickname, Gesamtzeit) und Kanten (gemeinsame Sekunden, Anteil an der Zeit beider Seiten) sowie den Zeitpunkt der letzten Berechnung; Filter für Mindestzeit und Anzahl Knoten
+  - Seite `/netzwerk` mit Navigationseintrag: ECharts-`GraphChart` mit `layout: 'force'` (Modul in `web/src/charts/EChart.tsx` registrieren, Bundle wächst um rund 50 KB – notfalls die Seite dynamisch nachladen)
+  - Knotengröße = Gesamtzeit, Kantenbreite = gemeinsame Zeit, Beschriftung nur für die größten Knoten, Nachbarn beim Überfahren hervorheben, Ziehen und Zoomen; Klick auf einen Knoten öffnet die Spielerseite
+  - Tabellenansicht mit den stärksten Paaren (Pflicht: ein Kraftgraph ist für Screenreader wertlos) und Leerzustand
+  - Hinweis auf der Seite, was der Graph **nicht** zeigt: nur live erfasste Zeit (der Log-Import schreibt keine Segmente), keine AFK-Zeit, anonymisierte und Platzhalter-Spieler fehlen, verknüpfte Accounts sind ein Knoten, gleicher Channel heißt nicht zwangsläufig miteinander geredet
+  - Fertig wenn: Tests für Route (Rechte, Zeiträume, Filter) und Seite (Knoten/Kanten, Tabelle, Filter lösen Anfragen aus, Leerzustand); Screenshot zur Sichtprüfung; README und `docs/performance.md` ergänzt
+
+---
+
 ---
 
 ## Gefundene Punkte
