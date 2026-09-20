@@ -326,10 +326,11 @@ Ziel: Historie aus mehreren GB alter TS3-Serverlogs und der Datenbank des bisher
   - Fertig wenn: Unit-Tests für jeden Zeilentyp aus T8.1; ein Test mit 1 Mio. generierten Zeilen bleibt unter 200 MB RAM
   - Notiz: `src/import/log-parser.ts` (rein: `parseLogLine` liefert `connect`, `disconnect`, `group`, `serverStart`, `serverStop`, `ignored` oder `unparsed`; dazu `orderLogFiles` für die chronologische Reihenfolge und `toUnix` für die Zeitzone der Logs) und `src/import/log-reader.ts` (`splitLines` arbeitet auf Buffern und liefert je Zeile den exakten Byte-Offset für `import_runs`; CRLF, geteilte Mehrbyte-Zeichen, fehlende letzte Zeilenumbrüche und ungültige Bytes sind abgedeckt, überlange Zeilen werden bei 64 KB gekappt). Der Parser wurde gegen die echte Beispieldatei laufen gelassen: 214.279 Zeilen, 2.768 Verbindungen, 2.768 Trennungen, 178 Gruppenänderungen, Start und Stopp – exakt die Zahlen aus der Analyse, 0 unbekannte Zeilen. Der Speichertest läuft über 1 Mio. erzeugte Zeilen.
 
-- [ ] **T8.5 Session-Rekonstruktion** · `Watcher` · braucht: T8.4
+- [x] **T8.5 Session-Rekonstruktion** · `Watcher` · braucht: T8.4
   - Reine Funktion in `/domain`: Connect/Disconnect paaren
   - Sonderfälle: Serverneustart oder -absturz schließt alle offenen Sessions (am letzten Log-Zeitstempel davor), doppelter Connect, Disconnect ohne Connect, konfigurierbare Maximaldauer einer Session
   - Fertig wenn: Tests für alle Sonderfälle; jede verworfene oder gekappte Session wird mit Grund gezählt
+  - Notiz: `src/domain/import-sessions.ts` – `SessionBuilder` (streamend, gibt fertige Sessions sofort zurück) und `reconstructSessions` für Tests. Mehrfach verbundene Accounts werden FIFO gepaart, weil das Log nur die Datenbank-ID kennt. Jede Session trägt ihr Ende (`disconnect`, `serverStop`, `serverStart`, `endOfLogs`, `maxDuration`), die Zähler enthalten doppelte Verbindungen, verwaiste Trennungen, gekappte und leere Sessions sowie rückwärts laufende Zeitstempel. Gegenprobe an der echten Beispieldatei mit Höchstdauer 24 h: 2.765 Sessions, 8.171 h, Median 1,6 h, 10 doppelte Verbindungen, 0 verwaiste Trennungen (mein Wegwerf-Skript aus T8.1 hatte hier 9 – es hatte die zweite Verbindung überschrieben), 28 gekappt, 3 ohne Dauer.
 
 - [ ] **T8.6 Import-CLI für Logs** · `Watcher` `DB` · braucht: T8.3, T8.5, T2.5
   - `pnpm import:logs <ordner> [--dry-run] [--from] [--to]`
