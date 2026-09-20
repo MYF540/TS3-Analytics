@@ -23,6 +23,8 @@ import {
   weekdayHourHeatmap,
 } from '../db/queries/stats.js';
 import { berlinDay, berlinDayStart } from '../domain/time.js';
+import { computeNetwork } from '../network/job.js';
+import { DEFAULT_NETWORK_SETTINGS } from '../network/settings.js';
 
 export const BUDGET_MS = 100;
 
@@ -31,9 +33,14 @@ interface Result {
   median: number;
   p95: number;
   max: number;
+  /** What this case may take; interactive queries get `BUDGET_MS`. */
+  budgetMs: number;
 }
 
-function measure(name: string, runs: number, fn: () => unknown): Result {
+/** A nightly job may take seconds – nobody waits for it. */
+export const JOB_BUDGET_MS = 5000;
+
+function measure(name: string, runs: number, fn: () => unknown, budgetMs = BUDGET_MS): Result {
   for (let i = 0; i < 3; i++) fn(); // warm-up (statement cache, page cache)
   const times: number[] = [];
   for (let i = 0; i < runs; i++) {
@@ -43,7 +50,7 @@ function measure(name: string, runs: number, fn: () => unknown): Result {
   }
   times.sort((a, b) => a - b);
   const at = (q: number) => times[Math.min(times.length - 1, Math.floor(q * times.length))] ?? 0;
-  return { name, median: at(0.5), p95: at(0.95), max: times[times.length - 1] ?? 0 };
+  return { name, median: at(0.5), p95: at(0.95), max: times[times.length - 1] ?? 0, budgetMs };
 }
 
 function main(): void {
@@ -131,6 +138,19 @@ function main(): void {
       measure('Spieler-Heatmap gesamt', runs, () =>
         userWeekdayHourHeatmap(sqlite, heavyUser, firstHour, now),
       ),
+      // The network is computed by a daily job (T9.1); measured without writing.
+      measure(
+        'Netzwerk 30 Tage (Job)',
+        runs,
+        () => computeNetwork(database, '30d', now, firstHour, DEFAULT_NETWORK_SETTINGS, []),
+        JOB_BUDGET_MS,
+      ),
+      measure(
+        'Netzwerk 90 Tage (Job)',
+        runs,
+        () => computeNetwork(database, '90d', now, firstHour, DEFAULT_NETWORK_SETTINGS, []),
+        JOB_BUDGET_MS,
+      ),
       measure('Leaderboard Jahr, Anzahl (Paginierung)', runs, () =>
         countLeaderboardForDays(sqlite, 'online', daysBack(364), today),
       ),
@@ -199,10 +219,10 @@ function main(): void {
     console.log('| Abfrage | Median (ms) | p95 (ms) | Max (ms) | Budget |');
     console.log('| --- | ---: | ---: | ---: | :---: |');
     for (const r of results) {
-      const ok = r.p95 < BUDGET_MS ? '✅' : '❌';
+      const ok = r.p95 < r.budgetMs ? '✅' : '❌';
       console.log(`| ${r.name} | ${fmt(r.median)} | ${fmt(r.p95)} | ${fmt(r.max)} | ${ok} |`);
     }
-    const failed = results.filter((r) => r.p95 >= BUDGET_MS);
+    const failed = results.filter((r) => r.p95 >= r.budgetMs);
     if (failed.length > 0) {
       console.error(
         `\n${String(failed.length)} Abfrage(n) über dem Budget von ${String(BUDGET_MS)} ms`,

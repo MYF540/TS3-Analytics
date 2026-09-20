@@ -25,6 +25,7 @@ import type {
   LeaderboardPeriod,
   ModerationAction,
   ModerationSettings,
+  NetworkSettings,
   Note,
   NoteRevision,
   OnlineNow,
@@ -171,6 +172,11 @@ export const api = {
   heatmap: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>('/stats/heatmap', { range }, signal),
   dataSources: (signal?: AbortSignal) => apiGet<DataSources>('/stats/sources', {}, signal),
+  networkSettings: (signal?: AbortSignal) =>
+    apiGet<NetworkSettings>('/settings/network', {}, signal),
+  saveNetworkSettings: (settings: NetworkSettings['settings']) =>
+    apiSend<NetworkSettings>('PUT', '/settings/network', settings),
+  runNetworkJob: () => apiPost<NetworkSettings>('/settings/network/run'),
   playerHeatmap: (userId: number, range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>(`/users/${String(userId)}/heatmap`, { range }, signal),
   importComparison: (

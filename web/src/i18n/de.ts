@@ -375,6 +375,8 @@ export const de = {
   'audit.action.privacy.export': 'Daten eines Spielers exportiert',
   'audit.action.privacy.anonymize': 'Spieler anonymisiert',
   'audit.action.import.decision': 'Rangzeit aus dem Import entschieden',
+  'audit.action.settings.network': 'Netzwerk-Einstellungen geändert',
+  'audit.action.network.run': 'Netzwerk neu berechnet',
   'audit.action.moderation.poke': 'Spieler angestupst',
   'audit.action.moderation.message': 'Nachricht an Spieler',
   'audit.action.moderation.move': 'Spieler verschoben',
@@ -390,6 +392,25 @@ export const de = {
     'Ohne Tastatur-/Mikrofon-Aktivität gilt ein Spieler nach dieser Zeit als inaktiv (idle). 1 bis 1440 Minuten.',
   'settings.away.label': 'Status „Abwesend“ zählt als AFK',
   'settings.muted.label': 'Lautsprecher stumm zählt als AFK',
+  'settings.network.title': 'Spieler-Netzwerk',
+  'settings.network.intro':
+    'Grundlage für die Netzwerk-Seite: Gezählt wird Zeit, die Spieler gemeinsam im selben Channel verbracht haben. Das Netz wird einmal täglich neu berechnet.',
+  'settings.network.candidates': 'Anzahl berücksichtigter Spieler',
+  'settings.network.candidatesHint':
+    'Nur die aktivsten Spieler des Zeitraums kommen ins Netz – sonst wächst die Zahl der Verbindungen quadratisch mit der Spielerzahl.',
+  'settings.network.minEncounter': 'Mindestdauer einer Begegnung (Minuten)',
+  'settings.network.minPair': 'Mindestzeit je Paar insgesamt (Minuten)',
+  'settings.network.channels': 'Channels ausschließen',
+  'settings.network.channelsHint':
+    'Lobby, Warteraum oder Support sagen nichts darüber aus, wer zusammengehört. AFK-Channel sind immer ausgeschlossen.',
+  'settings.network.selected': 'Ausgewählt: {count}',
+  'settings.network.alwaysAfk': 'AFK-Channel, immer ausgeschlossen',
+  'settings.network.never': 'Das Netz wurde noch nicht berechnet.',
+  'settings.network.lastRun':
+    'Zuletzt berechnet: {time} ({seconds} s). Zeitraum 30 Tage: {nodes} Spieler, {edges} Verbindungen.',
+  'settings.network.run': 'Jetzt neu berechnen',
+  'settings.network.done': 'Netz neu berechnet.',
+
   'settings.afk.title': 'AFK-Channels',
   'settings.afk.hint': 'Wer sich in einem dieser Channels aufhält, gilt als AFK.',
   'settings.afk.filter': 'Channels filtern',

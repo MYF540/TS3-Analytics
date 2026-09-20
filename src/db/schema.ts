@@ -593,3 +593,52 @@ export const importRuns = sqliteTable(
     check('import_runs_offset_check', sql`${t.offset} >= 0 AND ${t.offset} <= ${t.size}`),
   ],
 );
+
+/** Windows the player network is computed for (T9.1); each one is a separate snapshot. */
+export const NETWORK_RANGES = ['30d', '90d', '1y', 'all'] as const;
+export type NetworkRange = (typeof NETWORK_RANGES)[number];
+
+/**
+ * One row per player and window: the time that counts towards the network (without AFK and
+ * without excluded channels). Written by the daily job, which replaces a whole window at once.
+ */
+export const networkNodes = sqliteTable(
+  'network_nodes',
+  {
+    range: text('range', { enum: NETWORK_RANGES }).notNull(),
+    /** Primary account of the person (T5.3). */
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    seconds: integer('seconds').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.range, t.userId] }),
+    check('network_nodes_range_check', sql`${t.range} IN ('30d', '90d', '1y', 'all')`),
+    check('network_nodes_seconds_check', sql`${t.seconds} >= 0`),
+  ],
+);
+
+/** Time two players spent together in the same channel. `user_a` is always the smaller id. */
+export const networkEdges = sqliteTable(
+  'network_edges',
+  {
+    range: text('range', { enum: NETWORK_RANGES }).notNull(),
+    userA: integer('user_a')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    userB: integer('user_b')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    seconds: integer('seconds').notNull(),
+    /** Number of separate encounters the time is made of. */
+    encounters: integer('encounters').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.range, t.userA, t.userB] }),
+    index('network_edges_seconds_idx').on(t.range, t.seconds),
+    check('network_edges_range_check', sql`${t.range} IN ('30d', '90d', '1y', 'all')`),
+    check('network_edges_order_check', sql`${t.userA} < ${t.userB}`),
+    check('network_edges_seconds_check', sql`${t.seconds} > 0`),
+  ],
+);

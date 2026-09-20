@@ -5,6 +5,7 @@ import type {
   ChannelUsage,
   Health,
   Heatmap,
+  NetworkSettings,
   Note,
   OnlineSeries,
   Overview,
@@ -46,6 +47,16 @@ export const sampleSeries: OnlineSeries = {
 export const sampleHeatmap: Heatmap = {
   range: '30d',
   values: Array.from({ length: 7 }, (_, d) => Array.from({ length: 24 }, (_, h) => d + h / 10)),
+};
+
+export const sampleNetworkSettings: NetworkSettings = {
+  settings: { excludedChannelIds: [], candidates: 200, minEncounterS: 300, minPairS: 1800 },
+  defaults: { excludedChannelIds: [], candidates: 200, minEncounterS: 300, minPairS: 1800 },
+  channels: [
+    { id: 3, name: 'Gaming', lastSeen: 1_789_800_000, afk: false },
+    { id: 9, name: 'AFK', lastSeen: 1_789_800_000, afk: true },
+  ],
+  state: null,
 };
 
 export const sampleChannelUsage: ChannelUsage = {
@@ -234,6 +245,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     },
     '/api/channels/usage': sampleChannelUsage,
     '/api/channels/unused': sampleUnusedChannels,
+    '/api/settings/network': sampleNetworkSettings,
     '/api/users': sampleUsers,
     '/api/users/1': sampleUser,
     '/api/users/1/heatmap': { range: '1y', values: sampleHeatmap.values },

@@ -6,6 +6,7 @@ import { deleteExpiredSessions } from './api/auth/service.js';
 import { runMaintenance, runRetention } from './jobs/retention.js';
 import { runBackup } from './jobs/backup.js';
 import { runFlagDetection } from './jobs/flag-detection.js';
+import { runNetworkJob } from './network/job.js';
 import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
@@ -116,6 +117,14 @@ async function main(): Promise<void> {
         name: 'flag-detection',
         intervalS: 15 * 60,
         run: (now) => detectFlags(now),
+      },
+      {
+        // The player network does not have to be live; once a day is enough (T9.1).
+        name: 'network',
+        intervalS: 86_400,
+        run: (now) => {
+          runNetworkJob(database, now);
+        },
       },
       {
         name: 'maintenance',

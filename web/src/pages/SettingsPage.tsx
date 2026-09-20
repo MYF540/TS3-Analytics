@@ -5,6 +5,7 @@ import { useApi } from '../hooks/useApi';
 import { formatDateTime, t } from '../i18n';
 import { AlertSettingsCard } from '../components/AlertSettingsCard';
 import { GroupSettingsCard } from '../components/GroupSettingsCard';
+import { NetworkSettingsCard } from '../components/NetworkSettingsCard';
 import { ModerationSettingsCard } from '../components/ModerationSettingsCard';
 import { PageHeader } from './pages';
 
@@ -259,6 +260,7 @@ export function SettingsPage() {
       {error && <p className="alert">{error}</p>}
       {!data && !error && <p className="muted">{t('common.loading')}</p>}
       {data && <ActivityForm data={data} />}
+      <NetworkSettingsCard />
       <ModerationSettingsCard />
       <GroupSettingsCard />
       <AlertSettingsCard />

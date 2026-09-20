@@ -28,6 +28,12 @@ function putBodies(fetchMock: ReturnType<typeof mockApi>): unknown[] {
     .map(([, init]) => JSON.parse(init?.body as string) as unknown);
 }
 
+/** The page has several settings cards; queries must stay inside the activity form. */
+function activityForm() {
+  const heading = screen.getByRole('heading', { level: 2, name: 'Aktivität' });
+  return within(heading.closest('form') as HTMLElement);
+}
+
 function setup() {
   return mockApi({
     '/api/settings/activity': (_url: URL, init?: RequestInit) =>
@@ -41,31 +47,37 @@ describe('SettingsPage', () => {
   it('shows the current rules with selected AFK channels', async () => {
     setup();
     renderAt('/einstellungen');
-    expect(await screen.findByLabelText('Inaktiv nach (Minuten)')).toHaveValue(10);
-    expect(screen.getByRole('checkbox', { name: 'Status „Abwesend“ zählt als AFK' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: /^AFK/ })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: /^Gaming/ })).not.toBeChecked();
+    await screen.findByRole('heading', { level: 2, name: 'Aktivität' });
+    expect(activityForm().getByLabelText('Inaktiv nach (Minuten)')).toHaveValue(10);
+    expect(
+      activityForm().getByRole('checkbox', { name: 'Status „Abwesend“ zählt als AFK' }),
+    ).toBeChecked();
+    expect(activityForm().getByRole('checkbox', { name: /^AFK/ })).toBeChecked();
+    expect(activityForm().getByRole('checkbox', { name: /^Gaming/ })).not.toBeChecked();
     // Selected but no longer known channel stays visible and can be removed.
-    expect(screen.getByRole('checkbox', { name: 'Unbekannter Channel #42' })).toBeChecked();
+    expect(activityForm().getByRole('checkbox', { name: 'Unbekannter Channel #42' })).toBeChecked();
     expect(screen.getByText(/zuletzt gesehen/)).toBeInTheDocument();
     expect(
       screen.getByText(/Bereits erfasste Zeiten werden nicht neu bewertet/),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Speichern' })).toBeDisabled();
+    expect(activityForm().getByRole('button', { name: 'Speichern' })).toBeDisabled();
   });
 
   it('saves changed rules in seconds', async () => {
     const fetchMock = setup();
     renderAt('/einstellungen');
-    const idle = await screen.findByLabelText('Inaktiv nach (Minuten)');
+    await screen.findByRole('heading', { level: 2, name: 'Aktivität' });
+    const idle = activityForm().getByLabelText('Inaktiv nach (Minuten)');
     await userEvent.clear(idle);
     await userEvent.type(idle, '15');
-    await userEvent.click(screen.getByRole('checkbox', { name: /^Gaming/ }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Unbekannter Channel #42' }));
+    await userEvent.click(activityForm().getByRole('checkbox', { name: /^Gaming/ }));
     await userEvent.click(
-      screen.getByRole('checkbox', { name: 'Lautsprecher stumm zählt als AFK' }),
+      activityForm().getByRole('checkbox', { name: 'Unbekannter Channel #42' }),
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    await userEvent.click(
+      activityForm().getByRole('checkbox', { name: 'Lautsprecher stumm zählt als AFK' }),
+    );
+    await userEvent.click(activityForm().getByRole('button', { name: 'Speichern' }));
     expect(await screen.findByText('Gespeichert.')).toHaveAttribute('role', 'status');
     const [body] = putBodies(fetchMock) as { afkChannelIds: number[] }[];
     expect({ ...body, afkChannelIds: [...(body?.afkChannelIds ?? [])].sort() }).toEqual({
@@ -74,32 +86,33 @@ describe('SettingsPage', () => {
       awayIsAfk: true,
       outputMutedIsAfk: false,
     });
-    expect(screen.getByRole('button', { name: 'Speichern' })).toBeDisabled();
+    expect(activityForm().getByRole('button', { name: 'Speichern' })).toBeDisabled();
   });
 
   it('blocks invalid idle values and can reset to defaults', async () => {
     setup();
     renderAt('/einstellungen');
-    const idle = await screen.findByLabelText('Inaktiv nach (Minuten)');
+    await screen.findByRole('heading', { level: 2, name: 'Aktivität' });
+    const idle = activityForm().getByLabelText('Inaktiv nach (Minuten)');
     await userEvent.clear(idle);
     await userEvent.type(idle, '0');
     expect(
       screen.getByText('Bitte eine ganze Zahl zwischen 1 und 1440 eingeben.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Speichern' })).toBeDisabled();
+    expect(activityForm().getByRole('button', { name: 'Speichern' })).toBeDisabled();
 
     await userEvent.click(screen.getByRole('button', { name: 'Standardwerte eintragen' }));
     expect(idle).toHaveValue(10);
-    expect(screen.getByRole('checkbox', { name: /^AFK/ })).not.toBeChecked();
+    expect(activityForm().getByRole('checkbox', { name: /^AFK/ })).not.toBeChecked();
     await userEvent.click(screen.getByRole('button', { name: 'Änderungen verwerfen' }));
-    expect(screen.getByRole('checkbox', { name: /^AFK/ })).toBeChecked();
+    expect(activityForm().getByRole('checkbox', { name: /^AFK/ })).toBeChecked();
   });
 
   it('filters the channel list but keeps selected channels', async () => {
     setup();
     renderAt('/einstellungen');
     await userEvent.type(await screen.findByLabelText('Channels filtern'), 'gam');
-    const list = screen.getByRole('list');
+    const list = activityForm().getByRole('list');
     expect(within(list).getByText('Gaming')).toBeInTheDocument();
     expect(within(list).getByText('AFK')).toBeInTheDocument();
     expect(within(list).queryByText('Alter Raum')).not.toBeInTheDocument();

@@ -136,6 +136,23 @@ Das Wochentag-×-Stunde-Raster gibt es jetzt auch je Spieler. Es liest die Sessi
 | Spieler-Heatmap 1 Jahr |         1,6 |      1,8 |   ✅   |
 | Spieler-Heatmap gesamt |         6,1 |      6,6 |   ✅   |
 
+### Spieler-Netzwerk T9.1 (2026-09-20)
+
+Das Netz (wer ist mit wem im selben Channel) wird einmal täglich berechnet, nicht auf Abruf. Gleicher Datensatz wie oben, Vorgabewerte (200 Spieler, Begegnung ab 5 min, Paar ab 30 min):
+
+| Fenster | Spieler | Verbindungen | zu schwache Paare |
+| ------- | ------: | -----------: | ----------------: |
+| 30 Tage |     200 |        9.677 |             2.938 |
+| 90 Tage |     200 |       16.433 |             1.702 |
+| 1 Jahr  |     200 |       19.849 |                36 |
+| Gesamt  |     200 |       19.748 |                 6 |
+
+Der ganze Job (alle vier Fenster, inklusive Schreiben) braucht **3,0 s** und legt rund 66.000 Zeilen ab. Die Berechnung eines einzelnen Fensters steht als eigener Fall in `pnpm bench` (30 Tage 42 ms, 90 Tage 117 ms) – mit dem Job-Budget von 5 s statt der 100 ms für interaktive Abfragen.
+
+Verworfener erster Ansatz: Die beiden Abfragen haben `persons` mitgejoint und über `COALESCE(primary_user_id, user_id)` gefiltert. Das kann keinen Index nutzen und las bei jedem Lauf alle 2,19 Mio. Segmente – 30 Tage kosteten so **1.058 ms** statt 42 ms. Jetzt wird je Account aggregiert und die Zuordnung zur Person im Speicher gemacht (derselbe Trick wie bei den Leaderboards in T5.3), und das Zeitfenster beginnt den Indexscan bei `from - 24 h` statt am Anfang der Zeit.
+
+Bei einem Jahr sind fast alle möglichen Paare der 200 Kandidaten vorhanden (19.849 von 19.900). Ein Graph mit 20.000 Kanten ist nicht lesbar – die Seite (T9.2) muss die Anzahl der gezeigten Verbindungen begrenzen.
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

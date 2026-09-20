@@ -157,6 +157,26 @@ export interface OnlineNow {
   }[];
 }
 
+/** Settings of the player network and the result of the last daily run (T9.1). */
+export interface NetworkSettings {
+  settings: {
+    excludedChannelIds: number[];
+    candidates: number;
+    minEncounterS: number;
+    minPairS: number;
+  };
+  defaults: NetworkSettings['settings'];
+  channels: { id: number; name: string; lastSeen: number; afk: boolean }[];
+  state: {
+    computedAt: number;
+    seconds: number;
+    ranges: Record<
+      string,
+      { nodes: number; edges: number; droppedPairs: number; from: number; to: number }
+    >;
+  } | null;
+}
+
 /** Log time against the value of the old ranking system, per player (T8.10). */
 export interface ImportComparison {
   items: {
