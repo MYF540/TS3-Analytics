@@ -1,8 +1,18 @@
 {
   "name": "ts3-analytics",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "TeamSpeak 3 watcher with statistics, leaderboards, admin tools and automatic rank system",
+  "license": "AGPL-3.0-only",
+  "author": "MYF540",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MYF540/TS3-Analytics.git"
+  },
+  "homepage": "https://github.com/MYF540/TS3-Analytics#readme",
+  "bugs": {
+    "url": "https://github.com/MYF540/TS3-Analytics/issues"
+  },
   "type": "module",
   "packageManager": "pnpm@12.4.2",
   "engines": {

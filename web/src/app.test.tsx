@@ -46,6 +46,17 @@ describe('routing', () => {
   });
 });
 
+describe('licence', () => {
+  /** The AGPL asks for an offer of the source to everyone using the program over a network. */
+  it('links to the source in the footer', async () => {
+    mockApi();
+    renderAt('/');
+    const link = await screen.findByRole('link', { name: 'Quellcode (AGPL-3.0)' });
+    expect(link).toHaveAttribute('href', 'https://github.com/MYF540/TS3-Analytics');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+});
+
 describe('theme', () => {
   it('toggles between light and dark and remembers the choice', async () => {
     renderAt('/');

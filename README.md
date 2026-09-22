@@ -217,3 +217,16 @@ Stand der Arbeit in [TODO.md](TODO.md).
 | [docs/import-legacy-ranking.md](docs/import-legacy-ranking.md) | Datenbestand des alten Rangsystems und sein Import |
 
 Die Screenshots oben zeigen erzeugte Beispieldaten, keine echten Spieler.
+
+## Lizenz
+
+[GNU Affero General Public License v3.0](LICENSE) – nutzen, ändern und weitergeben ist
+ausdrücklich erwünscht. Wer eine geänderte Fassung betreibt und sie anderen über das Netz
+zugänglich macht, muss seinen Quellcode unter derselben Lizenz anbieten. Deshalb verlinkt die
+Weboberfläche in der Fußzeile auf dieses Repository.
+
+Nicht enthalten: die GeoLite2-Datenbank von MaxMind. Sie wird nicht mitgeliefert, sondern bei
+Bedarf selbst heruntergeladen und unterliegt den Bedingungen von MaxMind.
+
+TeamSpeak ist eine Marke der TeamSpeak Systems GmbH. Dieses Projekt steht in keiner Verbindung
+zu TeamSpeak Systems.

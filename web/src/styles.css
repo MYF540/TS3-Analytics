@@ -1085,3 +1085,17 @@ td .badge {
     padding: 1rem;
   }
 }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.5rem 1.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.footer a {
+  color: inherit;
+}

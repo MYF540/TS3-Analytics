@@ -5,6 +5,7 @@
 export const de = {
   'app.title': 'TS3 Analytics',
   'app.skipToContent': 'Zum Inhalt springen',
+  'app.source': 'Quellcode (AGPL-3.0)',
 
   'nav.dashboard': 'Dashboard',
   'nav.players': 'Spieler',

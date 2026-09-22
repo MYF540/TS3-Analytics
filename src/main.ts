@@ -1,3 +1,12 @@
+/*
+ * TS3 Analytics – Statistiken, Leaderboards und Rangsystem für TeamSpeak-3-Server.
+ * Copyright (C) 2026 MYF540
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation, either
+ * version 3 of the License, or (at your option) any later version. It is distributed WITHOUT
+ * ANY WARRANTY; see the LICENSE file or <https://www.gnu.org/licenses/> for details.
+ */
 import { startServer } from './api/server.js';
 import { loadConfigOrExit } from './config/config.js';
 import { openDatabase, runMigrations } from './db/client.js';

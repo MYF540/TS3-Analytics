@@ -19,6 +19,9 @@ const NAV: { to: string; label: string; end: boolean; role?: AdminRole }[] = [
   { to: '/einstellungen', label: t('nav.settings'), end: false, role: 'admin' },
 ];
 
+/** Section 13 of the AGPL: everyone using this over a network gets an offer of the source. */
+const SOURCE_URL = 'https://github.com/MYF540/TS3-Analytics';
+
 export function Layout() {
   const { theme, toggle } = useTheme();
   const { state, logout } = useAuth();
@@ -70,6 +73,14 @@ export function Layout() {
       <main id="main" className="main">
         <Outlet />
       </main>
+      <footer className="footer">
+        <span>
+          {t('app.title')} {__APP_VERSION__}
+        </span>
+        <a href={SOURCE_URL} target="_blank" rel="noreferrer noopener">
+          {t('app.source')}
+        </a>
+      </footer>
     </div>
   );
 }
