@@ -88,8 +88,8 @@ describe('parseLogLine', () => {
       parseLogLine(line("client connected 'a|b'(id:7) from 203.0.113.7:1"), utc),
     ).toMatchObject({ nick: 'a|b', dbid: 7 });
     expect(
-      parseLogLine(line("client connected 'Smii'Simon'(id:7) from 203.0.113.7:1"), utc),
-    ).toMatchObject({ nick: "Smii'Simon", dbid: 7 });
+      parseLogLine(line("client connected 'O'Neill'(id:7) from 203.0.113.7:1"), utc),
+    ).toMatchObject({ nick: "O'Neill", dbid: 7 });
   });
 
   it('reads a disconnection with its reason', () => {
