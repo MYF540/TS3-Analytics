@@ -383,9 +383,12 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
       }
       await teamspeak.registerEvent('server');
       await teamspeak.registerEvent('channel', '0');
-      // Private messages to the bot (rule confirmation, T10.8).
-      await teamspeak.registerEvent('textprivate');
       this.selfClid = Number((await teamspeak.whoami()).clientId);
+      // Private messages to the bot (rule confirmation, T10.8). Time tracking does not depend
+      // on them, so a refusal must not keep the bot from connecting.
+      await teamspeak.registerEvent('textprivate').catch((error: unknown) => {
+        this.logger.warn({ err: error }, 'Private messages to the bot are not available');
+      });
     } catch (error) {
       this.teamspeak = undefined;
       teamspeak.forceQuit();
