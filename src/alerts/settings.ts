@@ -13,6 +13,7 @@ export const ALERT_EVENTS = [
   'group.protected',
   'rank.promoted',
   'support.request',
+  'proxy.detected',
 ] as const;
 export type AlertEvent = (typeof ALERT_EVENTS)[number];
 

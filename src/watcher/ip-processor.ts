@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import type { AppDatabase } from '../db/client.js';
 import { upsertIpSeen } from '../db/repositories/index.js';
 import { users } from '../db/schema.js';
-import { hashIp, normalizeIp } from '../domain/ip.js';
+import { hashIp, normalizeIp, type NormalizedIp } from '../domain/ip.js';
 import type { CountryLookup } from '../geoip/country-lookup.js';
 import type { Logger } from '../logging/logger.js';
 import type { Ts3Connection } from '../ts3/connection.js';
@@ -14,6 +14,12 @@ export interface IpProcessorDeps {
   countries: CountryLookup;
   hmacSecret: string;
   logger: Logger;
+  /**
+   * Sees every address right after it was hashed, while it is still in memory (proxy check,
+   * T10.10). The receiver must not store or log `ip` (rule 1).
+   */
+  onAddress?:
+    ((client: OnlineClient, ip: NormalizedIp, ipHash: Buffer, at: number) => void) | undefined;
 }
 
 /**
@@ -101,5 +107,10 @@ export class IpProcessor implements TrackerListener {
         database.db.update(users).set({ country }).where(eq(users.id, client.userId)).run();
       }
     })();
+    try {
+      this.deps.onAddress?.(client, ip, ipHash, at);
+    } catch (error) {
+      logger.error({ err: error, clid: client.clid }, 'Address inspection failed');
+    }
   }
 }

@@ -36,6 +36,11 @@ import type {
   nicknameTestResponse,
 } from './routes/automation-nickname.js';
 import type { privateSettingsResponse } from './routes/automation-private.js';
+import type {
+  playerProxyResponse,
+  proxyClearResponse,
+  proxySettingsResponse,
+} from './routes/automation-proxy.js';
 import type { playerRulesResponse, rulesSettingsResponse } from './routes/automation-rules.js';
 import type { spamSettingsResponse } from './routes/automation-spam.js';
 import type { staffSettingsResponse } from './routes/automation-staff.js';
@@ -86,6 +91,9 @@ export type Contract = [
   Assert<Equals<z.output<typeof rulesSettingsResponse>, Web.RulesSettings>>,
   Assert<Equals<z.output<typeof playerRulesResponse>, Web.PlayerRules>>,
   Assert<Equals<z.output<typeof spamSettingsResponse>, Web.SpamSettings>>,
+  Assert<Equals<z.output<typeof proxySettingsResponse>, Web.ProxySettings>>,
+  Assert<Equals<z.output<typeof proxyClearResponse>, Web.ProxyClear>>,
+  Assert<Equals<z.output<typeof playerProxyResponse>, Web.PlayerProxy>>,
   Assert<Equals<z.output<typeof authResponse>, Web.AuthResponse>>,
   Assert<Equals<z.output<typeof auditEntry>, Web.AuditEntry>>,
   Assert<Equals<z.output<typeof auditFiltersResponse>, Web.AuditFilters>>,

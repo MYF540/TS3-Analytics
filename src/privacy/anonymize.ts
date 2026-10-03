@@ -55,6 +55,8 @@ export function anonymizeUser(
     run('DELETE FROM rank_history WHERE user_id = ?', userId);
     run('DELETE FROM automation_log WHERE user_id = ?', userId);
     run('DELETE FROM rule_acceptances WHERE user_id = ?', userId);
+    run('DELETE FROM proxy_checks WHERE user_id = ?', userId);
+    run('UPDATE proxy_ips SET user_id = NULL WHERE user_id = ?', userId);
     run(
       `UPDATE bans SET user_id = NULL, uid = NULL, last_nickname = NULL, ip_hash = NULL,
          subnet_hash = NULL

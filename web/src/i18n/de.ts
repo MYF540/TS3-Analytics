@@ -130,6 +130,7 @@ export const de = {
     'Diese Servergruppe gehört zur Rangleiter und wird nur vom Rangsystem vergeben.',
   'error.SPAM_INVALID_THRESHOLDS':
     'Bei mindestens einer Art steigen die Schwellen nicht an oder es ist keine Stufe eingeschaltet.',
+  'error.PROXY_GROUP_MISSING': 'Für diese Aktion muss eine Servergruppe gewählt sein.',
   'error.INVALID_PATTERN':
     'Mindestens ein Muster lässt sich nicht verwenden (leer, ungültig oder so verschachtelt, dass die Prüfung sehr lange dauern könnte).',
   'error.MODERATION_DISABLED': 'Moderationsaktionen sind in den Einstellungen ausgeschaltet.',
@@ -437,6 +438,8 @@ export const de = {
   'audit.action.automation.private': 'Privat-Channel geändert',
   'audit.action.automation.rules': 'Regelbestätigung geändert',
   'audit.action.automation.spam': 'Spam-Control geändert',
+  'audit.action.automation.proxy': 'Anti-Proxy geändert',
+  'audit.action.automation.proxy.clear': 'Proxy-Befund als Fehlalarm markiert',
   'audit.action.automation.channels.adopt': 'Channels an den Channel-Creator übergeben',
   'audit.action.moderation.poke': 'Spieler angestupst',
   'audit.action.moderation.message': 'Nachricht an Spieler',
@@ -665,6 +668,7 @@ export const de = {
   'alerts.event.group.protected': 'Änderung an einer geschützten Servergruppe',
   'alerts.event.rank.promoted': 'Rang-Aufstieg eines Spielers',
   'alerts.event.support.request': 'Jemand wartet im Support-Channel',
+  'alerts.event.proxy.detected': 'VPN oder Proxy bei einem Spieler erkannt',
   'alerts.event.bot.connection': 'Bot länger als 2 Minuten ohne Verbindung und wieder verbunden',
   'alerts.rate': 'Höchstens Meldungen pro Minute',
   'alerts.rateHint': 'Weitere Meldungen werden zusammengefasst. 1 bis 30.',
@@ -1062,6 +1066,38 @@ export const de = {
   'spam.reason': 'Grund für Kick und Ban',
   'spam.notRising': 'Die Schwellen müssen von Verwarnung über Kick zu Ban ansteigen.',
   'spam.noStep': 'Mindestens eine Stufe braucht eine Schwelle größer als 0.',
+  'proxy.intro':
+    'Prüft bei neuen Spielern, ob sie über ein VPN oder einen Proxy verbunden sind. Wer einmal ohne Proxy verbunden war, wird nicht erneut geprüft. Erkannte Adressen landen als Prüfsumme auf einer lokalen Liste und werden künftig ohne Abfrage erkannt.',
+  'proxy.privacy':
+    'Solange das Modul eingeschaltet ist – auch im Testmodus –, wird die IP-Adresse jedes noch nicht geprüften Spielers an den Dienst proxycheck.io übermittelt. Gespeichert wird sie nirgends.',
+  'proxy.noKey':
+    'In der .env ist kein PROXYCHECK_API_KEY gesetzt. Ohne Schlüssel sind nur rund 100 Abfragen pro Tag möglich.',
+  'proxy.action': 'Was soll bei einem Treffer passieren?',
+  'proxy.action.none': 'Nichts, nur vermerken und melden',
+  'proxy.action.group': 'Servergruppe setzen und Nachricht schicken',
+  'proxy.action.ban': 'Zeitlich bannen',
+  'proxy.group': 'Servergruppe für erkannte Spieler',
+  'proxy.message': 'Text für den Spieler (auch Kick- und Ban-Grund)',
+  'proxy.notify': 'Team benachrichtigen',
+  'proxy.notifyHint':
+    'Mitglieder dieser Servergruppen bekommen bei jedem Treffer eine Privatnachricht, wenn sie online sind.',
+  'proxy.notifyMessage': 'Text an das Team ({name} = Nickname)',
+  'proxy.exemptUsers': 'Spieler, die nie geprüft werden (interne IDs, mit Komma getrennt)',
+  'proxy.exemptUsersHint':
+    'Die interne ID steht in der Adresse der Spielerseite, z. B. /spieler/42.',
+  'proxy.flagged': 'Erkannte Spieler',
+  'proxy.stats':
+    'Adressen auf der lokalen Liste: {listed} · geprüft ohne Befund: {clean} · mit Befund: {proxy}',
+  'proxy.noFlagged': 'Bisher wurde niemand erkannt.',
+  'proxy.col.when': 'Zuletzt erkannt',
+  'proxy.col.undo': 'Fehlalarm',
+  'proxy.clear': 'Als sauber markieren',
+  'proxy.clearFor': '{name} als sauber markieren',
+  'proxy.clearHint':
+    'Entfernt die Adressen dieses Spielers von der lokalen Liste; er wird danach nicht mehr geprüft. Eine gesetzte Servergruppe bitte von Hand entfernen.',
+  'proxy.cleared': 'Als sauber markiert.',
+  'player.proxy': 'Zuletzt über VPN oder Proxy verbunden (erkannt am {time}).',
+  'automation.action.proxy.detected': 'VPN/Proxy erkannt',
   'automation.module.nickname': 'Nickname-Checker',
   'automation.module.support': 'Support-Channel',
   'automation.module.staff': 'Staffliste',

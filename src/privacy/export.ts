@@ -123,6 +123,9 @@ export function exportUser(database: AppDatabase, userId: number, now: number) {
     ),
     rules:
       one('SELECT version, decision, at FROM rule_acceptances WHERE user_id = ?', userId) ?? null,
+    proxyCheck:
+      one('SELECT verdict, checked_at AS checkedAt FROM proxy_checks WHERE user_id = ?', userId) ??
+      null,
     automation: all(
       'SELECT at, module, action, detail, result FROM automation_log WHERE user_id = ? ORDER BY at',
       userId,

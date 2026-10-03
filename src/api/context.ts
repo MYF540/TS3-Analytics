@@ -23,6 +23,8 @@ export interface ApiContext {
   channels?: (() => Promise<Ts3Channel[]>) | undefined;
   /** The server's channel groups; undefined when the bot is not running. */
   channelGroups?: (() => Promise<Ts3ChannelGroup[]>) | undefined;
+  /** Whether an API key for the proxy check is configured (the key itself stays in config). */
+  proxyKeyConfigured?: boolean | undefined;
   /** Current time in UTC seconds. */
   now: () => number;
   /** Process start (UTC seconds), for the uptime. */

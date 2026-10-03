@@ -232,6 +232,35 @@ export interface SpamSettings {
   groups: { id: number; name: string }[];
 }
 
+export interface ProxySettings {
+  settings: {
+    enabled: boolean;
+    dryRun: boolean;
+    exemptGroupIds: number[];
+    action: 'none' | 'message' | 'poke' | 'kick' | 'ban' | 'group';
+    message: string;
+    groupId: number | null;
+    banDurationS: number;
+    notifyGroupIds: number[];
+    notifyMessage: string;
+    exemptUserIds: number[];
+  };
+  groups: { id: number; name: string }[];
+  keyConfigured: boolean;
+  stats: { listed: number; clean: number; proxy: number };
+  flagged: { userId: number; nickname: string | null; checkedAt: number }[];
+}
+
+export interface ProxyClear {
+  removed: number;
+}
+
+export interface PlayerProxy {
+  enabled: boolean;
+  verdict: 'clean' | 'proxy' | null;
+  checkedAt: number | null;
+}
+
 export interface NicknameTest {
   match: number | null;
 }
@@ -699,7 +728,8 @@ export type AlertEvent =
   | 'join.spike'
   | 'group.protected'
   | 'rank.promoted'
-  | 'support.request';
+  | 'support.request'
+  | 'proxy.detected';
 
 export interface AlertSettings {
   configured: boolean;

@@ -14,8 +14,11 @@ import type {
   ChannelsSettings,
   NicknameSettings,
   NicknameTest,
+  PlayerProxy,
   PlayerRules,
   PrivateSettings,
+  ProxyClear,
+  ProxySettings,
   RulesSettings,
   SpamSettings,
   StaffSettings,
@@ -215,6 +218,13 @@ export const api = {
   spamSettings: (signal?: AbortSignal) => apiGet<SpamSettings>('/automation/spam', {}, signal),
   saveSpamSettings: (settings: SpamSettings['settings']) =>
     apiSend<SpamSettings>('PUT', '/automation/spam', settings),
+  proxySettings: (signal?: AbortSignal) => apiGet<ProxySettings>('/automation/proxy', {}, signal),
+  saveProxySettings: (settings: ProxySettings['settings']) =>
+    apiSend<ProxySettings>('PUT', '/automation/proxy', settings),
+  clearProxyVerdict: (userId: number) =>
+    apiPost<ProxyClear>(`/automation/proxy/clear/${String(userId)}`),
+  playerProxy: (userId: number, signal?: AbortSignal) =>
+    apiGet<PlayerProxy>(`/users/${String(userId)}/proxy`, {}, signal),
   testNickname: (body: {
     nickname: string;
     patterns: NicknameSettings['settings']['patterns'];

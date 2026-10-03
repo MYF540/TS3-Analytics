@@ -11,6 +11,7 @@ import { PlayerAccounts } from '../components/PlayerAccounts';
 import { HeatmapCard } from '../components/HeatmapCard';
 import { PlayerFlagsNotice } from '../components/PlayerFlagsNotice';
 import { PlayerNotes } from '../components/PlayerNotes';
+import { PlayerProxyNotice } from '../components/PlayerProxyNotice';
 import { PlayerRankCard } from '../components/PlayerRankCard';
 import { PlayerRulesNotice } from '../components/PlayerRulesNotice';
 import { PrivacyCard } from '../components/PrivacyCard';
@@ -256,6 +257,7 @@ export function PlayerPage() {
       </header>
       <PlayerFlagsNotice userId={id} />
       <PlayerRulesNotice userId={id} />
+      <PlayerProxyNotice userId={id} />
       <Kpis detail={data} />
       <section className="card chart-card">
         <header className="chart-card__header">

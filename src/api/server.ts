@@ -26,6 +26,7 @@ import { moderationRoutes } from './routes/moderation.js';
 import { automationChannelsRoutes } from './routes/automation-channels.js';
 import { automationNicknameRoutes } from './routes/automation-nickname.js';
 import { automationPrivateRoutes } from './routes/automation-private.js';
+import { automationProxyRoutes } from './routes/automation-proxy.js';
 import { automationRulesRoutes } from './routes/automation-rules.js';
 import { automationSpamRoutes } from './routes/automation-spam.js';
 import { automationStaffRoutes } from './routes/automation-staff.js';
@@ -148,6 +149,7 @@ export async function buildServer(
       await api.register(automationPrivateRoutes(context));
       await api.register(automationRulesRoutes(context));
       await api.register(automationSpamRoutes(context));
+      await api.register(automationProxyRoutes(context));
     },
     { prefix: '/api' },
   );

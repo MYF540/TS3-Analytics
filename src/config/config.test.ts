@@ -39,6 +39,7 @@ describe('parseConfig', () => {
       web: { host: '127.0.0.1', port: 8080, sessionTtlS: 43_200, cookieSecure: false },
       backup: { dir: './data/backups', keep: 14 },
       paths: { geoipDb: './data/GeoLite2-Country.mmdb' },
+      proxy: { apiKey: undefined },
       database: { path: './data/ts3-analytics.sqlite', cacheSizeMb: 64, mmapSizeMb: 256 },
       retention: { ipDays: 90, segmentMonths: 0 },
       watcher: {

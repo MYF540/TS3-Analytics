@@ -61,6 +61,8 @@ Beim Start führt der Dienst alle ausstehenden Migrationen aus (`runMigrations()
 | `automation_log`            | Was die Bot-Module getan haben oder im Testmodus getan hätten (90 Tage)     |
 | `managed_channels`          | Channels, die ein Bot-Modul angelegt oder übernommen hat (Regel 13)         |
 | `rule_acceptances`          | Letzte Entscheidung je Spieler zu den Serverregeln, mit Regel-Version       |
+| `proxy_ips`                 | Lokale Liste erkannter VPN-/Proxy-Adressen, nur als HMAC-Hash               |
+| `proxy_checks`              | Ergebnis der Proxy-Prüfung je Spieler (`clean` wird nie erneut geprüft)     |
 
 Das maßgebliche Schema steht in `src/db/schema.ts`.
 

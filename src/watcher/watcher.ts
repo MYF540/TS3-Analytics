@@ -5,7 +5,7 @@ import type { Ts3Connection } from '../ts3/connection.js';
 import type { Ts3Client, Ts3ClientLeft, Ts3ClientMoved } from '../ts3/types.js';
 import type { CountryLookup } from '../geoip/country-lookup.js';
 import { ActivityTracker } from './activity.js';
-import { IpProcessor } from './ip-processor.js';
+import { IpProcessor, type IpProcessorDeps } from './ip-processor.js';
 import {
   recoverOpenSessions,
   resolveResume,
@@ -44,7 +44,11 @@ export interface WatcherDeps {
    */
   resumeGraceS?: number;
   /** IP pseudonymisation on join (T2.5); disabled when omitted. */
-  ip?: { countries: CountryLookup; hmacSecret: string };
+  ip?: {
+    countries: CountryLookup;
+    hmacSecret: string;
+    onAddress?: IpProcessorDeps['onAddress'];
+  };
 }
 
 /**

@@ -16,6 +16,7 @@ import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
 import { PlayersPage } from './pages/PlayersPage';
 import { PrivateChannelPage } from './pages/PrivateChannelPage';
+import { ProxyCheckPage } from './pages/ProxyCheckPage';
 import { RanksPage } from './pages/RanksPage';
 import { RulesPage } from './pages/RulesPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -61,6 +62,7 @@ export const routes: RouteObject[] = [
                   { path: 'automatik/private', element: <PrivateChannelPage /> },
                   { path: 'automatik/rules', element: <RulesPage /> },
                   { path: 'automatik/spam', element: <SpamControlPage /> },
+                  { path: 'automatik/proxy', element: <ProxyCheckPage /> },
                   { path: 'abgleich', element: <ImportPage /> },
                   { path: 'netzwerk', element: <NetworkPage /> },
                   { path: 'status', element: <StatusPage /> },

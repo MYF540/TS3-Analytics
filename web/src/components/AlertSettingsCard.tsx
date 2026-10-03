@@ -12,6 +12,7 @@ const EVENTS: readonly AlertEvent[] = [
   'group.protected',
   'rank.promoted',
   'support.request',
+  'proxy.detected',
   'bot.connection',
 ];
 

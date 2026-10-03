@@ -40,6 +40,13 @@ const envSchema = z.object({
   SESSION_TTL_HOURS: optional(z.coerce.number().int().min(1).max(720).default(12)),
   WEB_COOKIE_SECURE: optional(z.stringbool().default(false)),
   GEOIP_DB_PATH: optional(z.string().default('./data/GeoLite2-Country.mmdb')),
+  // Secret. Without it the proxy check (T10.10) works within the small anonymous quota.
+  PROXYCHECK_API_KEY: optional(
+    z
+      .string()
+      .regex(/^[\w-]{6,64}$/)
+      .optional(),
+  ),
   SQLITE_PATH: optional(z.string().default('./data/ts3-analytics.sqlite')),
   BACKUP_DIR: optional(z.string().default('./data/backups')),
   BACKUP_KEEP: optional(z.coerce.number().int().min(1).max(365).default(14)),
@@ -72,6 +79,10 @@ export interface Config {
   };
   readonly security: {
     readonly hmacSecret: string;
+  };
+  readonly proxy: {
+    /** API key of proxycheck.io; never logged, never returned by the API. */
+    readonly apiKey: string | undefined;
   };
   readonly web: {
     readonly host: string;
@@ -161,6 +172,7 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
     }),
     backup: Object.freeze({ dir: e.BACKUP_DIR, keep: e.BACKUP_KEEP }),
     paths: Object.freeze({ geoipDb: e.GEOIP_DB_PATH }),
+    proxy: Object.freeze({ apiKey: e.PROXYCHECK_API_KEY }),
     database: Object.freeze({
       path: e.SQLITE_PATH,
       cacheSizeMb: e.SQLITE_CACHE_SIZE_MB,

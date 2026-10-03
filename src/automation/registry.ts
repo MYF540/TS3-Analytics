@@ -4,6 +4,7 @@ import type { AutomationModule } from '../db/schema.js';
 import { channelsSettingsSchema } from './modules/channels.js';
 import { nicknameSettingsSchema } from './modules/nickname.js';
 import { privateSettingsSchema } from './modules/private.js';
+import { proxySettingsSchema } from './modules/proxy.js';
 import { rulesSettingsSchema } from './modules/rules.js';
 import { spamSettingsSchema } from './modules/spam.js';
 import { staffSettingsSchema } from './modules/staff.js';
@@ -25,6 +26,7 @@ export const MODULES: readonly ModuleDescriptor[] = [
   { id: 'private', schema: privateSettingsSchema },
   { id: 'rules', schema: rulesSettingsSchema },
   { id: 'spam', schema: spamSettingsSchema },
+  { id: 'proxy', schema: proxySettingsSchema },
 ];
 
 export interface ModuleState {

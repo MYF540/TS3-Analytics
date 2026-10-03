@@ -251,6 +251,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/users/1/heatmap': { range: '1y', values: sampleHeatmap.values },
     '/api/users/1/notes': { notes: sampleNotes },
     '/api/users/1/rules': { enabled: false, currentVersion: 1, state: null },
+    '/api/users/1/proxy': { enabled: false, verdict: null, checkedAt: null },
     '/api/tags': {
       tags: [
         { id: 1, name: 'Stammspieler', color: 'green', users: 4 },

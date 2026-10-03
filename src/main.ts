@@ -13,10 +13,12 @@ import { AutomationHost } from './automation/host.js';
 import { ChannelsModule } from './automation/modules/channels.js';
 import { NicknameModule } from './automation/modules/nickname.js';
 import { PrivateModule } from './automation/modules/private.js';
+import { ProxyModule } from './automation/modules/proxy.js';
 import { RulesModule } from './automation/modules/rules.js';
 import { SpamModule } from './automation/modules/spam.js';
 import { StaffModule } from './automation/modules/staff.js';
 import { SupportModule } from './automation/modules/support.js';
+import { createProxycheckLookup } from './automation/proxycheck.js';
 import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
 import { deleteExpiredSessions } from './api/auth/service.js';
@@ -54,11 +56,17 @@ async function main(): Promise<void> {
     { logger },
   );
   const countries = await openCountryLookup(config.paths.geoipDb, logger);
+  // Filled in further down, once the automation host exists; until then nothing is inspected.
+  const proxy: { module?: ProxyModule } = {};
   const watcher = new Watcher({
     database,
     connection,
     logger,
-    ip: { countries, hmacSecret: config.security.hmacSecret },
+    ip: {
+      countries,
+      hmacSecret: config.security.hmacSecret,
+      onAddress: (client, ip, ipHash) => proxy.module?.inspect(client, ip, ipHash),
+    },
     pollIntervalS: config.watcher.pollIntervalS,
     flushIntervalS: config.watcher.flushIntervalS,
     resumeGraceS: config.watcher.resumeGraceS,
@@ -132,6 +140,14 @@ async function main(): Promise<void> {
   );
   automation.register(new RulesModule(automationDeps));
   automation.register(new SpamModule(automationDeps));
+  proxy.module = new ProxyModule({
+    ...automationDeps,
+    lookup: createProxycheckLookup({ apiKey: config.proxy.apiKey }),
+    client: (clid) => automation.get(clid),
+    online: () => automation.online,
+    notifier: alerts,
+  });
+  automation.register(proxy.module);
   connection.on('channelCreated', (event) => {
     automation.onChannelCreatedEvent(event, Math.floor(Date.now() / 1000));
   });
@@ -202,6 +218,7 @@ async function main(): Promise<void> {
       moderation: connection,
       channels: () => connection.channelList(),
       channelGroups: () => connection.channelGroups(),
+      proxyKeyConfigured: config.proxy.apiKey !== undefined,
       ranks: rankJob,
       bot: {
         connection: () => connection.status(),

@@ -738,3 +738,42 @@ export const ruleAcceptances = sqliteTable(
     check('rule_acceptances_version_check', sql`${t.version} >= 1`),
   ],
 );
+
+export const PROXY_VERDICTS = ['clean', 'proxy'] as const;
+export type ProxyVerdict = (typeof PROXY_VERDICTS)[number];
+
+/**
+ * The local list of the proxy check (T10.10): addresses an online service reported as VPN or
+ * proxy. Only the keyed hash of the address is kept (rule 1).
+ */
+export const proxyIps = sqliteTable(
+  'proxy_ips',
+  {
+    ipHash: blob('ip_hash', { mode: 'buffer' }).primaryKey(),
+    /** What the service called it, e.g. `VPN`. */
+    kind: text('kind'),
+    /** The player it was first seen with; lets an admin undo a false alarm. */
+    userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+    flaggedAt: integer('flagged_at').notNull(),
+  },
+  (t) => [index('proxy_ips_user_idx').on(t.userId)],
+);
+
+/**
+ * Result of the proxy check per player. Who was once seen without a proxy (`clean`) is not
+ * checked again.
+ */
+export const proxyChecks = sqliteTable(
+  'proxy_checks',
+  {
+    userId: integer('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    verdict: text('verdict', { enum: PROXY_VERDICTS }).notNull(),
+    checkedAt: integer('checked_at').notNull(),
+  },
+  (t) => [
+    index('proxy_checks_verdict_idx').on(t.verdict, t.checkedAt),
+    check('proxy_checks_verdict_check', sql`${t.verdict} IN ('clean', 'proxy')`),
+  ],
+);
