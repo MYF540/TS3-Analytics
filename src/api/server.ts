@@ -23,6 +23,7 @@ import { healthRoutes } from './routes/health.js';
 import { importRoutes } from './routes/import.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
 import { moderationRoutes } from './routes/moderation.js';
+import { automationChannelsRoutes } from './routes/automation-channels.js';
 import { automationNicknameRoutes } from './routes/automation-nickname.js';
 import { automationStaffRoutes } from './routes/automation-staff.js';
 import { automationSupportRoutes } from './routes/automation-support.js';
@@ -140,6 +141,7 @@ export async function buildServer(
       await api.register(automationNicknameRoutes(context));
       await api.register(automationSupportRoutes(context));
       await api.register(automationStaffRoutes(context));
+      await api.register(automationChannelsRoutes(context));
     },
     { prefix: '/api' },
   );

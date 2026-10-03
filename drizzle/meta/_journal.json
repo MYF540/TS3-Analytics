@@ -106,6 +106,13 @@
       "when": 1791037697637,
       "tag": "0014_automation_log",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1791040509947,
+      "tag": "0015_managed_channels",
+      "breakpoints": true
     }
   ]
 }

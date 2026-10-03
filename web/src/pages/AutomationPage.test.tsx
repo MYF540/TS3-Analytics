@@ -29,7 +29,7 @@ const log: Paged<AutomationLogEntry> = {
       id: 1,
       at: 1_789_799_000,
       module: 'channels',
-      action: 'channel.create',
+      action: 'custom.step',
       userId: null,
       nickname: null,
       detail: 'Talk 3',
@@ -78,7 +78,7 @@ describe('AutomationPage', () => {
     expect(row.getByText('Kick vom Server')).toBeInTheDocument();
     expect(row.getByText('nur Test')).toBeInTheDocument();
     // An action without a German name is shown as it is.
-    expect(rowOf('Talk 3').getByText('channel.create')).toBeInTheDocument();
+    expect(rowOf('Talk 3').getByText('custom.step')).toBeInTheDocument();
     expect(rowOf('Talk 3').getByText('fehlgeschlagen')).toBeInTheDocument();
     expect(screen.getByText('Einträge werden nach 90 Tagen gelöscht.')).toBeInTheDocument();
   });

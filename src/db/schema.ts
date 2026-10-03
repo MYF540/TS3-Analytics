@@ -688,3 +688,29 @@ export const automationLog = sqliteTable(
     check('automation_log_result_check', sql`${t.result} IN ('done', 'dry', 'failed')`),
   ],
 );
+
+/** Modules that create channels of their own (rule 13). */
+export const CHANNEL_OWNERS = ['channels', 'private'] as const;
+export type ChannelOwner = (typeof CHANNEL_OWNERS)[number];
+
+/**
+ * Channels a bot module created or was expressly given. Only these may be edited or deleted by
+ * the module (rule 13). `channel_id` is the TS3 channel id.
+ */
+export const managedChannels = sqliteTable(
+  'managed_channels',
+  {
+    channelId: integer('channel_id').primaryKey(),
+    module: text('module', { enum: CHANNEL_OWNERS }).notNull(),
+    /** Id of the area (channel creator) or lobby (private channels) in the module's settings. */
+    scope: text('scope').notNull(),
+    /** Private channels: the player the channel belongs to. */
+    ownerUserId: integer('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    index('managed_channels_scope_idx').on(t.module, t.scope),
+    index('managed_channels_owner_idx').on(t.ownerUserId),
+    check('managed_channels_module_check', sql`${t.module} IN ('channels', 'private')`),
+  ],
+);

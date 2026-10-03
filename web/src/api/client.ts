@@ -10,6 +10,8 @@ import type {
   AutomationLogEntry,
   AutomationModule,
   AutomationOverview,
+  ChannelsAdopt,
+  ChannelsSettings,
   NicknameSettings,
   NicknameTest,
   StaffSettings,
@@ -191,6 +193,12 @@ export const api = {
   staffSettings: (signal?: AbortSignal) => apiGet<StaffSettings>('/automation/staff', {}, signal),
   saveStaffSettings: (settings: StaffSettings['settings']) =>
     apiSend<StaffSettings>('PUT', '/automation/staff', settings),
+  channelsSettings: (signal?: AbortSignal) =>
+    apiGet<ChannelsSettings>('/automation/channels', {}, signal),
+  saveChannelsSettings: (settings: ChannelsSettings['settings']) =>
+    apiSend<ChannelsSettings>('PUT', '/automation/channels', settings),
+  adoptChannels: (areaId: string) =>
+    apiPost<ChannelsAdopt>('/automation/channels/adopt', { areaId }),
   testNickname: (body: {
     nickname: string;
     patterns: NicknameSettings['settings']['patterns'];

@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { AuditPage } from './pages/AuditPage';
 import { AutomationPage } from './pages/AutomationPage';
+import { ChannelCreatorPage } from './pages/ChannelCreatorPage';
 import { ChannelsPage } from './pages/ChannelsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FlagsPage } from './pages/FlagsPage';
@@ -53,6 +54,7 @@ export const routes: RouteObject[] = [
                   { path: 'automatik/nickname', element: <NicknameCheckPage /> },
                   { path: 'automatik/support', element: <SupportChannelPage /> },
                   { path: 'automatik/staff', element: <StaffListPage /> },
+                  { path: 'automatik/channels', element: <ChannelCreatorPage /> },
                   { path: 'abgleich', element: <ImportPage /> },
                   { path: 'netzwerk', element: <NetworkPage /> },
                   { path: 'status', element: <StatusPage /> },

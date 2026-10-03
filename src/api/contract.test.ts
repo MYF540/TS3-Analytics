@@ -28,6 +28,10 @@ import type { moderationAction } from '../moderation/actions.js';
 import type { onlineResponse } from './routes/online.js';
 import type { importComparisonResponse } from './routes/import.js';
 import type {
+  channelsAdoptResponse,
+  channelsSettingsResponse,
+} from './routes/automation-channels.js';
+import type {
   nicknameSettingsResponse,
   nicknameTestResponse,
 } from './routes/automation-nickname.js';
@@ -73,6 +77,8 @@ export type Contract = [
   Assert<Equals<z.output<typeof nicknameTestResponse>, Web.NicknameTest>>,
   Assert<Equals<z.output<typeof supportSettingsResponse>, Web.SupportSettings>>,
   Assert<Equals<z.output<typeof staffSettingsResponse>, Web.StaffSettings>>,
+  Assert<Equals<z.output<typeof channelsSettingsResponse>, Web.ChannelsSettings>>,
+  Assert<Equals<z.output<typeof channelsAdoptResponse>, Web.ChannelsAdopt>>,
   Assert<Equals<z.output<typeof authResponse>, Web.AuthResponse>>,
   Assert<Equals<z.output<typeof auditEntry>, Web.AuditEntry>>,
   Assert<Equals<z.output<typeof auditFiltersResponse>, Web.AuditFilters>>,

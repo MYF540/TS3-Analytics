@@ -111,6 +111,34 @@ export interface StaffSettings {
   channels: { id: number; name: string }[];
 }
 
+export interface ChannelsSettings {
+  settings: {
+    enabled: boolean;
+    dryRun: boolean;
+    exemptGroupIds: number[];
+    areas: {
+      id: string;
+      parentId: number;
+      naming: 'numbered' | 'list';
+      prefix: string;
+      names: string[];
+      minFree: number;
+      maxChannels: number;
+      maxClients: number;
+      codecQuality: number;
+      joinPower: number;
+      talkPower: number;
+      description: string;
+    }[];
+  };
+  channels: { id: number; name: string }[];
+  managed: { areaId: string; count: number }[];
+}
+
+export interface ChannelsAdopt {
+  adopted: number;
+}
+
 export interface NicknameTest {
   match: number | null;
 }
