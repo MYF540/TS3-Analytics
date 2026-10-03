@@ -157,6 +157,43 @@ describe('Ts3Connection', () => {
     expect(events).toEqual([`move ${String(clid)}→5`, `leave ${String(clid)}`]);
   });
 
+  it('forwards private messages and channel events', async () => {
+    createConnection().start();
+    await vi.advanceTimersByTimeAsync(0);
+    const events: string[] = [];
+    connection.on('textMessage', (e) => events.push(`message ${e.message}`));
+    connection.on('channelCreated', (e) => events.push(`created ${e.name}`));
+    connection.on('channelDeleted', (e) => events.push(`deleted ${String(e.cid)}`));
+    const clid = server.join({ uid: 'u', nickname: 'A' });
+    server.privateMessage(clid, 'hallo');
+    const cid = server.createChannelAs(clid, 'Mein Raum');
+    server.leave(clid);
+    expect(events).toEqual(['message hallo', 'created Mein Raum', `deleted ${String(cid)}`]);
+  });
+
+  it('sends channel commands through the queue', async () => {
+    createConnection().start();
+    await vi.advanceTimersByTimeAsync(0);
+    const created = connection.channelCreate({ name: 'Talk 1', parentId: 0, kind: 'permanent' });
+    await vi.advanceTimersByTimeAsync(1000);
+    const cid = await created;
+    const done = Promise.all([
+      connection.channelEdit(cid, { name: 'Talk 2' }),
+      connection.channelSetPermission(cid, 'i_channel_needed_join_power', 10),
+      connection.channelDelete(cid),
+    ]);
+    await vi.advanceTimersByTimeAsync(2000);
+    await done;
+    expect(server.commandLog.map((entry) => entry.command)).toEqual([
+      'connect',
+      'channelcreate',
+      'channeledit',
+      'channeladdperm',
+      'channeldelete',
+    ]);
+    expect(connection.queue.pending).toBe(0);
+  });
+
   it('stops reconnecting after stop()', async () => {
     createConnection().start();
     await vi.advanceTimersByTimeAsync(0);

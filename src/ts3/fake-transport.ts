@@ -2,12 +2,44 @@ import { EventEmitter } from 'node:events';
 import type { Ts3Transport } from './transport.js';
 import {
   CLIENT_TYPE_REGULAR,
+  MOVE_REASON_CHANNEL_KICK,
+  MOVE_REASON_MOVED,
+  MOVE_REASON_SELF,
   type Ts3Ban,
-  type Ts3ServerGroup,
   type Ts3Channel,
+  type Ts3ChannelCreate,
+  type Ts3ChannelEdit,
+  type Ts3ChannelGroup,
+  type Ts3ChannelKind,
   type Ts3Client,
+  type Ts3GroupMember,
+  type Ts3Self,
+  type Ts3ServerGroup,
   type Ts3TransportEvents,
 } from './types.js';
+
+/** Connection id of the bot's own query client on the fake server. */
+export const FAKE_BOT_CLID = 9000;
+const DEFAULT_CHANNEL = 1;
+
+function fakeChannel(
+  cid: number,
+  name: string,
+  pid: number,
+  extra: Partial<Ts3Channel> = {},
+): Ts3Channel {
+  return {
+    cid,
+    pid,
+    name,
+    order: 0,
+    totalClients: 0,
+    maxClients: -1,
+    kind: 'permanent',
+    hasPassword: false,
+    ...extra,
+  };
+}
 
 /**
  * Simulated TeamSpeak server shared by all fake transports (a new transport is created per
@@ -18,7 +50,27 @@ export class FakeTs3Server {
   readonly clients = new Map<number, Ts3Client>();
   /** IP addresses per clid (kept apart from `Ts3Client`, like on the real server). */
   readonly ips = new Map<number, string>();
-  readonly channels = new Map<number, Ts3Channel>([[1, { cid: 1, pid: 0, name: 'Lobby' }]]);
+  readonly channels = new Map<number, Ts3Channel>([
+    [DEFAULT_CHANNEL, fakeChannel(DEFAULT_CHANNEL, 'Lobby', 0)],
+  ]);
+  /** What `channelcreate`/`channeledit` set beyond `Ts3Channel`, per channel id. */
+  readonly channelDetails = new Map<
+    number,
+    { topic?: string; description?: string; password?: string; deleteDelayS?: number }
+  >();
+  /** Channel permissions set by the bot, per channel id. */
+  readonly channelPermissions = new Map<number, Record<string, number>>();
+  readonly channelGroups: Ts3ChannelGroup[] = [
+    { id: 5, name: 'Channel Admin', type: 1 },
+    { id: 8, name: 'Guest', type: 1 },
+  ];
+  /** Channel groups assigned by the bot, for assertions. */
+  readonly channelGroupAssignments: { dbid: number; cid: number; groupId: number }[] = [];
+  /** Members per server group as `servergroupclientlist` reports them (offline ones included). */
+  readonly groupMembers = new Map<number, Ts3GroupMember[]>();
+  /** Channel the bot's query client sits in. */
+  botChannelId = DEFAULT_CHANNEL;
+  private nextCid = 1000;
   /** Every executed command, in order, with the time it started. */
   readonly commandLog: { command: string; at: number }[] = [];
   /** Ban list as returned by `banlist`. */
@@ -78,8 +130,102 @@ export class FakeTs3Server {
     this.commandLog.push({ command, at: this.now() });
   }
 
-  addChannel(cid: number, name: string, pid = 0): void {
-    this.channels.set(cid, { cid, pid, name });
+  addChannel(cid: number, name: string, pid = 0, extra: Partial<Ts3Channel> = {}): void {
+    this.channels.set(cid, fakeChannel(cid, name, pid, extra));
+  }
+
+  /** Channels with their current occupancy, as `channellist` reports them. */
+  channelSnapshot(): Ts3Channel[] {
+    return [...this.channels.values()].map((channel) => ({
+      ...channel,
+      totalClients: this.occupants(channel.cid),
+    }));
+  }
+
+  private occupants(cid: number): number {
+    let total = this.botChannelId === cid ? 1 : 0;
+    for (const client of this.clients.values()) if (client.channelId === cid) total++;
+    return total;
+  }
+
+  /** @internal Creates a channel like `channelcreate` does and announces it. */
+  createChannel(channel: Ts3ChannelCreate, invokerClid: number, invokerUid: string): number {
+    if (channel.parentId !== 0 && !this.channels.has(channel.parentId)) {
+      throw new Error('invalid channelID (fake)');
+    }
+    for (const other of this.channels.values()) {
+      if (other.pid === channel.parentId && other.name === channel.name) {
+        throw new Error('channel name is already in use (fake)');
+      }
+    }
+    const cid = this.nextCid++;
+    this.channels.set(
+      cid,
+      fakeChannel(cid, channel.name, channel.parentId, {
+        order: channel.order ?? 0,
+        maxClients: channel.maxClients ?? -1,
+        kind: channel.kind,
+        hasPassword: Boolean(channel.password),
+      }),
+    );
+    this.channelDetails.set(cid, {
+      ...(channel.topic === undefined ? {} : { topic: channel.topic }),
+      ...(channel.description === undefined ? {} : { description: channel.description }),
+      ...(channel.password ? { password: channel.password } : {}),
+      ...(channel.deleteDelayS === undefined ? {} : { deleteDelayS: channel.deleteDelayS }),
+    });
+    this.active?.emit('channelCreated', {
+      cid,
+      pid: channel.parentId,
+      name: channel.name,
+      kind: channel.kind,
+      invokerClid,
+      invokerUid,
+    });
+    return cid;
+  }
+
+  /** A regular client creates a temporary channel and is moved into it, like in the client. */
+  createChannelAs(clid: number, name: string, pid = 0, kind: Ts3ChannelKind = 'temporary'): number {
+    const client = this.clients.get(clid);
+    if (!client) throw new Error('invalid clientID (fake)');
+    const cid = this.createChannel({ name, parentId: pid, kind }, clid, client.uid);
+    if (kind === 'temporary') this.move(clid, cid);
+    return cid;
+  }
+
+  /** Removes a channel; clients inside fall back to the default channel. */
+  removeChannel(cid: number, invokerClid = 0): void {
+    if (!this.channels.delete(cid)) return;
+    this.channelDetails.delete(cid);
+    this.channelPermissions.delete(cid);
+    if (this.botChannelId === cid) this.botChannelId = DEFAULT_CHANNEL;
+    for (const client of this.clients.values()) {
+      if (client.channelId === cid) client.channelId = DEFAULT_CHANNEL;
+    }
+    this.active?.emit('channelDeleted', { cid, invokerClid });
+  }
+
+  /** The server drops an empty temporary channel right away unless it has a delete delay. */
+  private dropIfAbandoned(cid: number): void {
+    const channel = this.channels.get(cid);
+    if (channel?.kind !== 'temporary' || this.occupants(cid) > 0) return;
+    if ((this.channelDetails.get(cid)?.deleteDelayS ?? 0) > 0) return;
+    this.removeChannel(cid);
+  }
+
+  /** @internal The bot's own query client changes its channel. */
+  moveBot(channelId: number): void {
+    const previous = this.botChannelId;
+    this.botChannelId = channelId;
+    this.dropIfAbandoned(previous);
+  }
+
+  /** A client writes a private message to the bot. */
+  privateMessage(clid: number, message: string): void {
+    const client = this.clients.get(clid);
+    if (!client) return;
+    this.active?.emit('textMessage', { clid, uid: client.uid, nickname: client.nickname, message });
   }
 
   /** A client connects; returns its clid. */
@@ -107,16 +253,30 @@ export class FakeTs3Server {
   }
 
   leave(clid: number, reasonId = 8): void {
-    if (!this.clients.delete(clid)) return;
-    this.ips.delete(clid);
-    this.active?.emit('clientDisconnect', { clid, reasonId });
-  }
-
-  move(clid: number, channelId: number): void {
     const client = this.clients.get(clid);
     if (!client) return;
+    this.clients.delete(clid);
+    this.ips.delete(clid);
+    this.active?.emit('clientDisconnect', { clid, reasonId });
+    this.dropIfAbandoned(client.channelId);
+  }
+
+  /**
+   * A client changes its channel. With `invokerClid` somebody else moved it; `reasonId` defaults
+   * to "moved" then and to "switched itself" otherwise.
+   */
+  move(clid: number, channelId: number, invokerClid?: number, reasonId?: number): void {
+    const client = this.clients.get(clid);
+    if (!client) return;
+    const previous = client.channelId;
     client.channelId = channelId;
-    this.active?.emit('clientMoved', { clid, channelId });
+    this.active?.emit('clientMoved', {
+      clid,
+      channelId,
+      reasonId: reasonId ?? (invokerClid === undefined ? MOVE_REASON_SELF : MOVE_REASON_MOVED),
+      invokerClid,
+    });
+    if (previous !== channelId) this.dropIfAbandoned(previous);
   }
 
   /** Changes client properties without an event (e.g. nickname, idle time), like the real server. */
@@ -179,7 +339,7 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
 
   channelList(): Promise<Ts3Channel[]> {
     this.assertOpen('channellist');
-    return Promise.resolve([...this.server.channels.values()].map((c) => ({ ...c })));
+    return Promise.resolve(this.server.channelSnapshot());
   }
 
   serverGroups(): Promise<Ts3ServerGroup[]> {
@@ -218,7 +378,7 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
     this.requireClient(clid);
     this.server.moderation.push({ command: `kick.${from}`, clid, text: reason });
     if (from === 'server') this.server.leave(clid, 5);
-    else this.server.move(clid, 1);
+    else this.server.move(clid, DEFAULT_CHANNEL, FAKE_BOT_CLID, MOVE_REASON_CHANNEL_KICK);
     return Promise.resolve();
   }
 
@@ -238,11 +398,97 @@ export class FakeTs3Transport extends EventEmitter<Ts3TransportEvents> implement
 
   move(clid: number, channelId: number): Promise<void> {
     this.assertOpen('clientmove');
-    this.requireClient(clid);
     if (!this.server.channels.has(channelId)) throw new Error('invalid channelID (fake)');
+    if (clid === FAKE_BOT_CLID) {
+      this.server.moveBot(channelId);
+      return Promise.resolve();
+    }
+    this.requireClient(clid);
     this.server.moderation.push({ command: 'move', clid, value: channelId });
-    this.server.move(clid, channelId);
+    this.server.move(clid, channelId, FAKE_BOT_CLID);
     return Promise.resolve();
+  }
+
+  self(): Promise<Ts3Self> {
+    this.assertOpen('whoami');
+    return Promise.resolve({ clid: FAKE_BOT_CLID, channelId: this.server.botChannelId });
+  }
+
+  channelCreate(channel: Ts3ChannelCreate): Promise<number> {
+    this.assertOpen('channelcreate');
+    const cid = this.server.createChannel(channel, FAKE_BOT_CLID, 'serveradmin');
+    // Like the real server: the creator of a temporary channel ends up inside it.
+    if (channel.kind === 'temporary') this.server.moveBot(cid);
+    return Promise.resolve(cid);
+  }
+
+  channelEdit(cid: number, changes: Ts3ChannelEdit): Promise<void> {
+    this.assertOpen('channeledit');
+    const channel = this.requireChannel(cid);
+    if (changes.name !== undefined) {
+      for (const other of this.server.channels.values()) {
+        if (other.cid !== cid && other.pid === channel.pid && other.name === changes.name) {
+          throw new Error('channel name is already in use (fake)');
+        }
+      }
+      channel.name = changes.name;
+    }
+    if (changes.maxClients !== undefined) channel.maxClients = changes.maxClients;
+    const details = this.server.channelDetails.get(cid) ?? {};
+    if (changes.topic !== undefined) details.topic = changes.topic;
+    if (changes.description !== undefined) details.description = changes.description;
+    if (changes.password !== undefined) {
+      channel.hasPassword = changes.password !== '';
+      if (changes.password === '') delete details.password;
+      else details.password = changes.password;
+    }
+    this.server.channelDetails.set(cid, details);
+    return Promise.resolve();
+  }
+
+  channelDelete(cid: number, force: boolean): Promise<void> {
+    this.assertOpen('channeldelete');
+    this.requireChannel(cid);
+    const occupied = [...this.server.clients.values()].some((c) => c.channelId === cid);
+    if (occupied && !force) throw new Error('channel not empty (fake)');
+    this.server.removeChannel(cid, FAKE_BOT_CLID);
+    return Promise.resolve();
+  }
+
+  channelSetPermission(cid: number, permission: string, value: number): Promise<void> {
+    this.assertOpen('channeladdperm');
+    this.requireChannel(cid);
+    this.server.channelPermissions.set(cid, {
+      ...this.server.channelPermissions.get(cid),
+      [permission]: value,
+    });
+    return Promise.resolve();
+  }
+
+  channelGroups(): Promise<Ts3ChannelGroup[]> {
+    this.assertOpen('channelgrouplist');
+    return Promise.resolve(this.server.channelGroups.map((g) => ({ ...g })));
+  }
+
+  setChannelGroup(dbid: number, cid: number, channelGroupId: number): Promise<void> {
+    this.assertOpen('setclientchannelgroup');
+    this.requireChannel(cid);
+    if (!this.server.channelGroups.some((g) => g.id === channelGroupId)) {
+      throw new Error('invalid group ID (fake)');
+    }
+    this.server.channelGroupAssignments.push({ dbid, cid, groupId: channelGroupId });
+    return Promise.resolve();
+  }
+
+  serverGroupMembers(groupId: number): Promise<Ts3GroupMember[]> {
+    this.assertOpen('servergroupclientlist');
+    return Promise.resolve((this.server.groupMembers.get(groupId) ?? []).map((m) => ({ ...m })));
+  }
+
+  private requireChannel(cid: number): Ts3Channel {
+    const channel = this.server.channels.get(cid);
+    if (!channel) throw new Error('invalid channelID (fake)');
+    return channel;
   }
 
   banUid(uid: string, durationS: number, reason: string): Promise<void> {

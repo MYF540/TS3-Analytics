@@ -5,11 +5,19 @@ import type { Ts3Transport, Ts3TransportFactory } from './transport.js';
 import {
   CLIENT_TYPE_QUERY,
   type Ts3Ban,
-  type Ts3ServerGroup,
   type Ts3Channel,
+  type Ts3ChannelCreate,
+  type Ts3ChannelCreated,
+  type Ts3ChannelDeleted,
+  type Ts3ChannelEdit,
+  type Ts3ChannelGroup,
   type Ts3Client,
   type Ts3ClientLeft,
   type Ts3ClientMoved,
+  type Ts3GroupMember,
+  type Ts3Self,
+  type Ts3ServerGroup,
+  type Ts3TextMessage,
 } from './types.js';
 
 export interface ConnectionOptions {
@@ -47,6 +55,9 @@ export interface Ts3ConnectionEvents {
   clientConnect: [client: Ts3Client];
   clientDisconnect: [event: Ts3ClientLeft];
   clientMoved: [event: Ts3ClientMoved];
+  textMessage: [event: Ts3TextMessage];
+  channelCreated: [event: Ts3ChannelCreated];
+  channelDeleted: [event: Ts3ChannelDeleted];
 }
 
 export class NotConnectedError extends Error {
@@ -211,6 +222,38 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
     return this.command((t) => t.channelList());
   }
 
+  self(): Promise<Ts3Self> {
+    return this.command((t) => t.self());
+  }
+
+  channelCreate(channel: Ts3ChannelCreate): Promise<number> {
+    return this.command((t) => t.channelCreate(channel));
+  }
+
+  channelEdit(cid: number, changes: Ts3ChannelEdit): Promise<void> {
+    return this.command((t) => t.channelEdit(cid, changes));
+  }
+
+  channelDelete(cid: number, force = false): Promise<void> {
+    return this.command((t) => t.channelDelete(cid, force));
+  }
+
+  channelSetPermission(cid: number, permission: string, value: number): Promise<void> {
+    return this.command((t) => t.channelSetPermission(cid, permission, value));
+  }
+
+  channelGroups(): Promise<Ts3ChannelGroup[]> {
+    return this.command((t) => t.channelGroups());
+  }
+
+  setChannelGroup(dbid: number, cid: number, channelGroupId: number): Promise<void> {
+    return this.command((t) => t.setChannelGroup(dbid, cid, channelGroupId));
+  }
+
+  serverGroupMembers(groupId: number): Promise<Ts3GroupMember[]> {
+    return this.command((t) => t.serverGroupMembers(groupId));
+  }
+
   /** Runs a command on the current transport through the rate-limited queue. */
   command<T>(fn: (transport: Ts3Transport) => Promise<T>): Promise<T> {
     return this.queue.run(() => {
@@ -279,6 +322,9 @@ export class Ts3Connection extends EventEmitter<Ts3ConnectionEvents> {
     });
     transport.on('clientDisconnect', (event) => this.emit('clientDisconnect', event));
     transport.on('clientMoved', (event) => this.emit('clientMoved', event));
+    transport.on('textMessage', (event) => this.emit('textMessage', event));
+    transport.on('channelCreated', (event) => this.emit('channelCreated', event));
+    transport.on('channelDeleted', (event) => this.emit('channelDeleted', event));
 
     const ended = new Promise<void>((resolve) => {
       this.connectionEnded = resolve;

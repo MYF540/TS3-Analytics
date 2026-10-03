@@ -1,5 +1,16 @@
 import type { EventEmitter } from 'node:events';
-import type { Ts3Ban, Ts3Channel, Ts3Client, Ts3ServerGroup, Ts3TransportEvents } from './types.js';
+import type {
+  Ts3Ban,
+  Ts3Channel,
+  Ts3ChannelCreate,
+  Ts3ChannelEdit,
+  Ts3ChannelGroup,
+  Ts3Client,
+  Ts3GroupMember,
+  Ts3Self,
+  Ts3ServerGroup,
+  Ts3TransportEvents,
+} from './types.js';
 
 /**
  * One physical ServerQuery connection. It does not reconnect or rate-limit by itself; that is
@@ -47,6 +58,22 @@ export interface Ts3Transport extends EventEmitter<Ts3TransportEvents> {
   banUid(uid: string, durationS: number, reason: string): Promise<void>;
   /** `banclient`: bans UID and current IP of an online client and disconnects it. */
   banClient(clid: number, durationS: number, reason: string): Promise<void>;
+
+  // Bot modules (phase 10). Callers check dry-run and what they are allowed to touch (rule 13).
+  /** The bot's own connection id and channel (`whoami`). */
+  self(): Promise<Ts3Self>;
+  /** Creates a channel and returns its id. A temporary channel pulls the bot into it. */
+  channelCreate(channel: Ts3ChannelCreate): Promise<number>;
+  channelEdit(cid: number, changes: Ts3ChannelEdit): Promise<void>;
+  /** `force` also deletes a channel that still has clients in it. */
+  channelDelete(cid: number, force: boolean): Promise<void>;
+  /** Sets one channel permission by name, e.g. `i_channel_needed_join_power`. */
+  channelSetPermission(cid: number, permission: string, value: number): Promise<void>;
+  channelGroups(): Promise<Ts3ChannelGroup[]>;
+  /** Gives a client (by database id) a channel group in one channel. */
+  setChannelGroup(dbid: number, cid: number, channelGroupId: number): Promise<void>;
+  /** All members of a server group, online or not. */
+  serverGroupMembers(groupId: number): Promise<Ts3GroupMember[]>;
 }
 
 /** Creates a fresh transport for every connection attempt. */

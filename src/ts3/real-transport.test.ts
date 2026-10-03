@@ -3,8 +3,11 @@ import { ResponseError, TeamSpeak } from 'ts3-nodejs-library';
 import { describe, expect, it, vi } from 'vitest';
 import {
   attachNotificationHandlers,
+  channelCreateProps,
+  channelEditProps,
   enterViewToClient,
   fetchAllBans,
+  toTs3Channel,
   type RawEnterView,
 } from './real-transport.js';
 import type { Ts3TransportEvents } from './types.js';
@@ -66,7 +69,7 @@ describe('attachNotificationHandlers', () => {
     const clientList = vi.spyOn(teamspeak, 'clientList');
     const channelList = vi.spyOn(teamspeak, 'channelList');
     const target = new EventEmitter<Ts3TransportEvents>();
-    attachNotificationHandlers(teamspeak, target);
+    attachNotificationHandlers(teamspeak, target, 99);
     return { query, clientList, channelList, target };
   }
 
@@ -95,6 +98,154 @@ describe('attachNotificationHandlers', () => {
     expect(query.listenerCount('cliententerview')).toBe(1);
     expect(query.listenerCount('clientleftview')).toBe(1);
     expect(query.listenerCount('clientmoved')).toBe(1);
+    expect(query.listenerCount('textmessage')).toBe(1);
+    expect(query.listenerCount('channelcreated')).toBe(1);
+    expect(query.listenerCount('channeldeleted')).toBe(1);
+    // Nothing of ours listens to these, and the library must not fetch lists for them either.
+    for (const name of ['channeledited', 'channelmoved', 'serveredited', 'tokenused']) {
+      expect(query.listenerCount(name)).toBe(0);
+    }
+  });
+
+  it('tells whether a client switched itself or was moved', () => {
+    const { query, target } = setup();
+    const events: unknown[] = [];
+    target.on('clientMoved', (e) => events.push(e));
+    query.emit('clientmoved', { clid: '12', ctid: '7', reasonid: '0' });
+    query.emit('clientmoved', { clid: '12', ctid: '8', reasonid: '1', invokerid: '3' });
+    expect(events).toEqual([
+      { clid: 12, channelId: 7, reasonId: 0, invokerClid: undefined },
+      { clid: 12, channelId: 8, reasonId: 1, invokerClid: 3 },
+    ]);
+  });
+
+  it('passes on private messages, but not other chats or its own echo', () => {
+    const { query, clientList, target } = setup();
+    const events: unknown[] = [];
+    target.on('textMessage', (e) => events.push(e));
+    const message = { msg: 'akzeptieren', invokername: 'Alice', invokeruid: 'abcDEF123+/=' };
+    query.emit('textmessage', { ...message, targetmode: 1, invokerid: '12' });
+    query.emit('textmessage', { ...message, targetmode: 3, invokerid: '12' });
+    query.emit('textmessage', { ...message, targetmode: 1, invokerid: '99' });
+    expect(events).toEqual([
+      { clid: 12, uid: 'abcDEF123+/=', nickname: 'Alice', message: 'akzeptieren' },
+    ]);
+    expect(clientList).not.toHaveBeenCalled();
+  });
+
+  it('reports created and deleted channels without fetching lists', () => {
+    const { query, clientList, channelList, target } = setup();
+    const events: unknown[] = [];
+    target.on('channelCreated', (e) => events.push(e));
+    target.on('channelDeleted', (e) => events.push(e));
+    const created = { cid: '40', cpid: '5', invokerid: '12', invokeruid: 'abcDEF123+/=' };
+    query.emit('channelcreated', { ...created, channelName: 'Mein Raum' });
+    query.emit('channelcreated', { ...created, channelName: 'Fest', channelFlagPermanent: true });
+    query.emit('channelcreated', { ...created, channelName: 'Halb', channelFlagSemiPermanent: 1 });
+    query.emit('channeldeleted', { cid: '40', invokerid: '0' });
+    expect(events).toEqual([
+      {
+        cid: 40,
+        pid: 5,
+        name: 'Mein Raum',
+        kind: 'temporary',
+        invokerClid: 12,
+        invokerUid: 'abcDEF123+/=',
+      },
+      expect.objectContaining({ name: 'Fest', kind: 'permanent' }),
+      expect.objectContaining({ name: 'Halb', kind: 'semi' }),
+      { cid: 40, invokerClid: 0 },
+    ]);
+    expect(clientList).not.toHaveBeenCalled();
+    expect(channelList).not.toHaveBeenCalled();
+  });
+});
+
+describe('channel mapping', () => {
+  it('maps a channel of the list with occupancy, limit and kind', () => {
+    const channel = {
+      cid: '40',
+      pid: '5',
+      name: 'Talk 1',
+      order: 39,
+      totalClients: 2,
+      maxclients: -1,
+      flagPermanent: false,
+      flagSemiPermanent: true,
+      flagPassword: true,
+    };
+    expect(toTs3Channel(channel)).toEqual({
+      cid: 40,
+      pid: 5,
+      name: 'Talk 1',
+      order: 39,
+      totalClients: 2,
+      maxClients: -1,
+      kind: 'semi',
+      hasPassword: true,
+    });
+  });
+
+  it('builds the parameters of a new channel', () => {
+    expect(channelCreateProps({ name: 'Talk 1', parentId: 5, kind: 'permanent' })).toEqual({
+      channelName: 'Talk 1',
+      cpid: 5,
+      channelFlagPermanent: true,
+    });
+    expect(
+      channelCreateProps({
+        name: 'Privat',
+        parentId: 5,
+        kind: 'temporary',
+        order: 39,
+        deleteDelayS: 600,
+        topic: 't',
+        description: 'd',
+        maxClients: 4,
+        codecQuality: 7,
+        password: 'geheim',
+        encrypted: true,
+      }),
+    ).toEqual({
+      channelName: 'Privat',
+      cpid: 5,
+      channelOrder: 39,
+      channelDeleteDelay: 600,
+      channelTopic: 't',
+      channelDescription: 'd',
+      channelFlagMaxclientsUnlimited: false,
+      channelMaxclients: 4,
+      channelCodecQuality: 7,
+      channelPassword: 'geheim',
+      channelCodecIsUnencrypted: false,
+    });
+  });
+
+  it('only sends a delete delay for temporary channels and no empty password', () => {
+    const props = channelCreateProps({
+      name: 'Halb',
+      parentId: 0,
+      kind: 'semi',
+      deleteDelayS: 600,
+      password: '',
+      maxClients: -1,
+    });
+    expect(props).toEqual({
+      channelName: 'Halb',
+      cpid: 0,
+      channelFlagSemiPermanent: true,
+      channelFlagMaxclientsUnlimited: true,
+    });
+  });
+
+  it('only sends the fields of an edit that were given', () => {
+    expect(channelEditProps({})).toEqual({});
+    expect(channelEditProps({ name: 'Support [zu]', maxClients: 0, password: '' })).toEqual({
+      channelName: 'Support [zu]',
+      channelFlagMaxclientsUnlimited: false,
+      channelMaxclients: 0,
+      channelPassword: '',
+    });
   });
 });
 

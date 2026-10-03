@@ -411,6 +411,80 @@ Auf Abruf wären 1 Jahr und gesamt damit über dem 100-ms-Budget – als Tagesjo
   - Fertig wenn: Tests für Route (Rechte, Zeiträume, Filter) und Seite (Knoten/Kanten, Tabelle, Filter lösen Anfragen aus, Leerzustand); Screenshot zur Sichtprüfung; README und `docs/performance.md` ergänzt
   - Notiz: Seite `/netzwerk` (nur Admin) mit `GET /api/network?range=30d|90d|1y|all&limit=…`; gelesen werden nur die gespeicherten Tabellen, gerechnet hat der Tagesjob. Bedienung: Zeitraum-Umschalter (Zustand in der URL), **Schieberegler** für die Anzahl gezeigter Verbindungen (25 bis 1.500, Vorgabe 200) und **„Jetzt neu berechnen“** – letzteres nutzt denselben Endpunkt wie die Einstellungsseite. Diagramm ist ECharts `graph` mit Kraft-Layout (Modul in `EChart.tsx` ergänzt, Bundle wächst entsprechend); Punktgröße = gezählte Zeit (über die Fläche skaliert), Linienbreite = gemeinsame Zeit, Beschriftung nur für die 15 größten Punkte, Nachbarn beim Überfahren hervorgehoben, Ziehen und Zoomen an. Darunter die stärksten Paare als Tabelle (gemeinsame Zeit, Begegnungen, Anteil an der Zeit beider Seiten) mit Links zur Spielerseite, dazu ein Hinweis, was der Graph nicht zeigt. Kantenfarbe ist gedämpfte Schrift-, nicht Gitterfarbe – mit Gitterfarbe waren die Linien im Screenshot kaum zu sehen. Lesen kostet 28 ms bei 200 Verbindungen, 33 ms bei 1.500 (mit HTTP). Hell und dunkel per Screenshot geprüft.
 
+## Phase 10 – Bot-Funktionen (Ablösung der SinusBot-Skripte)
+
+Ziel: Die Aufgaben der bisherigen SinusBot-Skripte übernimmt dieser Dienst selbst – konfiguriert im Webinterface, gedrosselt über die zentrale Queue, mit Protokoll und Testmodus.
+
+Entscheidungen (03.10.2026):
+
+- **Anti-Proxy:** Jede IP eines **neuen** Nutzers geht an einen Online-Dienst. Wird sie als Proxy/VPN erkannt, landet sie auf einer lokalen Liste und wird künftig ohne Abfrage erkannt. Wer einmal ohne Proxy verbunden war, wird nicht erneut geprüft. Wegen Regel 1 enthält die lokale Liste **nicht die Klar-IP, sondern ihren HMAC-Hash** – für den Abgleich reicht das.
+- **Regelbestätigung:** per Chat-Befehl an den Bot **und/oder** durch Betreten eines Bestätigungs-Channels, beides einzeln schaltbar.
+- **Alte SinusBot-Einstellungen** werden **nicht** importiert; alle Module werden im Webinterface neu eingerichtet.
+- **Support-Channel:** Benachrichtigung ist der Kern, automatisches Öffnen/Schließen (Name, Client-Limit) ist eine abschaltbare Option.
+
+Grundsätze für alle Module:
+
+- Jedes Modul hat `enabled` (Vorgabe aus) und `dryRun` (Vorgabe an, Regel 7). Im Testmodus wird nur protokolliert, was passiert wäre.
+- Jede automatische Aktion landet im **Automatik-Protokoll** (Modul, Aktion, Spieler, Testmodus ja/nein); Änderungen an der Konfiguration im Audit-Log (Regel 10).
+- Ein Modul fasst nur an, was ihm gehört: Servergruppen, die in **seiner** Konfiguration stehen (nie Rang-Gruppen, nie fremde), und Channels, die es **selbst angelegt** oder ausdrücklich übernommen hat. Fremde Channels werden nie gelöscht.
+- Ausnahmen über Servergruppen („diese Gruppen ignorieren") gibt es einheitlich in jedem Modul.
+- Logik als reine Funktionen in `/domain`, Tests nur gegen den Fake-Adapter.
+- Vor dem Scharfschalten eines Moduls muss das entsprechende SinusBot-Skript aus sein, sonst arbeiten zwei Bots gegeneinander.
+
+- [x] **T10.1 Query-Adapter erweitern** · `TS3` · braucht: T2.1
+  - Ereignisse: private Textnachricht an den Bot (`textprivate`), Channel angelegt (mit Auslöser), Channel gelöscht; `clientMoved` zusätzlich mit Auslöser (selbst gewechselt oder verschoben)
+  - Befehle: Channel anlegen, ändern (Name, Beschreibung, Limit, Passwort), löschen; Channel-Recht setzen; Channel-Gruppe eines Nutzers setzen; Mitglieder einer Servergruppe; Channel-Gruppen auflisten; Channelliste mit Belegung
+  - Echte und Fake-Implementierung, alles über die Queue
+  - Fertig wenn: Fake-Adapter bildet Channels und Belegung nach (anlegen, löschen, verschieben), Tests für jedes neue Ereignis und jeden Befehl
+  - Notiz: Neue Ereignisse `textMessage` (nur Privatnachrichten, das eigene Echo des Bots wird verworfen), `channelCreated`, `channelDeleted`; `clientMoved` trägt jetzt `reasonId` und `invokerClid` (selbst gewechselt / verschoben / Channel-Kick). Neue Befehle an `Ts3Transport` und `Ts3Connection`: `self`, `channelCreate`, `channelEdit`, `channelDelete`, `channelSetPermission`, `channelGroups`, `setChannelGroup`, `serverGroupMembers`; `Ts3Channel` kennt zusätzlich Reihenfolge, Belegung, Limit, Art und Passwort-Flag. Die Channel-Befehle gehen bewusst über `execute` statt über die Helfer der Bibliothek – die holen nach jedem Anlegen eine komplette Channelliste an der Queue vorbei. **Fund:** Die Bibliothek hat bisher bei jeder Channel-Änderung, jedem Channel-Verschieben und jeder Textnachricht von sich aus `clientlist`/`channellist` geschickt (an der Queue vorbei, Regel 5); diese Handler sind jetzt ebenfalls ersetzt bzw. entfernt. Der Fake-Server bildet Channels samt Belegung nach, zieht den Bot wie der echte Server in einen selbst angelegten temporären Channel und löscht leere temporäre Channels ohne Löschverzögerung. Beim Verbinden kommt `servernotifyregister event=textprivate` und ein `whoami` dazu. Am echten Server noch zu prüfen: Schreibweise der Parameter von `channelcreate` (insbesondere `channel_delete_delay`).
+- [ ] **T10.2 Modul-Gerüst und Automatik-Protokoll** · `DB` `Backend` `Frontend` · braucht: T10.1
+  - Tabelle `automation_log`, gemeinsame Ausführung mit Testmodus-Prüfung und Gruppen-Schutz (konfigurierte Gruppe, keine Rang-Gruppe), Watcher meldet Beitritt, Abgang, Wechsel und Nickname-Änderung an die Module
+  - Seite „Automatik" (nur Admin) mit Übersicht der Module (an/aus, Testmodus) und Protokoll
+  - AGENTS.md: Regel 13 für Bot-Module (nur eigene Gruppen und Channels)
+  - Fertig wenn: Tests für Testmodus (kein Query-Befehl), Gruppen-Schutz, Protokoll; Aufbewahrung des Protokolls im Retention-Job
+- [ ] **T10.3 Nickname-Checker** · `Backend` `Frontend` · braucht: T10.2
+  - Liste verbotener Muster (Text oder regulärer Ausdruck), optional „ähnliche Zeichen erkennen" (z. B. `Ａdmіn` → `admin`), je Muster eigener Hinweistext
+  - Aktion: Nachricht oder Kick; Prüfung beim Beitritt und bei Nickname-Änderung (über die Abfrage, ServerQuery meldet Umbenennungen nicht als Ereignis)
+  - Testfeld im Webinterface: „Würde dieser Nickname treffen?"
+  - Fertig wenn: Tests für Muster, Normalisierung, Ausnahmen-Gruppen, ungültige Ausdrücke werden beim Speichern abgelehnt
+- [ ] **T10.4 Support-Channel** · `Backend` `Frontend` · braucht: T10.2
+  - Betritt jemand den Support-Channel: Nachricht an ihn, Anstupsen oder Nachricht an alle Supporter (Servergruppen), die online und nicht in einem AFK-Channel sind; eigener Text, wenn niemand da ist
+  - Option: Channel automatisch öffnen/schließen (Name, Client-Limit), je nachdem ob ein Supporter verfügbar ist
+  - Option: Discord-Meldung über die vorhandenen Benachrichtigungen
+  - Fertig wenn: Tests für Benachrichtigung, niemand da, Ausnahmen, Öffnen/Schließen nur bei Zustandswechsel (keine Befehlsflut)
+- [ ] **T10.5 Staffliste** · `Backend` `Frontend` · braucht: T10.2
+  - Channel-Beschreibung zeigt die Mitglieder gewählter Servergruppen mit Status online / abwesend / offline; Reihenfolge und Anzeigename je Gruppe, Vorlage mit Platzhaltern, Kopf- und Fußtext
+  - Geschrieben wird nur, wenn sich der Text geändert hat, und höchstens alle 30 s
+  - Fertig wenn: Tests für Darstellung, Mehrfach-Gruppen, Längenlimit der Beschreibung, keine Schreibzugriffe ohne Änderung
+- [ ] **T10.6 Channel-Creator** · `DB` `Backend` `Frontend` · braucht: T10.2
+  - Je Bereich (Eltern-Channel): Es ist immer eine einstellbare Zahl leerer Channels vorhanden („Name 1", „Name 2", … oder Namen aus einer Liste); überzählige leere werden entfernt
+  - Einstellbar: Codec-Qualität, Client-Limit, Beitritts- und Sprechrecht, Beschreibung
+  - Gelöscht werden nur Channels aus der Tabelle der verwalteten Channels; vorhandene passende Channels lassen sich im Webinterface ausdrücklich übernehmen
+  - Fertig wenn: Tests für Anlegen, Aufräumen, Lücken in der Nummerierung, fremde Channels bleiben unangetastet, Neustart des Dienstes
+- [ ] **T10.7 Privat-Channel** · `DB` `Backend` `Frontend` · braucht: T10.6
+  - Wer die Lobby betritt, bekommt einen eigenen Channel (Namensvorlage mit Nickname), wird hineinverschoben und erhält dort die eingestellte Channel-Gruppe; ein vorhandener eigener Channel wird wiederverwendet
+  - Einstellbar: Eltern-Channel, Lebensdauer (temporär mit Löschverzögerung, semi-permanent, permanent), Beschreibung, optionales Passwort (per Privatnachricht), erlaubte Gruppen
+  - Schutz vor Missbrauch: Wartezeit je Nutzer
+  - Fertig wenn: Tests für Anlegen, Wiederverwenden, gelöschter Channel, Wartezeit, nicht erlaubte Gruppe
+- [ ] **T10.8 Regelbestätigung** · `DB` `Backend` `Frontend` · braucht: T10.2
+  - Regeltext mit Version; eine neue Version verlangt die Bestätigung erneut. Zustellung als Privatnachricht (beim Beitritt oder in einem Regel-Channel)
+  - Bestätigung per Chat-Befehl und/oder Bestätigungs-Channel; danach optional Servergruppe setzen. Ablehnen oder Frist verstrichen: optional Kick bzw. andere Gruppe
+  - Stand je Spieler (Version, Zeitpunkt) in der DB und auf der Spielerseite
+  - Fertig wenn: Tests für beide Wege, neue Version, Frist, Ausnahmen, Gruppen nur aus der eigenen Konfiguration
+- [ ] **T10.9 Spam-Control** · `Backend` `Frontend` · braucht: T10.2
+  - Getrennt nach Aktion, jeweils mit eigenem Zeitfenster und eigenen Schwellen: Channel-Wechsel (nur selbst ausgelöst), Channel anlegen, Nickname ändern, schnelles Neuverbinden, Auslösen der Lobby
+  - Stufen je Aktion: Verwarnung (Anstupsen oder Nachricht) → Kick → zeitlicher Ban
+  - Fertig wenn: Tests für gleitendes Fenster, Stufen, Ausnahmen, verschobene Nutzer zählen nicht
+- [ ] **T10.10 Anti-Proxy** · `DB` `Backend` `Frontend` `Security` · braucht: T10.2
+  - Prüfung im IP-Schritt des Watchers (IP nur im Speicher): zuerst lokale Liste (HMAC-Hash), sonst Online-Dienst – nur für Nutzer, die noch nie ohne Proxy verbunden waren
+  - Treffer: Hash auf die lokale Liste, Aktion nach Einstellung (Gruppe setzen, Nachricht, Anstupsen, Kick, zeitlicher Ban), Hinweis auf der Spielerseite, optional Meldung an Team-Gruppen und Discord
+  - Ausnahmen: Servergruppen und einzelne Spieler; Einträge der lokalen Liste lassen sich im Webinterface entfernen (Fehlalarm)
+  - Dienst nicht erreichbar oder Kontingent erschöpft: nichts tun, später erneut prüfen, Warnung im Bot-Status
+  - API-Schlüssel nur aus `.env`; Datenschutz-Doku ergänzen (IP-Weitergabe an Dritten)
+  - Fertig wenn: Tests für Liste, einmal sauber = nie wieder, Ausfall des Dienstes, keine Klar-IP in DB, Log oder Protokoll
+- [ ] **T10.11 Doku** · `Docs` · braucht: T10.3–T10.10
+  - README, Betriebsdoku (Rechte des Query-Accounts je Modul, Umstieg vom SinusBot), Screenshots aus der synthetischen Datenbank
+
 ---
 
 ---

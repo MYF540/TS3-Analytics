@@ -29,11 +29,72 @@ export interface Ts3Client {
   country: string | undefined;
 }
 
+export type Ts3ChannelKind = 'permanent' | 'semi' | 'temporary';
+
 export interface Ts3Channel {
   cid: number;
   /** Parent channel id (0 = top level). */
   pid: number;
   name: string;
+  /** Id of the channel this one is sorted after (0 = first below its parent). */
+  order: number;
+  /** Clients currently in the channel, query clients included. */
+  totalClients: number;
+  /** -1 = unlimited. */
+  maxClients: number;
+  kind: Ts3ChannelKind;
+  hasPassword: boolean;
+}
+
+/** What a bot module may set when it creates a channel (T10.1). */
+export interface Ts3ChannelCreate {
+  name: string;
+  /** 0 = top level. */
+  parentId: number;
+  kind: Ts3ChannelKind;
+  /** Sort after this channel (0 = first below the parent). */
+  order?: number;
+  /** Temporary channels only: seconds an empty channel survives. */
+  deleteDelayS?: number;
+  topic?: string;
+  description?: string;
+  /** -1 = unlimited. */
+  maxClients?: number;
+  /** 0–10. */
+  codecQuality?: number;
+  password?: string;
+  /** Voice data encrypted (the server setting may override this). */
+  encrypted?: boolean;
+}
+
+/** Changes of an existing channel; only the given fields are sent. */
+export interface Ts3ChannelEdit {
+  name?: string;
+  topic?: string;
+  description?: string;
+  /** -1 = unlimited. */
+  maxClients?: number;
+  /** Empty string removes the password. */
+  password?: string;
+}
+
+export interface Ts3ChannelGroup {
+  id: number;
+  name: string;
+  /** 0 = template, 1 = regular, 2 = query group. */
+  type: number;
+}
+
+export interface Ts3GroupMember {
+  dbid: number;
+  uid: string;
+  nickname: string;
+}
+
+/** The bot's own query client. */
+export interface Ts3Self {
+  clid: number;
+  channelId: number;
 }
 
 /**
@@ -70,15 +131,51 @@ export interface Ts3ClientLeft {
   reasonId: number;
 }
 
+/** `reasonid` of a move: the client switched itself, was moved or was kicked out of a channel. */
+export const MOVE_REASON_SELF = 0;
+export const MOVE_REASON_MOVED = 1;
+export const MOVE_REASON_CHANNEL_KICK = 4;
+
 export interface Ts3ClientMoved {
   clid: number;
   channelId: number;
+  /** See `MOVE_REASON_*`. */
+  reasonId: number;
+  /** Who moved the client; undefined when it switched itself. */
+  invokerClid: number | undefined;
+}
+
+/** A private text message sent to the bot. Never one of the bot's own messages. */
+export interface Ts3TextMessage {
+  clid: number;
+  uid: string;
+  nickname: string;
+  message: string;
+}
+
+export interface Ts3ChannelCreated {
+  cid: number;
+  pid: number;
+  name: string;
+  kind: Ts3ChannelKind;
+  /** Connection id of the creator (may be the bot itself or another query client). */
+  invokerClid: number;
+  invokerUid: string;
+}
+
+export interface Ts3ChannelDeleted {
+  cid: number;
+  /** 0 when the server removed an empty temporary channel. */
+  invokerClid: number;
 }
 
 export interface Ts3TransportEvents {
   clientConnect: [client: Ts3Client];
   clientDisconnect: [event: Ts3ClientLeft];
   clientMoved: [event: Ts3ClientMoved];
+  textMessage: [event: Ts3TextMessage];
+  channelCreated: [event: Ts3ChannelCreated];
+  channelDeleted: [event: Ts3ChannelDeleted];
   /** The connection is gone (network error, server shutdown, ...). */
   close: [error: Error | undefined];
 }

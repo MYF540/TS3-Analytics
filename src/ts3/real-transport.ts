@@ -13,7 +13,19 @@ import type { Config } from '../config/config.js';
 import type { Logger } from '../logging/logger.js';
 import { useWithFreeNickname } from './nickname.js';
 import type { Ts3Transport } from './transport.js';
-import type { Ts3Ban, Ts3Channel, Ts3Client, Ts3ServerGroup, Ts3TransportEvents } from './types.js';
+import type {
+  Ts3Ban,
+  Ts3Channel,
+  Ts3ChannelCreate,
+  Ts3ChannelEdit,
+  Ts3ChannelGroup,
+  Ts3ChannelKind,
+  Ts3Client,
+  Ts3GroupMember,
+  Ts3Self,
+  Ts3ServerGroup,
+  Ts3TransportEvents,
+} from './types.js';
 
 type ClientLike = Pick<
   TeamSpeakClient,
@@ -92,15 +104,67 @@ export function enterViewToClient(event: RawEnterView): Ts3Client {
 
 /**
  * The library's own handlers for these notifications run extra `clientlist`/`channellist`
- * commands for every join and move, bypassing our rate-limited queue (rule 5). We replace them
- * with handlers that only use the notification payload.
+ * commands for every join, move, message and channel change, bypassing our rate-limited queue
+ * (rule 5). We replace them with handlers that only use the notification payload; the ones we
+ * have no use for are dropped altogether.
  */
-const REPLACED_NOTIFICATIONS = ['cliententerview', 'clientleftview', 'clientmoved'] as const;
+const REPLACED_NOTIFICATIONS = [
+  'cliententerview',
+  'clientleftview',
+  'clientmoved',
+  'textmessage',
+  'channelcreated',
+  'channeldeleted',
+  'channeledited',
+  'channelmoved',
+  'serveredited',
+  'tokenused',
+] as const;
 
-/** Routes raw join/leave/move notifications of `teamspeak` to `target` (see above). */
+/** Raw `notifyclientmoved`; `invokerid` is missing when the client switched itself. */
+export interface RawClientMoved {
+  clid: string;
+  ctid: string;
+  reasonid?: string;
+  invokerid?: string;
+}
+
+export interface RawTextMessage {
+  targetmode: number | string;
+  msg: string;
+  invokerid: string;
+  invokername: string;
+  invokeruid: string;
+}
+
+export interface RawChannelCreated {
+  cid: string;
+  cpid: string;
+  channelName: string;
+  channelFlagPermanent?: unknown;
+  channelFlagSemiPermanent?: unknown;
+  invokerid: string;
+  invokeruid?: string;
+}
+
+/** `targetmode` of a private message (1 = client, 2 = channel, 3 = server). */
+const TARGET_MODE_CLIENT = 1;
+
+const flag = (value: unknown): boolean => value === true || value === 1 || value === '1';
+
+function channelKind(permanent: unknown, semiPermanent: unknown): Ts3ChannelKind {
+  if (flag(permanent)) return 'permanent';
+  return flag(semiPermanent) ? 'semi' : 'temporary';
+}
+
+/**
+ * Routes raw notifications of `teamspeak` to `target` (see above). `selfClid` is the bot's own
+ * connection id: the server echoes the bot's private messages back, those are dropped.
+ */
 export function attachNotificationHandlers(
   teamspeak: TeamSpeak,
   target: EventEmitter<Ts3TransportEvents>,
+  selfClid?: number,
 ): void {
   const query = (teamspeak as unknown as { query: NodeEventEmitter }).query;
   for (const name of REPLACED_NOTIFICATIONS) query.removeAllListeners(name);
@@ -110,13 +174,120 @@ export function attachNotificationHandlers(
   query.on('clientleftview', (event: { clid: string; reasonid: string }) => {
     target.emit('clientDisconnect', { clid: Number(event.clid), reasonId: Number(event.reasonid) });
   });
-  query.on('clientmoved', (event: { clid: string; ctid: string }) => {
-    target.emit('clientMoved', { clid: Number(event.clid), channelId: Number(event.ctid) });
+  query.on('clientmoved', (event: RawClientMoved) => {
+    target.emit('clientMoved', {
+      clid: Number(event.clid),
+      channelId: Number(event.ctid),
+      reasonId: Number(event.reasonid ?? 0),
+      invokerClid: event.invokerid === undefined ? undefined : Number(event.invokerid),
+    });
+  });
+  query.on('textmessage', (event: RawTextMessage) => {
+    const clid = Number(event.invokerid);
+    if (Number(event.targetmode) !== TARGET_MODE_CLIENT || clid === selfClid) {
+      return;
+    }
+    target.emit('textMessage', {
+      clid,
+      uid: event.invokeruid,
+      nickname: event.invokername,
+      message: event.msg,
+    });
+  });
+  query.on('channelcreated', (event: RawChannelCreated) => {
+    target.emit('channelCreated', {
+      cid: Number(event.cid),
+      pid: Number(event.cpid),
+      name: event.channelName,
+      kind: channelKind(event.channelFlagPermanent, event.channelFlagSemiPermanent),
+      invokerClid: Number(event.invokerid),
+      invokerUid: event.invokeruid ?? '',
+    });
+  });
+  query.on('channeldeleted', (event: { cid: string; invokerid?: string }) => {
+    target.emit('channelDeleted', {
+      cid: Number(event.cid),
+      invokerClid: Number(event.invokerid ?? 0),
+    });
   });
 }
 
-function toTs3Channel(channel: Pick<TeamSpeakChannel, 'cid' | 'pid' | 'name'>): Ts3Channel {
-  return { cid: Number(channel.cid), pid: Number(channel.pid), name: channel.name };
+type ChannelLike = Pick<
+  TeamSpeakChannel,
+  | 'cid'
+  | 'pid'
+  | 'name'
+  | 'order'
+  | 'totalClients'
+  | 'maxclients'
+  | 'flagPermanent'
+  | 'flagSemiPermanent'
+  | 'flagPassword'
+>;
+
+export function toTs3Channel(channel: ChannelLike): Ts3Channel {
+  return {
+    cid: Number(channel.cid),
+    pid: Number(channel.pid),
+    name: channel.name,
+    order: count(channel.order),
+    totalClients: count(channel.totalClients),
+    maxClients: Number.isFinite(channel.maxclients) ? channel.maxclients : -1,
+    kind: channelKind(channel.flagPermanent, channel.flagSemiPermanent),
+    hasPassword: flag(channel.flagPassword),
+  };
+}
+
+type QueryProps = Record<string, string | number | boolean>;
+
+/** `-1` (unlimited) needs its own flag; a number alone would be ignored by the server. */
+function maxClientsProps(maxClients: number | undefined): QueryProps {
+  if (maxClients === undefined) return {};
+  return maxClients < 0
+    ? { channelFlagMaxclientsUnlimited: true }
+    : { channelFlagMaxclientsUnlimited: false, channelMaxclients: maxClients };
+}
+
+/** Parameters of `channelcreate` for our description of a new channel. */
+export function channelCreateProps(channel: Ts3ChannelCreate): QueryProps {
+  return {
+    channelName: channel.name,
+    cpid: channel.parentId,
+    ...(channel.kind === 'permanent' ? { channelFlagPermanent: true } : {}),
+    ...(channel.kind === 'semi' ? { channelFlagSemiPermanent: true } : {}),
+    ...(channel.order === undefined ? {} : { channelOrder: channel.order }),
+    ...(channel.kind === 'temporary' && channel.deleteDelayS !== undefined
+      ? { channelDeleteDelay: channel.deleteDelayS }
+      : {}),
+    ...(channel.topic === undefined ? {} : { channelTopic: channel.topic }),
+    ...(channel.description === undefined ? {} : { channelDescription: channel.description }),
+    ...maxClientsProps(channel.maxClients),
+    ...(channel.codecQuality === undefined ? {} : { channelCodecQuality: channel.codecQuality }),
+    ...(channel.password ? { channelPassword: channel.password } : {}),
+    ...(channel.encrypted === undefined ? {} : { channelCodecIsUnencrypted: !channel.encrypted }),
+  };
+}
+
+/** Parameters of `channeledit`; fields that were not given are not sent. */
+export function channelEditProps(changes: Ts3ChannelEdit): QueryProps {
+  return {
+    ...(changes.name === undefined ? {} : { channelName: changes.name }),
+    ...(changes.topic === undefined ? {} : { channelTopic: changes.topic }),
+    ...(changes.description === undefined ? {} : { channelDescription: changes.description }),
+    ...maxClientsProps(changes.maxClients),
+    ...(changes.password === undefined ? {} : { channelPassword: changes.password }),
+  };
+}
+
+/** The server answers an empty list with error 1281 instead of no rows. */
+async function emptyOn1281<T>(run: () => Promise<T | T[]>): Promise<T[]> {
+  try {
+    const result = await run();
+    return Array.isArray(result) ? result : [result];
+  } catch (error) {
+    if (error instanceof ResponseError && error.id === '1281') return [];
+    throw error;
+  }
 }
 
 const BAN_PAGE_SIZE = 1000;
@@ -170,6 +341,7 @@ export function toTs3Ban(row: RawBan): Ts3Ban {
 /** ServerQuery over SSH via ts3-nodejs-library. */
 export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implements Ts3Transport {
   private teamspeak: TeamSpeak | undefined;
+  private selfClid: number | undefined;
 
   constructor(
     private readonly config: Config['ts3'],
@@ -211,6 +383,9 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
       }
       await teamspeak.registerEvent('server');
       await teamspeak.registerEvent('channel', '0');
+      // Private messages to the bot (rule confirmation, T10.8).
+      await teamspeak.registerEvent('textprivate');
+      this.selfClid = Number((await teamspeak.whoami()).clientId);
     } catch (error) {
       this.teamspeak = undefined;
       teamspeak.forceQuit();
@@ -218,7 +393,7 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
     }
 
     teamspeak.on('close', (error) => this.emit('close', error));
-    attachNotificationHandlers(teamspeak, this);
+    attachNotificationHandlers(teamspeak, this, this.selfClid);
   }
 
   async disconnect(): Promise<void> {
@@ -327,6 +502,72 @@ export class RealTs3Transport extends EventEmitter<Ts3TransportEvents> implement
   async clientIp(clid: number): Promise<string | undefined> {
     const [info] = await this.connected().clientInfo(String(clid));
     return info?.connectionClientIp || undefined;
+  }
+
+  async self(): Promise<Ts3Self> {
+    const me = await this.connected().whoami();
+    return { clid: Number(me.clientId), channelId: Number(me.clientChannelId) };
+  }
+
+  // The library's own channel helpers run an extra `channellist` each; `execute` does not.
+  async channelCreate(channel: Ts3ChannelCreate): Promise<number> {
+    const rows = await this.connected().execute<{ cid: string } | { cid: string }[]>(
+      'channelcreate',
+      channelCreateProps(channel),
+    );
+    const cid = Number((Array.isArray(rows) ? rows[0] : rows)?.cid);
+    if (!Number.isInteger(cid) || cid <= 0) throw new Error('channelcreate returned no channel id');
+    return cid;
+  }
+
+  async channelEdit(cid: number, changes: Ts3ChannelEdit): Promise<void> {
+    const props = channelEditProps(changes);
+    if (Object.keys(props).length === 0) return;
+    await this.connected().execute('channeledit', { cid, ...props });
+  }
+
+  async channelDelete(cid: number, force: boolean): Promise<void> {
+    await this.connected().execute('channeldelete', { cid, force });
+  }
+
+  async channelSetPermission(cid: number, permission: string, value: number): Promise<void> {
+    await this.connected().execute('channeladdperm', {
+      cid,
+      permsid: permission,
+      permvalue: value,
+    });
+  }
+
+  async channelGroups(): Promise<Ts3ChannelGroup[]> {
+    const query = this.connected();
+    const rows = await emptyOn1281(() =>
+      query.execute<{ cgid: string; name: string; type: number | string }[]>('channelgrouplist'),
+    );
+    return rows.map((g) => ({ id: Number(g.cgid), name: g.name, type: Number(g.type) }));
+  }
+
+  async setChannelGroup(dbid: number, cid: number, channelGroupId: number): Promise<void> {
+    await this.connected().execute('setclientchannelgroup', {
+      cgid: channelGroupId,
+      cid,
+      cldbid: dbid,
+    });
+  }
+
+  async serverGroupMembers(groupId: number): Promise<Ts3GroupMember[]> {
+    const query = this.connected();
+    const rows = await emptyOn1281(() =>
+      query.execute<{ cldbid: string; clientNickname: string; clientUniqueIdentifier: string }[]>(
+        'servergroupclientlist',
+        { sgid: groupId },
+        ['-names'],
+      ),
+    );
+    return rows.map((m) => ({
+      dbid: Number(m.cldbid),
+      uid: m.clientUniqueIdentifier,
+      nickname: m.clientNickname,
+    }));
   }
 
   private connected(): TeamSpeak {
