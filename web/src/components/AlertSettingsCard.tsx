@@ -11,6 +11,7 @@ const EVENTS: readonly AlertEvent[] = [
   'join.spike',
   'group.protected',
   'rank.promoted',
+  'support.request',
   'bot.connection',
 ];
 

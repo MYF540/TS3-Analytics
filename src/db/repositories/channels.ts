@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { channels } from '../schema.js';
 import type { DbExecutor, UnixSeconds } from './types.js';
 
@@ -27,6 +27,11 @@ export interface Channel {
   id: number;
   name: string;
   lastSeen: UnixSeconds;
+}
+
+/** Name of a channel as last seen by a poll; undefined for an unknown channel. */
+export function getChannelName(db: DbExecutor, id: number): string | undefined {
+  return db.select({ name: channels.name }).from(channels).where(eq(channels.id, id)).get()?.name;
 }
 
 /** All known channels (including ones deleted on the server), ordered by name. */

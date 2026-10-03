@@ -37,6 +37,8 @@ export interface BotModule {
     at: number,
   ): Result;
   onLeft?(client: BotClient, at: number): Result;
+  /** After every client-list poll: server groups and channels of everyone are up to date. */
+  onSynced?(): Result;
 }
 
 /**
@@ -75,6 +77,7 @@ export class AutomationHost implements TrackerListener {
 
   onSyncEnd(): void {
     this.syncing = false;
+    this.each('onSynced', (module) => module.onSynced?.());
   }
 
   onJoined(client: OnlineClient, source: Ts3Client, at: number): void {

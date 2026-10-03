@@ -24,6 +24,7 @@ import { importRoutes } from './routes/import.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
 import { moderationRoutes } from './routes/moderation.js';
 import { automationNicknameRoutes } from './routes/automation-nickname.js';
+import { automationSupportRoutes } from './routes/automation-support.js';
 import { automationRoutes } from './routes/automation.js';
 import { networkRoutes } from './routes/network.js';
 import { noteRoutes } from './routes/notes.js';
@@ -136,6 +137,7 @@ export async function buildServer(
       await api.register(networkRoutes(context));
       await api.register(automationRoutes(context));
       await api.register(automationNicknameRoutes(context));
+      await api.register(automationSupportRoutes(context));
     },
     { prefix: '/api' },
   );

@@ -63,6 +63,30 @@ export interface NicknameSettings {
   groups: { id: number; name: string }[];
 }
 
+export interface SupportSettings {
+  settings: {
+    enabled: boolean;
+    dryRun: boolean;
+    exemptGroupIds: number[];
+    channelId: number | null;
+    supporterGroupIds: number[];
+    notify: 'poke' | 'message';
+    supporterMessage: string;
+    userMessage: string;
+    nobodyMessage: string;
+    cooldownS: number;
+    autoOpen: {
+      enabled: boolean;
+      openName: string;
+      closedName: string;
+      openMaxClients: number;
+      closedMaxClients: number;
+    };
+  };
+  groups: { id: number; name: string }[];
+  channels: { id: number; name: string }[];
+}
+
 export interface NicknameTest {
   match: number | null;
 }
@@ -529,7 +553,8 @@ export type AlertEvent =
   | 'bot.connection'
   | 'join.spike'
   | 'group.protected'
-  | 'rank.promoted';
+  | 'rank.promoted'
+  | 'support.request';
 
 export interface AlertSettings {
   configured: boolean;

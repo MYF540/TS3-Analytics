@@ -12,6 +12,7 @@ import type {
   AutomationOverview,
   NicknameSettings,
   NicknameTest,
+  SupportSettings,
   AuthResponse,
   BotStatus,
   ChannelRange,
@@ -182,6 +183,10 @@ export const api = {
     apiGet<NicknameSettings>('/automation/nickname', {}, signal),
   saveNicknameSettings: (settings: NicknameSettings['settings']) =>
     apiSend<NicknameSettings>('PUT', '/automation/nickname', settings),
+  supportSettings: (signal?: AbortSignal) =>
+    apiGet<SupportSettings>('/automation/support', {}, signal),
+  saveSupportSettings: (settings: SupportSettings['settings']) =>
+    apiSend<SupportSettings>('PUT', '/automation/support', settings),
   testNickname: (body: {
     nickname: string;
     patterns: NicknameSettings['settings']['patterns'];

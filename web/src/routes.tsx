@@ -17,6 +17,7 @@ import { PlayersPage } from './pages/PlayersPage';
 import { RanksPage } from './pages/RanksPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StatusPage } from './pages/StatusPage';
+import { SupportChannelPage } from './pages/SupportChannelPage';
 
 /** URL paths are German, like the UI. Everything except the login page requires a login. */
 export const routes: RouteObject[] = [
@@ -49,6 +50,7 @@ export const routes: RouteObject[] = [
                   { path: 'raenge', element: <RanksPage /> },
                   { path: 'automatik', element: <AutomationPage /> },
                   { path: 'automatik/nickname', element: <NicknameCheckPage /> },
+                  { path: 'automatik/support', element: <SupportChannelPage /> },
                   { path: 'abgleich', element: <ImportPage /> },
                   { path: 'netzwerk', element: <NetworkPage /> },
                   { path: 'status', element: <StatusPage /> },

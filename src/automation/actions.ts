@@ -14,6 +14,7 @@ export type AutomationCommands = Pick<
   | 'banClient'
   | 'addToServerGroup'
   | 'removeFromServerGroup'
+  | 'channelEdit'
 >;
 
 /** Limits of the TS3 server for texts sent to clients. */

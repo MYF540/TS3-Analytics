@@ -12,6 +12,7 @@ export const ALERT_EVENTS = [
   'join.spike',
   'group.protected',
   'rank.promoted',
+  'support.request',
 ] as const;
 export type AlertEvent = (typeof ALERT_EVENTS)[number];
 
