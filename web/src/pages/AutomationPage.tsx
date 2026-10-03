@@ -63,7 +63,7 @@ export function AutomationPage() {
         )}
         {overview.data && overview.data.modules.length > 0 && (
           <div className="table-scroll">
-            <table className="data-table">
+            <table className="data-table audit-table">
               <thead>
                 <tr>
                   <th scope="col">{t('automation.col.module')}</th>

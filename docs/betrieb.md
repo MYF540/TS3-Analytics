@@ -41,6 +41,8 @@ pnpm build
 
 `pnpm build` erzeugt den Server in `dist/` und die Weboberfläche in `web/dist/`. Gestartet wird mit `node dist/main.js` (Skript: `pnpm start`). Die Konfiguration kommt aus `.env` im Arbeitsverzeichnis; echte Umgebungsvariablen haben Vorrang.
 
+Für das Modul „Anti-Proxy“ gibt es den optionalen Wert `PROXYCHECK_API_KEY` (Schlüssel von proxycheck.io); ohne ihn sind nur rund 100 Abfragen pro Tag möglich.
+
 Pflichtwerte in `.env`: `TS3_HOST`, `TS3_QUERY_PORT`, `TS3_QUERY_USER`, `TS3_QUERY_PASSWORD`, `HMAC_SECRET` (mindestens 32 Zeichen, einmalig erzeugen und **nie** ändern – sonst passen gespeicherte IP-Prüfsummen nicht mehr zusammen). Alle weiteren Werte sind in `.env.example` beschrieben.
 
 Erstes Admin-Konto anlegen:
@@ -64,7 +66,9 @@ Der ServerQuery-Account braucht – je nach genutzten Funktionen – diese Recht
 | Moderation (T5.6)            | Kicken, Bannen, Anstupsen, Nachricht, Verschieben – jeweils mit passender Power                  |
 | Rangsystem (Phase 6)         | Servergruppen zuweisen und entfernen (`i_group_member_add_power`, `i_group_member_remove_power`) |
 
-Fehlt ein Recht, meldet der Dienst das als Warnung im Log; sie erscheint auf der Seite „Bot-Status“.
+| Automatik (Phase 10) | je Modul verschieden – siehe [automatik.md](automatik.md) |
+
+Fehlt ein Recht, meldet der Dienst das als Warnung im Log; sie erscheint auf der Seite „Bot-Status“. Fehlgeschlagene Aktionen der Bot-Module stehen mit der Meldung des Servers im Automatik-Protokoll.
 
 ## Anti-Flood-Allowlist
 

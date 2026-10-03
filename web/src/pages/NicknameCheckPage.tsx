@@ -256,7 +256,7 @@ function Form({ data }: { data: NicknameSettings }) {
       <fieldset className="settings-form__channels">
         <legend>{t('nickname.test')}</legend>
         <p className="muted small">{t('nickname.testHint')}</p>
-        <div className="button-row">
+        <div className="button-row button-row--end">
           <label className="field field--narrow">
             <span>{t('nickname.test.label')}</span>
             <input

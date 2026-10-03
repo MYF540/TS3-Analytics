@@ -828,6 +828,20 @@ a.button {
   gap: 0.25rem 1rem;
 }
 
+/* Select boxes hold whole sentences; the narrow width of number fields would cut them off. */
+.settings-form .field--narrow:has(select) {
+  max-width: 30rem;
+}
+
+/* A button next to a labelled field lines up with the field, not with the label above it. */
+.button-row--end {
+  align-items: flex-end;
+}
+
+.pattern-list__name {
+  padding-bottom: 0.6rem;
+}
+
 .pattern-list {
   list-style: none;
   margin: 0;

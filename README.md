@@ -30,6 +30,10 @@ Wer verbringt Zeit mit wem? Das Netzwerk verbindet Spieler, die gemeinsam im sel
 
 ![Spieler-Netzwerk](docs/screenshots/network.png)
 
+Was der Bot von selbst erledigt, steht unter „Automatik“ – jedes Modul mit Testmodus und Protokoll:
+
+![Automatik](docs/screenshots/automatik.png)
+
 ## Funktionen
 
 - **Zeiterfassung** pro Spieler: Online-Zeit, aktive Zeit, inaktiv, AFK; Sessions, Nickname-Verlauf,
@@ -45,6 +49,10 @@ Wer verbringt Zeit mit wem? Das Netzwerk verbindet Spieler, die gemeinsam im sel
   Moderation (kicken, bannen, anstupsen, verschieben, Nachricht), Audit-Log, Discord-Benachrichtigungen.
 - **Spieler-Netzwerk**: Kraft-gerichteter Graph, wer häufig mit wem im selben Channel ist –
   AFK-Zeiten und ausgewählte Channels bleiben außen vor. Wird einmal täglich berechnet.
+- **Automatik** (ersetzt typische SinusBot-Skripte): Nickname-Checker, Support-Channel mit
+  Benachrichtigung, Staffliste in einer Channel-Beschreibung, Channel-Creator, Privat-Channel,
+  Regelbestätigung, Spam-Control und Anti-Proxy. Jedes Modul ist zunächst aus und startet im
+  Testmodus. Details in [docs/automatik.md](docs/automatik.md).
 - **Datenschutz**: Auskunft als JSON-Export und Anonymisierung pro Spieler.
 - **Import der Historie**: alte Serverlogs und die Datenbank des früheren Rangsystems.
 
@@ -134,6 +142,10 @@ standardmäßig abgeschaltet. Die Rechte gehören in eine eigene ServerQuery-Gru
 | Moderation: Nachricht, Aufstiegsnachricht | `i_client_private_textmessage_power`                      | Nachricht wird nicht zugestellt                   |
 | Moderation: verschieben                   | `i_client_move_power`                                     | Aktion schlägt fehl                               |
 
+Die Bot-Module unter „Automatik“ brauchen je nach Modul weitere Rechte (Channels anlegen und
+ändern, Channel-Gruppen setzen, Gruppenmitglieder lesen). Die Liste steht in
+[docs/automatik.md](docs/automatik.md).
+
 **Zu den `i_…_power`-Rechten:** Sie wirken nur, wenn ihr Wert über dem entsprechenden
 `…needed…`-Recht des Ziels liegt – also `i_client_kick_from_server_power` über
 `i_client_needed_kick_from_server_power` des betroffenen Spielers und `i_group_member_add_power`
@@ -210,7 +222,8 @@ Stand der Arbeit in [TODO.md](TODO.md).
 | -------------------------------------------------------------- | -------------------------------------------------- |
 | [docs/betrieb.md](docs/betrieb.md)                             | Installation, Dienst, Update, Wartung              |
 | [docs/backup.md](docs/backup.md)                               | Sicherung und Wiederherstellung                    |
-| [docs/datenschutz.md](docs/datenschutz.md)                     | Auskunft und Anonymisierung                        |
+| [docs/automatik.md](docs/automatik.md)                         | Bot-Module, ihre Rechte, Umstieg vom SinusBot      |
+| [docs/datenschutz.md](docs/datenschutz.md)                     | Auskunft, Anonymisierung, Weitergabe (Anti-Proxy)  |
 | [docs/database.md](docs/database.md)                           | Datenmodell, Aggregate, Migrationen                |
 | [docs/performance.md](docs/performance.md)                     | Messwerte der Abfragen und des Imports             |
 | [docs/import-logs.md](docs/import-logs.md)                     | Format der TeamSpeak-Serverlogs und ihr Import     |

@@ -107,7 +107,7 @@ function Form({ data }: { data: StaffSettings }) {
             const name = groupName(entry.groupId);
             return (
               <li key={entry.groupId} className="pattern-list__row">
-                <strong>{name}</strong>
+                <strong className="pattern-list__name">{name}</strong>
                 <label className="field">
                   <span>{t('staff.title', { group: name })}</span>
                   <input
@@ -165,7 +165,7 @@ function Form({ data }: { data: StaffSettings }) {
             );
           })}
         </ol>
-        <div className="button-row">
+        <div className="button-row button-row--end">
           <label className="field field--narrow">
             <span>{t('staff.add')}</span>
             <select
