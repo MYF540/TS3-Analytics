@@ -69,6 +69,7 @@ export function AutomationPage() {
                   <th scope="col">{t('automation.col.module')}</th>
                   <th scope="col">{t('automation.col.state')}</th>
                   <th scope="col">{t('automation.col.what')}</th>
+                  <th scope="col">{t('automation.col.settings')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -85,6 +86,16 @@ export function AutomationPage() {
                       )}
                     </td>
                     <td className="muted">{t(`automation.about.${entry.id}`)}</td>
+                    <td>
+                      <Link
+                        to={`/automatik/${entry.id}`}
+                        aria-label={t('automation.configureModule', {
+                          module: t(`automation.module.${entry.id}`),
+                        })}
+                      >
+                        {t('automation.configure')}
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>

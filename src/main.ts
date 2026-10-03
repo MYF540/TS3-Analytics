@@ -10,6 +10,7 @@
 import { startServer } from './api/server.js';
 import { loadConfigOrExit } from './config/config.js';
 import { AutomationHost } from './automation/host.js';
+import { NicknameModule } from './automation/modules/nickname.js';
 import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
 import { deleteExpiredSessions } from './api/auth/service.js';
@@ -94,8 +95,15 @@ async function main(): Promise<void> {
   groupWatch.start();
   const rankJob = new RankJob({ database, connection, notifier: alerts, logger });
   watcher.tracker.addListener(rankJob);
-  // Bot modules (phase 10) register here as they arrive.
+  // Bot modules (phase 10); each one is off until an admin switches it on.
   const automation = new AutomationHost(logger);
+  const automationDeps = {
+    database,
+    commands: connection,
+    logger,
+    now: () => Math.floor(Date.now() / 1000),
+  };
+  automation.register(new NicknameModule(automationDeps));
   watcher.tracker.addListener(automation);
   rankJob.start();
   connection.start();

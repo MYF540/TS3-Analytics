@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppDatabase } from '../db/client.js';
 import { recordNickname, replaceRanks, upsertUser } from '../db/repositories/index.js';
 import { createTestDatabase } from '../db/testing.js';
@@ -20,14 +20,6 @@ let database: AppDatabase;
 let server: FakeTs3Server;
 let connection: Ts3Connection;
 let target: ActionTarget;
-
-async function settle(): Promise<void> {
-  for (let i = 0; i < 20; i++) {
-    await new Promise<void>((resolve) => {
-      setImmediate(resolve);
-    });
-  }
-}
 
 function actions(scope: Partial<ActionScope> = {}): ModuleActions {
   return new ModuleActions(
@@ -57,7 +49,9 @@ beforeEach(async () => {
     { logger: createSilentLogger() },
   );
   connection.start();
-  await settle();
+  await vi.waitFor(() => {
+    expect(connection.isConnected).toBe(true);
+  });
   const userId = upsertUser(database.db, { uid: 'uid-a', seenAt: NOW, dbid: 101 });
   const clid = server.join({ uid: 'uid-a', nickname: 'Alice', dbid: 101 });
   target = { clid, userId, dbid: 101 };

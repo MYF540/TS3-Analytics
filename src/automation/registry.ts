@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import type { DbExecutor } from '../db/repositories/index.js';
 import type { AutomationModule } from '../db/schema.js';
+import { nicknameSettingsSchema } from './modules/nickname.js';
 import { loadModuleSettings, type ModuleBase } from './settings.js';
 
 /** A bot module that exists in this version, with the schema of its settings. */
@@ -10,7 +11,9 @@ export interface ModuleDescriptor {
 }
 
 /** Filled in as the modules of phase 10 arrive; the order is the order on the page. */
-export const MODULES: readonly ModuleDescriptor[] = [];
+export const MODULES: readonly ModuleDescriptor[] = [
+  { id: 'nickname', schema: nicknameSettingsSchema },
+];
 
 export interface ModuleState {
   id: AutomationModule;

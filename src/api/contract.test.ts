@@ -27,6 +27,10 @@ import type { playerRankResponse } from './routes/player-rank.js';
 import type { moderationAction } from '../moderation/actions.js';
 import type { onlineResponse } from './routes/online.js';
 import type { importComparisonResponse } from './routes/import.js';
+import type {
+  nicknameSettingsResponse,
+  nicknameTestResponse,
+} from './routes/automation-nickname.js';
 import type { automationLogEntry, automationOverviewResponse } from './routes/automation.js';
 import type { networkGraphResponse, networkSettingsResponse } from './routes/network.js';
 import type { channelUsageResponse, unusedChannelsResponse } from './routes/channels.js';
@@ -63,6 +67,8 @@ export type Contract = [
   Assert<Equals<z.output<typeof networkGraphResponse>, Web.NetworkGraph>>,
   Assert<Equals<z.output<typeof automationOverviewResponse>, Web.AutomationOverview>>,
   Assert<Equals<z.output<typeof automationLogEntry>, Web.AutomationLogEntry>>,
+  Assert<Equals<z.output<typeof nicknameSettingsResponse>, Web.NicknameSettings>>,
+  Assert<Equals<z.output<typeof nicknameTestResponse>, Web.NicknameTest>>,
   Assert<Equals<z.output<typeof authResponse>, Web.AuthResponse>>,
   Assert<Equals<z.output<typeof auditEntry>, Web.AuditEntry>>,
   Assert<Equals<z.output<typeof auditFiltersResponse>, Web.AuditFilters>>,

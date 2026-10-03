@@ -10,6 +10,8 @@ import type {
   AutomationLogEntry,
   AutomationModule,
   AutomationOverview,
+  NicknameSettings,
+  NicknameTest,
   AuthResponse,
   BotStatus,
   ChannelRange,
@@ -176,6 +178,15 @@ export const api = {
     },
     signal?: AbortSignal,
   ) => apiGet<Paged<AutomationLogEntry>>('/automation/log', query, signal),
+  nicknameSettings: (signal?: AbortSignal) =>
+    apiGet<NicknameSettings>('/automation/nickname', {}, signal),
+  saveNicknameSettings: (settings: NicknameSettings['settings']) =>
+    apiSend<NicknameSettings>('PUT', '/automation/nickname', settings),
+  testNickname: (body: {
+    nickname: string;
+    patterns: NicknameSettings['settings']['patterns'];
+    lookalikes: boolean;
+  }) => apiPost<NicknameTest>('/automation/nickname/test', body),
   onlineNow: (signal?: AbortSignal) => apiGet<OnlineNow>('/online', {}, signal),
   overview: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Overview>('/stats/overview', { range }, signal),

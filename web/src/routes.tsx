@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { FlagsPage } from './pages/FlagsPage';
 import { ImportPage } from './pages/ImportPage';
 import { NetworkPage } from './pages/NetworkPage';
+import { NicknameCheckPage } from './pages/NicknameCheckPage';
 import { LeaderboardsPage } from './pages/LeaderboardsPage';
 import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
@@ -47,6 +48,7 @@ export const routes: RouteObject[] = [
                   { path: 'protokoll', element: <AuditPage /> },
                   { path: 'raenge', element: <RanksPage /> },
                   { path: 'automatik', element: <AutomationPage /> },
+                  { path: 'automatik/nickname', element: <NicknameCheckPage /> },
                   { path: 'abgleich', element: <ImportPage /> },
                   { path: 'netzwerk', element: <NetworkPage /> },
                   { path: 'status', element: <StatusPage /> },

@@ -50,6 +50,23 @@ export interface AutomationLogEntry {
   result: 'done' | 'dry' | 'failed';
 }
 
+export interface NicknameSettings {
+  settings: {
+    enabled: boolean;
+    dryRun: boolean;
+    exemptGroupIds: number[];
+    patterns: { pattern: string; regex: boolean; message?: string | undefined }[];
+    lookalikes: boolean;
+    action: 'message' | 'poke' | 'kick';
+    message: string;
+  };
+  groups: { id: number; name: string }[];
+}
+
+export interface NicknameTest {
+  match: number | null;
+}
+
 export interface AuditFilters {
   actors: string[];
   actions: string[];
