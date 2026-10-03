@@ -11,6 +11,7 @@ import { startServer } from './api/server.js';
 import { loadConfigOrExit } from './config/config.js';
 import { AutomationHost } from './automation/host.js';
 import { NicknameModule } from './automation/modules/nickname.js';
+import { StaffModule } from './automation/modules/staff.js';
 import { SupportModule } from './automation/modules/support.js';
 import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
@@ -107,6 +108,13 @@ async function main(): Promise<void> {
   automation.register(new NicknameModule(automationDeps));
   automation.register(
     new SupportModule({ ...automationDeps, online: () => automation.online, notifier: alerts }),
+  );
+  automation.register(
+    new StaffModule({
+      ...automationDeps,
+      online: () => automation.online,
+      members: (groupId) => connection.serverGroupMembers(groupId),
+    }),
   );
   watcher.tracker.addListener(automation);
   rankJob.start();

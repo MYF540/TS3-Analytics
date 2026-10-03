@@ -12,6 +12,7 @@ import type {
   AutomationOverview,
   NicknameSettings,
   NicknameTest,
+  StaffSettings,
   SupportSettings,
   AuthResponse,
   BotStatus,
@@ -187,6 +188,9 @@ export const api = {
     apiGet<SupportSettings>('/automation/support', {}, signal),
   saveSupportSettings: (settings: SupportSettings['settings']) =>
     apiSend<SupportSettings>('PUT', '/automation/support', settings),
+  staffSettings: (signal?: AbortSignal) => apiGet<StaffSettings>('/automation/staff', {}, signal),
+  saveStaffSettings: (settings: StaffSettings['settings']) =>
+    apiSend<StaffSettings>('PUT', '/automation/staff', settings),
   testNickname: (body: {
     nickname: string;
     patterns: NicknameSettings['settings']['patterns'];

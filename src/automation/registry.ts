@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import type { DbExecutor } from '../db/repositories/index.js';
 import type { AutomationModule } from '../db/schema.js';
 import { nicknameSettingsSchema } from './modules/nickname.js';
+import { staffSettingsSchema } from './modules/staff.js';
 import { supportSettingsSchema } from './modules/support.js';
 import { loadModuleSettings, type ModuleBase } from './settings.js';
 
@@ -15,6 +16,7 @@ export interface ModuleDescriptor {
 export const MODULES: readonly ModuleDescriptor[] = [
   { id: 'nickname', schema: nicknameSettingsSchema },
   { id: 'support', schema: supportSettingsSchema },
+  { id: 'staff', schema: staffSettingsSchema },
 ];
 
 export interface ModuleState {

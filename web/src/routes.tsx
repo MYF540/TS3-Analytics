@@ -16,6 +16,7 @@ import { PlayerPage } from './pages/PlayerPage';
 import { PlayersPage } from './pages/PlayersPage';
 import { RanksPage } from './pages/RanksPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { StaffListPage } from './pages/StaffListPage';
 import { StatusPage } from './pages/StatusPage';
 import { SupportChannelPage } from './pages/SupportChannelPage';
 
@@ -51,6 +52,7 @@ export const routes: RouteObject[] = [
                   { path: 'automatik', element: <AutomationPage /> },
                   { path: 'automatik/nickname', element: <NicknameCheckPage /> },
                   { path: 'automatik/support', element: <SupportChannelPage /> },
+                  { path: 'automatik/staff', element: <StaffListPage /> },
                   { path: 'abgleich', element: <ImportPage /> },
                   { path: 'netzwerk', element: <NetworkPage /> },
                   { path: 'status', element: <StatusPage /> },

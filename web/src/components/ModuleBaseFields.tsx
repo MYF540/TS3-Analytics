@@ -11,10 +11,12 @@ interface Props {
   /** Server groups seen on the server. */
   groups: readonly { id: number; name: string }[];
   onChange: (changes: Partial<ModuleBaseDraft>) => void;
+  /** For modules that do not act on players, so there is nobody to leave alone. */
+  hideExempt?: boolean;
 }
 
 /** What every bot module can be told: on/off, test mode and which groups to leave alone. */
-export function ModuleBaseFields({ value, groups, onChange }: Props) {
+export function ModuleBaseFields({ value, groups, onChange, hideExempt = false }: Props) {
   // Groups that were saved but are not known (any more) must stay visible and removable.
   const unknown = value.exemptGroupIds.filter((id) => !groups.some((group) => group.id === id));
   const all = [
@@ -58,35 +60,37 @@ export function ModuleBaseFields({ value, groups, onChange }: Props) {
         </p>
       )}
 
-      <fieldset className="settings-form__channels">
-        <legend>
-          {t('automation.exempt')}{' '}
-          <span className="muted small">
-            {t('settings.network.selected', { count: value.exemptGroupIds.length })}
-          </span>
-        </legend>
-        <p className="muted small">{t('automation.exemptHint')}</p>
-        {all.length === 0 ? (
-          <p className="muted">{t('automation.noGroups')}</p>
-        ) : (
-          <ul className="channel-list">
-            {all.map((group) => (
-              <li key={group.id}>
-                <label className="checkbox">
-                  <input
-                    type="checkbox"
-                    checked={value.exemptGroupIds.includes(group.id)}
-                    onChange={() => {
-                      toggle(group.id);
-                    }}
-                  />
-                  {group.name}
-                </label>
-              </li>
-            ))}
-          </ul>
-        )}
-      </fieldset>
+      {!hideExempt && (
+        <fieldset className="settings-form__channels">
+          <legend>
+            {t('automation.exempt')}{' '}
+            <span className="muted small">
+              {t('settings.network.selected', { count: value.exemptGroupIds.length })}
+            </span>
+          </legend>
+          <p className="muted small">{t('automation.exemptHint')}</p>
+          {all.length === 0 ? (
+            <p className="muted">{t('automation.noGroups')}</p>
+          ) : (
+            <ul className="channel-list">
+              {all.map((group) => (
+                <li key={group.id}>
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={value.exemptGroupIds.includes(group.id)}
+                      onChange={() => {
+                        toggle(group.id);
+                      }}
+                    />
+                    {group.name}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </fieldset>
+      )}
     </>
   );
 }

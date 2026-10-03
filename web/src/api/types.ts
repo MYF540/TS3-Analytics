@@ -87,6 +87,30 @@ export interface SupportSettings {
   channels: { id: number; name: string }[];
 }
 
+export interface StaffSettings {
+  settings: {
+    enabled: boolean;
+    dryRun: boolean;
+    exemptGroupIds: number[];
+    channelId: number | null;
+    groups: { groupId: number; title: string }[];
+    showInAll: boolean;
+    awayInAfkChannel: boolean;
+    header: string;
+    footer: string;
+    groupLine: string;
+    memberLine: string;
+    online: string;
+    away: string;
+    offline: string;
+    empty: string;
+    hideEmptyGroups: boolean;
+    clickable: boolean;
+  };
+  groups: { id: number; name: string }[];
+  channels: { id: number; name: string }[];
+}
+
 export interface NicknameTest {
   match: number | null;
 }
