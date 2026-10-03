@@ -204,6 +204,34 @@ export interface PlayerRules {
   state: { version: number; decision: 'accepted' | 'declined'; at: number } | null;
 }
 
+export type SpamCategory = 'channelSwitch' | 'channelCreate' | 'nickname' | 'reconnect' | 'lobby';
+
+export interface SpamRules {
+  enabled: boolean;
+  windowS: number;
+  warnAt: number;
+  kickAt: number;
+  banAt: number;
+  banDurationS: number;
+  warnBy: 'poke' | 'message';
+  warnMessage: string;
+  reason: string;
+}
+
+export interface SpamSettings {
+  settings: {
+    enabled: boolean;
+    dryRun: boolean;
+    exemptGroupIds: number[];
+    channelSwitch: SpamRules;
+    channelCreate: SpamRules;
+    nickname: SpamRules;
+    reconnect: SpamRules;
+    lobby: SpamRules;
+  };
+  groups: { id: number; name: string }[];
+}
+
 export interface NicknameTest {
   match: number | null;
 }

@@ -17,6 +17,7 @@ import type {
   PlayerRules,
   PrivateSettings,
   RulesSettings,
+  SpamSettings,
   StaffSettings,
   SupportSettings,
   AuthResponse,
@@ -211,6 +212,9 @@ export const api = {
     apiSend<RulesSettings>('PUT', '/automation/rules', settings),
   playerRules: (userId: number, signal?: AbortSignal) =>
     apiGet<PlayerRules>(`/users/${String(userId)}/rules`, {}, signal),
+  spamSettings: (signal?: AbortSignal) => apiGet<SpamSettings>('/automation/spam', {}, signal),
+  saveSpamSettings: (settings: SpamSettings['settings']) =>
+    apiSend<SpamSettings>('PUT', '/automation/spam', settings),
   testNickname: (body: {
     nickname: string;
     patterns: NicknameSettings['settings']['patterns'];

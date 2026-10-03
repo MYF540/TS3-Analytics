@@ -14,6 +14,7 @@ import { ChannelsModule } from './automation/modules/channels.js';
 import { NicknameModule } from './automation/modules/nickname.js';
 import { PrivateModule } from './automation/modules/private.js';
 import { RulesModule } from './automation/modules/rules.js';
+import { SpamModule } from './automation/modules/spam.js';
 import { StaffModule } from './automation/modules/staff.js';
 import { SupportModule } from './automation/modules/support.js';
 import { openDatabase, runMigrations } from './db/client.js';
@@ -130,6 +131,10 @@ async function main(): Promise<void> {
     new PrivateModule({ ...automationDeps, channels: () => connection.channelList() }),
   );
   automation.register(new RulesModule(automationDeps));
+  automation.register(new SpamModule(automationDeps));
+  connection.on('channelCreated', (event) => {
+    automation.onChannelCreatedEvent(event, Math.floor(Date.now() / 1000));
+  });
   connection.on('textMessage', (event) => {
     automation.onTextMessage(event, Math.floor(Date.now() / 1000));
   });

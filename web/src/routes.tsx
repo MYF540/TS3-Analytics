@@ -19,6 +19,7 @@ import { PrivateChannelPage } from './pages/PrivateChannelPage';
 import { RanksPage } from './pages/RanksPage';
 import { RulesPage } from './pages/RulesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SpamControlPage } from './pages/SpamControlPage';
 import { StaffListPage } from './pages/StaffListPage';
 import { StatusPage } from './pages/StatusPage';
 import { SupportChannelPage } from './pages/SupportChannelPage';
@@ -59,6 +60,7 @@ export const routes: RouteObject[] = [
                   { path: 'automatik/channels', element: <ChannelCreatorPage /> },
                   { path: 'automatik/private', element: <PrivateChannelPage /> },
                   { path: 'automatik/rules', element: <RulesPage /> },
+                  { path: 'automatik/spam', element: <SpamControlPage /> },
                   { path: 'abgleich', element: <ImportPage /> },
                   { path: 'netzwerk', element: <NetworkPage /> },
                   { path: 'status', element: <StatusPage /> },

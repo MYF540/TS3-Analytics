@@ -5,6 +5,7 @@ import { channelsSettingsSchema } from './modules/channels.js';
 import { nicknameSettingsSchema } from './modules/nickname.js';
 import { privateSettingsSchema } from './modules/private.js';
 import { rulesSettingsSchema } from './modules/rules.js';
+import { spamSettingsSchema } from './modules/spam.js';
 import { staffSettingsSchema } from './modules/staff.js';
 import { supportSettingsSchema } from './modules/support.js';
 import { loadModuleSettings, type ModuleBase } from './settings.js';
@@ -23,6 +24,7 @@ export const MODULES: readonly ModuleDescriptor[] = [
   { id: 'channels', schema: channelsSettingsSchema },
   { id: 'private', schema: privateSettingsSchema },
   { id: 'rules', schema: rulesSettingsSchema },
+  { id: 'spam', schema: spamSettingsSchema },
 ];
 
 export interface ModuleState {

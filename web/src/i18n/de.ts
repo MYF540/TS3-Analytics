@@ -128,6 +128,8 @@ export const de = {
   'error.RULES_SAME_COMMAND': 'Die Wörter zum Bestätigen und Ablehnen müssen sich unterscheiden.',
   'error.RULES_RANK_GROUP':
     'Diese Servergruppe gehört zur Rangleiter und wird nur vom Rangsystem vergeben.',
+  'error.SPAM_INVALID_THRESHOLDS':
+    'Bei mindestens einer Art steigen die Schwellen nicht an oder es ist keine Stufe eingeschaltet.',
   'error.INVALID_PATTERN':
     'Mindestens ein Muster lässt sich nicht verwenden (leer, ungültig oder so verschachtelt, dass die Prüfung sehr lange dauern könnte).',
   'error.MODERATION_DISABLED': 'Moderationsaktionen sind in den Einstellungen ausgeschaltet.',
@@ -434,6 +436,7 @@ export const de = {
   'audit.action.automation.channels': 'Channel-Creator geändert',
   'audit.action.automation.private': 'Privat-Channel geändert',
   'audit.action.automation.rules': 'Regelbestätigung geändert',
+  'audit.action.automation.spam': 'Spam-Control geändert',
   'audit.action.automation.channels.adopt': 'Channels an den Channel-Creator übergeben',
   'audit.action.moderation.poke': 'Spieler angestupst',
   'audit.action.moderation.message': 'Nachricht an Spieler',
@@ -1031,6 +1034,34 @@ export const de = {
   'automation.action.rules.send': 'Regeln geschickt',
   'automation.action.rules.accepted': 'Regeln bestätigt',
   'automation.action.rules.declined': 'Regeln abgelehnt',
+  'spam.intro':
+    'Zählt, was ein Spieler in kurzer Zeit wiederholt – getrennt nach Art der Aktion, jede mit eigenem Zeitfenster und eigenen Schwellen. Gezählt wird je Spieler, nicht je Verbindung.',
+  'spam.stepsHint':
+    'Je Art drei Stufen: Verwarnung, Kick, zeitlicher Ban. Eine Schwelle von 0 schaltet die Stufe ab; die übrigen müssen ansteigen.',
+  'spam.kind.channelSwitch': 'Channel-Wechsel',
+  'spam.kind.channelCreate': 'Channels anlegen',
+  'spam.kind.nickname': 'Nickname ändern',
+  'spam.kind.reconnect': 'Schnelles Neuverbinden',
+  'spam.kind.lobby': 'Privat-Channel anfordern',
+  'spam.about.channelSwitch':
+    'Zählt nur Wechsel, die der Spieler selbst auslöst. Verschoben werden zählt nicht.',
+  'spam.about.channelCreate': 'Zählt Channels, die der Spieler selbst anlegt.',
+  'spam.about.nickname':
+    'Umbenennungen sieht der Bot nur bei der Abfrage – höchstens eine je Minute. Das Zeitfenster deshalb großzügig wählen.',
+  'spam.about.reconnect':
+    'Zählt Verbindungen desselben Spielers. Eine Verwarnung erreicht hier kaum jemanden; sinnvoll ist vor allem der Ban.',
+  'spam.about.lobby': 'Zählt das Betreten eines Eingangs der Privat-Channels.',
+  'spam.watch': 'Diese Art überwachen',
+  'spam.window': 'Zeitfenster (Sekunden)',
+  'spam.warnAt': 'Verwarnung ab',
+  'spam.kickAt': 'Kick ab',
+  'spam.banAt': 'Ban ab',
+  'spam.banMinutes': 'Dauer des Bans (Minuten)',
+  'spam.warnBy': 'Verwarnen per',
+  'spam.warnMessage': 'Text der Verwarnung',
+  'spam.reason': 'Grund für Kick und Ban',
+  'spam.notRising': 'Die Schwellen müssen von Verwarnung über Kick zu Ban ansteigen.',
+  'spam.noStep': 'Mindestens eine Stufe braucht eine Schwelle größer als 0.',
   'automation.module.nickname': 'Nickname-Checker',
   'automation.module.support': 'Support-Channel',
   'automation.module.staff': 'Staffliste',

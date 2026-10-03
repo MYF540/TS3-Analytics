@@ -1,6 +1,6 @@
 import type { AutomationModule } from '../db/schema.js';
 import type { Logger } from '../logging/logger.js';
-import type { Ts3Client } from '../ts3/types.js';
+import type { Ts3ChannelCreated, Ts3Client } from '../ts3/types.js';
 import type { MoveCause, OnlineClient, TrackerListener } from '../watcher/tracker.js';
 import type { ActionTarget } from './actions.js';
 
@@ -39,6 +39,8 @@ export interface BotModule {
   onLeft?(client: BotClient, at: number): Result;
   /** The client wrote a private message to the bot. */
   onMessage?(client: BotClient, message: string, at: number): Result;
+  /** The client created a channel (channels created by query clients are not reported). */
+  onChannelCreated?(client: BotClient, event: Ts3ChannelCreated, at: number): Result;
   /** After every client-list poll: server groups and channels of everyone are up to date. */
   onSynced?(): Result;
 }
@@ -118,6 +120,13 @@ export class AutomationHost implements TrackerListener {
     const bot = this.clients.get(event.clid);
     if (!bot) return;
     this.each('onMessage', (module) => module.onMessage?.(bot, event.message, at));
+  }
+
+  /** A new channel; reported to the modules when a tracked client created it. */
+  onChannelCreatedEvent(event: Ts3ChannelCreated, at: number): void {
+    const bot = this.clients.get(event.invokerClid);
+    if (!bot) return;
+    this.each('onChannelCreated', (module) => module.onChannelCreated?.(bot, event, at));
   }
 
   onLeaving(client: OnlineClient, at: number): void {
