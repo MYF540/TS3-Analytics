@@ -19,6 +19,7 @@ export type AutomationCommands = Pick<
   | 'channelDelete'
   | 'channelSetPermission'
   | 'setChannelGroup'
+  | 'self'
 >;
 
 /** Limits of the TS3 server for texts sent to clients. */

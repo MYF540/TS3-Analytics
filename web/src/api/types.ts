@@ -139,6 +139,37 @@ export interface ChannelsAdopt {
   adopted: number;
 }
 
+export interface PrivateSettings {
+  settings: {
+    enabled: boolean;
+    dryRun: boolean;
+    exemptGroupIds: number[];
+    lobbies: {
+      id: string;
+      lobbyChannelId: number;
+      parentId: number;
+      nameTemplate: string;
+      channelGroupId: number | null;
+      kind: 'temporary' | 'semi' | 'permanent';
+      deleteDelayS: number;
+      description: string;
+      maxClients: number;
+      codecQuality: number;
+      password: boolean;
+      allowedGroupIds: number[];
+    }[];
+    cooldownS: number;
+    createdMessage: string;
+    movedMessage: string;
+    deniedMessage: string;
+    passwordMessage: string;
+  };
+  groups: { id: number; name: string }[];
+  channels: { id: number; name: string }[];
+  channelGroups: { id: number; name: string }[];
+  managed: { lobbyId: string; count: number }[];
+}
+
 export interface NicknameTest {
   match: number | null;
 }

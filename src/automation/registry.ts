@@ -3,6 +3,7 @@ import type { DbExecutor } from '../db/repositories/index.js';
 import type { AutomationModule } from '../db/schema.js';
 import { channelsSettingsSchema } from './modules/channels.js';
 import { nicknameSettingsSchema } from './modules/nickname.js';
+import { privateSettingsSchema } from './modules/private.js';
 import { staffSettingsSchema } from './modules/staff.js';
 import { supportSettingsSchema } from './modules/support.js';
 import { loadModuleSettings, type ModuleBase } from './settings.js';
@@ -19,6 +20,7 @@ export const MODULES: readonly ModuleDescriptor[] = [
   { id: 'support', schema: supportSettingsSchema },
   { id: 'staff', schema: staffSettingsSchema },
   { id: 'channels', schema: channelsSettingsSchema },
+  { id: 'private', schema: privateSettingsSchema },
 ];
 
 export interface ModuleState {

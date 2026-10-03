@@ -4,7 +4,7 @@ import type { JobStatus } from '../jobs/runner.js';
 import type { ModerationCommands } from '../moderation/actions.js';
 import type { RankRunResult } from '../ranks/job.js';
 import type { ConnectionState, ConnectionStatus } from '../ts3/connection.js';
-import type { Ts3Channel } from '../ts3/types.js';
+import type { Ts3Channel, Ts3ChannelGroup } from '../ts3/types.js';
 import type { LiveClient } from '../watcher/watcher.js';
 
 /** Everything route handlers may use. Kept small so tests can build it easily. */
@@ -21,6 +21,8 @@ export interface ApiContext {
   moderation: ModerationCommands | undefined;
   /** The server's channel list (bot modules, phase 10); undefined when the bot is not running. */
   channels?: (() => Promise<Ts3Channel[]>) | undefined;
+  /** The server's channel groups; undefined when the bot is not running. */
+  channelGroups?: (() => Promise<Ts3ChannelGroup[]>) | undefined;
   /** Current time in UTC seconds. */
   now: () => number;
   /** Process start (UTC seconds), for the uptime. */

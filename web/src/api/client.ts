@@ -14,6 +14,7 @@ import type {
   ChannelsSettings,
   NicknameSettings,
   NicknameTest,
+  PrivateSettings,
   StaffSettings,
   SupportSettings,
   AuthResponse,
@@ -199,6 +200,10 @@ export const api = {
     apiSend<ChannelsSettings>('PUT', '/automation/channels', settings),
   adoptChannels: (areaId: string) =>
     apiPost<ChannelsAdopt>('/automation/channels/adopt', { areaId }),
+  privateSettings: (signal?: AbortSignal) =>
+    apiGet<PrivateSettings>('/automation/private', {}, signal),
+  savePrivateSettings: (settings: PrivateSettings['settings']) =>
+    apiSend<PrivateSettings>('PUT', '/automation/private', settings),
   testNickname: (body: {
     nickname: string;
     patterns: NicknameSettings['settings']['patterns'];

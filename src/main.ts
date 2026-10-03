@@ -12,6 +12,7 @@ import { loadConfigOrExit } from './config/config.js';
 import { AutomationHost } from './automation/host.js';
 import { ChannelsModule } from './automation/modules/channels.js';
 import { NicknameModule } from './automation/modules/nickname.js';
+import { PrivateModule } from './automation/modules/private.js';
 import { StaffModule } from './automation/modules/staff.js';
 import { SupportModule } from './automation/modules/support.js';
 import { openDatabase, runMigrations } from './db/client.js';
@@ -124,6 +125,9 @@ async function main(): Promise<void> {
       channels: () => connection.channelList(),
     }),
   );
+  automation.register(
+    new PrivateModule({ ...automationDeps, channels: () => connection.channelList() }),
+  );
   watcher.tracker.addListener(automation);
   rankJob.start();
   connection.start();
@@ -187,6 +191,7 @@ async function main(): Promise<void> {
       live: watcher,
       moderation: connection,
       channels: () => connection.channelList(),
+      channelGroups: () => connection.channelGroups(),
       ranks: rankJob,
       bot: {
         connection: () => connection.status(),
