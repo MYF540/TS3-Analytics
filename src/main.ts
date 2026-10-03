@@ -9,6 +9,7 @@
  */
 import { startServer } from './api/server.js';
 import { loadConfigOrExit } from './config/config.js';
+import { AutomationHost } from './automation/host.js';
 import { openDatabase, runMigrations } from './db/client.js';
 import { openCountryLookup } from './geoip/country-lookup.js';
 import { deleteExpiredSessions } from './api/auth/service.js';
@@ -93,6 +94,9 @@ async function main(): Promise<void> {
   groupWatch.start();
   const rankJob = new RankJob({ database, connection, notifier: alerts, logger });
   watcher.tracker.addListener(rankJob);
+  // Bot modules (phase 10) register here as they arrive.
+  const automation = new AutomationHost(logger);
+  watcher.tracker.addListener(automation);
   rankJob.start();
   connection.start();
 

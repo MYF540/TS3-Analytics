@@ -116,6 +116,7 @@ Diese Regeln gelten immer und dürfen von keiner Aufgabe verletzt werden.
 10. **Jede Schreibaktion im Dashboard** (Moderation, Rang-Konfig, Notizen, Overrides) wird ins Audit-Log geschrieben.
 11. **Quelldaten nur lesen.** Alte Logs, `ts3server.sqlitedb` und die Alt-Ranking-DB werden nie verändert. Importe arbeiten immer auf Kopien unter `/data/import`.
 12. **Keine Doppelzählung.** Für Ränge zählt Alt-Ranking-Zeit bis zum `legacy_cutoff` plus Live-Zeit danach. Aus Logs rekonstruierte Zeit dient nur der Statistik.
+13. **Bot-Module fassen nur an, was ihnen gehört.** Ein Modul (Phase 10) ändert ausschließlich Servergruppen, die in seiner eigenen Konfiguration stehen und nicht zur Rangleiter gehören, und löscht oder ändert nur Channels, die es selbst angelegt hat oder die ihm im Webinterface ausdrücklich zugewiesen wurden. Jede automatische Aktion läuft über `ModuleActions` (Testmodus, Automatik-Protokoll); automatische Bans sind immer zeitlich begrenzt.
 
 ## Konventionen
 

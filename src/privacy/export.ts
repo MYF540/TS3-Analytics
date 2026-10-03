@@ -121,5 +121,9 @@ export function exportUser(database: AppDatabase, userId: number, now: number) {
        WHERE target_type = 'user' AND target_id = ? AND action LIKE 'moderation.%' ORDER BY at`,
       String(userId),
     ),
+    automation: all(
+      'SELECT at, module, action, detail, result FROM automation_log WHERE user_id = ? ORDER BY at',
+      userId,
+    ),
   };
 }

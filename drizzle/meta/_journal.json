@@ -99,6 +99,13 @@
       "when": 1789934247171,
       "tag": "0013_network",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1791037697637,
+      "tag": "0014_automation_log",
+      "breakpoints": true
     }
   ]
 }

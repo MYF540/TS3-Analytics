@@ -5,6 +5,7 @@
 import type Database from 'better-sqlite3';
 import { SEGMENTS_PRUNED_BEFORE_KEY, segmentsPrunedBefore } from '../db/aggregates.js';
 import type { AppDatabase } from '../db/client.js';
+import { pruneAutomationLog } from '../automation/log.js';
 import { setSetting } from '../db/repositories/index.js';
 
 export const MINUTELY_RETENTION_DAYS = 14;
@@ -23,6 +24,8 @@ export interface RetentionResult {
   banIpHashes: number;
   serverMinutely: number;
   segments: number;
+  /** Entries of the automation log past their retention period. */
+  automationLog: number;
 }
 
 /** Deletes in batches so a large first run does not hold the write lock for long. */
@@ -79,7 +82,8 @@ export function runRetention(
     const previous = segmentsPrunedBefore(database.db) ?? Number.NEGATIVE_INFINITY;
     if (cutoff > previous) setSetting(database.db, SEGMENTS_PRUNED_BEFORE_KEY, cutoff, now);
   }
-  return { ipSeen, banIpHashes, serverMinutely, segments };
+  const automationLog = pruneAutomationLog(sqlite, now);
+  return { ipSeen, banIpHashes, serverMinutely, segments, automationLog };
 }
 
 /** Weekly maintenance: refresh planner statistics and shrink the WAL file. */

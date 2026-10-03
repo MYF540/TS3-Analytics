@@ -105,7 +105,10 @@ export class Watcher {
     const onMoved = (event: Ts3ClientMoved) => {
       this.touchedDuringSync?.add(event.clid);
       this.safely(() => {
-        this.tracker.move(event.clid, event.channelId, this.now());
+        this.tracker.move(event.clid, event.channelId, this.now(), {
+          reasonId: event.reasonId,
+          invokerClid: event.invokerClid,
+        });
       });
     };
     const onLost = () => {

@@ -3,6 +3,7 @@ import { AuthProvider, RequireAuth, RequireRole } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { AuditPage } from './pages/AuditPage';
+import { AutomationPage } from './pages/AutomationPage';
 import { ChannelsPage } from './pages/ChannelsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FlagsPage } from './pages/FlagsPage';
@@ -45,6 +46,7 @@ export const routes: RouteObject[] = [
                 children: [
                   { path: 'protokoll', element: <AuditPage /> },
                   { path: 'raenge', element: <RanksPage /> },
+                  { path: 'automatik', element: <AutomationPage /> },
                   { path: 'abgleich', element: <ImportPage /> },
                   { path: 'netzwerk', element: <NetworkPage /> },
                   { path: 'status', element: <StatusPage /> },

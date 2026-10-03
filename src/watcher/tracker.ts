@@ -17,13 +17,27 @@ export interface OnlineClient {
   joinedAt: number;
 }
 
+/** Why a client changed its channel, as far as the move event tells (`MOVE_REASON_*`). */
+export interface MoveCause {
+  reasonId: number;
+  /** Who moved the client; undefined when it switched itself. */
+  invokerClid: number | undefined;
+}
+
 export interface TrackerListener {
   /** Called after a session was opened (client joined or discovered by a sync). */
   onJoined?(client: OnlineClient, source: Ts3Client, at: number): void;
   /** Called after an existing session was resumed following a short restart (T2.7). */
   onResumed?(client: OnlineClient, source: Ts3Client, at: number): void;
-  /** Called after the client moved to another channel. */
-  onMoved?(client: OnlineClient, previousChannelId: number, at: number): void;
+  /**
+   * Called after the client moved to another channel. `cause` is missing when the move was not
+   * reported by an event but noticed by a client-list sync.
+   */
+  onMoved?(client: OnlineClient, previousChannelId: number, at: number, cause?: MoveCause): void;
+  /** Called after a sync noticed a new nickname (ServerQuery has no event for renames). */
+  onNicknameChanged?(client: OnlineClient, previous: string, at: number): void;
+  /** Called for every tracked client a sync found online, with its current list entry. */
+  onObserved?(client: OnlineClient, source: Ts3Client, at: number): void;
   /** Called before the session is closed. */
   onLeaving?(client: OnlineClient, at: number): void;
   /**
@@ -133,12 +147,12 @@ export class SessionTracker {
     this.logger.debug({ uid: tracked.uid, clid }, 'Client left');
   }
 
-  move(clid: number, channelId: number, at: number): void {
+  move(clid: number, channelId: number, at: number, cause?: MoveCause): void {
     const tracked = this.online.get(clid);
     if (!tracked || tracked.channelId === channelId) return;
     const previous = tracked.channelId;
     tracked.channelId = channelId;
-    for (const l of this.listeners) l.onMoved?.(tracked, previous, at);
+    for (const l of this.listeners) l.onMoved?.(tracked, previous, at, cause);
   }
 
   /**
@@ -171,9 +185,12 @@ export class SessionTracker {
           this.join(client, at);
           continue;
         }
+        for (const l of this.listeners) l.onObserved?.(tracked, client, at);
         if (client.nickname !== tracked.nickname) {
+          const previous = tracked.nickname;
           recordNickname(this.database.db, tracked.userId, client.nickname, at);
           tracked.nickname = client.nickname;
+          for (const l of this.listeners) l.onNicknameChanged?.(tracked, previous, at);
         }
         this.move(client.clid, client.channelId, at);
       }

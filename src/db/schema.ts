@@ -642,3 +642,49 @@ export const networkEdges = sqliteTable(
     check('network_edges_seconds_check', sql`${t.seconds} > 0`),
   ],
 );
+
+/** Bot modules that act on the server by themselves (phase 10). */
+export const AUTOMATION_MODULES = [
+  'nickname',
+  'support',
+  'staff',
+  'channels',
+  'private',
+  'rules',
+  'spam',
+  'proxy',
+] as const;
+export type AutomationModule = (typeof AUTOMATION_MODULES)[number];
+
+/** `dry` = test mode, nothing was sent to the server (rule 7). */
+export const AUTOMATION_RESULTS = ['done', 'dry', 'failed'] as const;
+export type AutomationResult = (typeof AUTOMATION_RESULTS)[number];
+
+/**
+ * What the bot modules did (or, in test mode, would have done). Kept for a limited time only,
+ * see the retention job. `detail` is a short text for humans; it never holds an IP address.
+ */
+export const automationLog = sqliteTable(
+  'automation_log',
+  {
+    id: integer('id').primaryKey(),
+    at: integer('at').notNull(),
+    module: text('module', { enum: AUTOMATION_MODULES }).notNull(),
+    /** What happened, e.g. `kick` or `channel.create`. */
+    action: text('action').notNull(),
+    /** The player concerned; null for actions without one (a channel was created). */
+    userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+    detail: text('detail'),
+    result: text('result', { enum: AUTOMATION_RESULTS }).notNull(),
+  },
+  (t) => [
+    index('automation_log_at_idx').on(t.at),
+    index('automation_log_module_idx').on(t.module, t.at),
+    index('automation_log_user_idx').on(t.userId),
+    check(
+      'automation_log_module_check',
+      sql`${t.module} IN ('nickname', 'support', 'staff', 'channels', 'private', 'rules', 'spam', 'proxy')`,
+    ),
+    check('automation_log_result_check', sql`${t.result} IN ('done', 'dry', 'failed')`),
+  ],
+);

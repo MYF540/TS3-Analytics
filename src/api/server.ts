@@ -23,6 +23,7 @@ import { healthRoutes } from './routes/health.js';
 import { importRoutes } from './routes/import.js';
 import { leaderboardRoutes } from './routes/leaderboards.js';
 import { moderationRoutes } from './routes/moderation.js';
+import { automationRoutes } from './routes/automation.js';
 import { networkRoutes } from './routes/network.js';
 import { noteRoutes } from './routes/notes.js';
 import { personRoutes } from './routes/persons.js';
@@ -132,6 +133,7 @@ export async function buildServer(
       await api.register(privacyRoutes(context));
       await api.register(importRoutes(context));
       await api.register(networkRoutes(context));
+      await api.register(automationRoutes(context));
     },
     { prefix: '/api' },
   );

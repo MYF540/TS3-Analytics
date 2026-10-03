@@ -23,6 +23,12 @@ export function auditActionLabel(action: string): string {
   return key in de ? de[key as MessageKey] : action;
 }
 
+/** German label for an action of a bot module; unknown codes are shown as they are. */
+export function automationActionLabel(action: string): string {
+  const key = `automation.action.${action}`;
+  return key in de ? de[key as MessageKey] : action;
+}
+
 const numberFormat = new Intl.NumberFormat('de-DE');
 const dateTimeFormat = new Intl.DateTimeFormat('de-DE', {
   timeZone: TIME_ZONE,

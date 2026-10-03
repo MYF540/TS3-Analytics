@@ -31,6 +31,25 @@ export interface AuditEntry {
   status: number | null;
 }
 
+export type AutomationModule =
+  'nickname' | 'support' | 'staff' | 'channels' | 'private' | 'rules' | 'spam' | 'proxy';
+
+export interface AutomationOverview {
+  modules: { id: AutomationModule; enabled: boolean; dryRun: boolean }[];
+  retentionDays: number;
+}
+
+export interface AutomationLogEntry {
+  id: number;
+  at: number;
+  module: AutomationModule;
+  action: string;
+  userId: number | null;
+  nickname: string | null;
+  detail: string | null;
+  result: 'done' | 'dry' | 'failed';
+}
+
 export interface AuditFilters {
   actors: string[];
   actions: string[];

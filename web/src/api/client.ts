@@ -7,6 +7,9 @@ import type {
   ApiErrorBody,
   AuditEntry,
   AuditFilters,
+  AutomationLogEntry,
+  AutomationModule,
+  AutomationOverview,
   AuthResponse,
   BotStatus,
   ChannelRange,
@@ -164,6 +167,15 @@ export const api = {
     signal?: AbortSignal,
   ) => apiGet<Paged<AuditEntry>>('/audit', query, signal),
   auditFilters: (signal?: AbortSignal) => apiGet<AuditFilters>('/audit/filters', {}, signal),
+  automation: (signal?: AbortSignal) => apiGet<AutomationOverview>('/automation', {}, signal),
+  automationLog: (
+    query: {
+      module?: AutomationModule | undefined;
+      page?: number | undefined;
+      pageSize?: number | undefined;
+    },
+    signal?: AbortSignal,
+  ) => apiGet<Paged<AutomationLogEntry>>('/automation/log', query, signal),
   onlineNow: (signal?: AbortSignal) => apiGet<OnlineNow>('/online', {}, signal),
   overview: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Overview>('/stats/overview', { range }, signal),

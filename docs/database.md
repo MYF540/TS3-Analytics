@@ -58,6 +58,7 @@ Beim Start führt der Dienst alle ausstehenden Migrationen aus (`runMigrations()
 | `rank_state`                | Vom Rang-Job bestimmter Rang pro Nutzer, `pending` bis zum nächsten Join    |
 | `rank_history`              | Jede Rangänderung (auch im Dry-Run)                                         |
 | `import_runs`               | Fortschritt und Zähler je importierter Datei (Phase 8)                      |
+| `automation_log`            | Was die Bot-Module getan haben oder im Testmodus getan hätten (90 Tage)     |
 
 Das maßgebliche Schema steht in `src/db/schema.ts`.
 
