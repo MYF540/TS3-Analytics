@@ -14,7 +14,9 @@ import type {
   ChannelsSettings,
   NicknameSettings,
   NicknameTest,
+  PlayerRules,
   PrivateSettings,
+  RulesSettings,
   StaffSettings,
   SupportSettings,
   AuthResponse,
@@ -204,6 +206,11 @@ export const api = {
     apiGet<PrivateSettings>('/automation/private', {}, signal),
   savePrivateSettings: (settings: PrivateSettings['settings']) =>
     apiSend<PrivateSettings>('PUT', '/automation/private', settings),
+  rulesSettings: (signal?: AbortSignal) => apiGet<RulesSettings>('/automation/rules', {}, signal),
+  saveRulesSettings: (settings: RulesSettings['settings']) =>
+    apiSend<RulesSettings>('PUT', '/automation/rules', settings),
+  playerRules: (userId: number, signal?: AbortSignal) =>
+    apiGet<PlayerRules>(`/users/${String(userId)}/rules`, {}, signal),
   testNickname: (body: {
     nickname: string;
     patterns: NicknameSettings['settings']['patterns'];

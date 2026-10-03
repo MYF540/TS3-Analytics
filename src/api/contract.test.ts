@@ -36,6 +36,7 @@ import type {
   nicknameTestResponse,
 } from './routes/automation-nickname.js';
 import type { privateSettingsResponse } from './routes/automation-private.js';
+import type { playerRulesResponse, rulesSettingsResponse } from './routes/automation-rules.js';
 import type { staffSettingsResponse } from './routes/automation-staff.js';
 import type { supportSettingsResponse } from './routes/automation-support.js';
 import type { automationLogEntry, automationOverviewResponse } from './routes/automation.js';
@@ -81,6 +82,8 @@ export type Contract = [
   Assert<Equals<z.output<typeof channelsSettingsResponse>, Web.ChannelsSettings>>,
   Assert<Equals<z.output<typeof channelsAdoptResponse>, Web.ChannelsAdopt>>,
   Assert<Equals<z.output<typeof privateSettingsResponse>, Web.PrivateSettings>>,
+  Assert<Equals<z.output<typeof rulesSettingsResponse>, Web.RulesSettings>>,
+  Assert<Equals<z.output<typeof playerRulesResponse>, Web.PlayerRules>>,
   Assert<Equals<z.output<typeof authResponse>, Web.AuthResponse>>,
   Assert<Equals<z.output<typeof auditEntry>, Web.AuditEntry>>,
   Assert<Equals<z.output<typeof auditFiltersResponse>, Web.AuditFilters>>,

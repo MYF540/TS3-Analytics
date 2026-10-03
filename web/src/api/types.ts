@@ -170,6 +170,40 @@ export interface PrivateSettings {
   managed: { lobbyId: string; count: number }[];
 }
 
+export interface RulesSettings {
+  settings: {
+    enabled: boolean;
+    dryRun: boolean;
+    exemptGroupIds: number[];
+    version: number;
+    rules: string[];
+    trigger: 'join' | 'channel';
+    ruleChannelId: number | null;
+    viaChat: boolean;
+    acceptCommand: string;
+    declineCommand: string;
+    viaChannel: boolean;
+    acceptChannelId: number | null;
+    returnChannelId: number | null;
+    prompt: string;
+    acceptedMessage: string;
+    declinedMessage: string;
+    acceptedGroupId: number | null;
+    kickOnDecline: boolean;
+    deadlineS: number;
+    kickReason: string;
+  };
+  groups: { id: number; name: string }[];
+  channels: { id: number; name: string }[];
+  stats: { accepted: number; declined: number };
+}
+
+export interface PlayerRules {
+  enabled: boolean;
+  currentVersion: number;
+  state: { version: number; decision: 'accepted' | 'declined'; at: number } | null;
+}
+
 export interface NicknameTest {
   match: number | null;
 }

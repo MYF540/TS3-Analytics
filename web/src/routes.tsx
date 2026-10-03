@@ -17,6 +17,7 @@ import { PlayerPage } from './pages/PlayerPage';
 import { PlayersPage } from './pages/PlayersPage';
 import { PrivateChannelPage } from './pages/PrivateChannelPage';
 import { RanksPage } from './pages/RanksPage';
+import { RulesPage } from './pages/RulesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { StaffListPage } from './pages/StaffListPage';
 import { StatusPage } from './pages/StatusPage';
@@ -57,6 +58,7 @@ export const routes: RouteObject[] = [
                   { path: 'automatik/staff', element: <StaffListPage /> },
                   { path: 'automatik/channels', element: <ChannelCreatorPage /> },
                   { path: 'automatik/private', element: <PrivateChannelPage /> },
+                  { path: 'automatik/rules', element: <RulesPage /> },
                   { path: 'abgleich', element: <ImportPage /> },
                   { path: 'netzwerk', element: <NetworkPage /> },
                   { path: 'status', element: <StatusPage /> },

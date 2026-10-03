@@ -714,3 +714,27 @@ export const managedChannels = sqliteTable(
     check('managed_channels_module_check', sql`${t.module} IN ('channels', 'private')`),
   ],
 );
+
+export const RULE_DECISIONS = ['accepted', 'declined'] as const;
+export type RuleDecision = (typeof RULE_DECISIONS)[number];
+
+/**
+ * A player's last decision about the server rules (T10.8). `version` is the version of the
+ * rules the decision was made for; a newer version of the rules asks again.
+ */
+export const ruleAcceptances = sqliteTable(
+  'rule_acceptances',
+  {
+    userId: integer('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    decision: text('decision', { enum: RULE_DECISIONS }).notNull(),
+    at: integer('at').notNull(),
+  },
+  (t) => [
+    index('rule_acceptances_version_idx').on(t.version, t.decision),
+    check('rule_acceptances_decision_check', sql`${t.decision} IN ('accepted', 'declined')`),
+    check('rule_acceptances_version_check', sql`${t.version} >= 1`),
+  ],
+);

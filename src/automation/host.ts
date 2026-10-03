@@ -37,6 +37,8 @@ export interface BotModule {
     at: number,
   ): Result;
   onLeft?(client: BotClient, at: number): Result;
+  /** The client wrote a private message to the bot. */
+  onMessage?(client: BotClient, message: string, at: number): Result;
   /** After every client-list poll: server groups and channels of everyone are up to date. */
   onSynced?(): Result;
 }
@@ -109,6 +111,13 @@ export class AutomationHost implements TrackerListener {
     if (!bot) return;
     bot.channelId = client.channelId;
     this.each('onMoved', (module) => module.onMoved?.(bot, previousChannelId, cause, at));
+  }
+
+  /** A private message to the bot; messages of clients the tracker does not know are dropped. */
+  onTextMessage(event: { clid: number; message: string }, at: number): void {
+    const bot = this.clients.get(event.clid);
+    if (!bot) return;
+    this.each('onMessage', (module) => module.onMessage?.(bot, event.message, at));
   }
 
   onLeaving(client: OnlineClient, at: number): void {

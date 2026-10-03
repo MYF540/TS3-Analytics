@@ -60,6 +60,7 @@ Beim Start führt der Dienst alle ausstehenden Migrationen aus (`runMigrations()
 | `import_runs`               | Fortschritt und Zähler je importierter Datei (Phase 8)                      |
 | `automation_log`            | Was die Bot-Module getan haben oder im Testmodus getan hätten (90 Tage)     |
 | `managed_channels`          | Channels, die ein Bot-Modul angelegt oder übernommen hat (Regel 13)         |
+| `rule_acceptances`          | Letzte Entscheidung je Spieler zu den Serverregeln, mit Regel-Version       |
 
 Das maßgebliche Schema steht in `src/db/schema.ts`.
 

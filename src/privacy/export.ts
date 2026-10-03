@@ -121,6 +121,8 @@ export function exportUser(database: AppDatabase, userId: number, now: number) {
        WHERE target_type = 'user' AND target_id = ? AND action LIKE 'moderation.%' ORDER BY at`,
       String(userId),
     ),
+    rules:
+      one('SELECT version, decision, at FROM rule_acceptances WHERE user_id = ?', userId) ?? null,
     automation: all(
       'SELECT at, module, action, detail, result FROM automation_log WHERE user_id = ? ORDER BY at',
       userId,
