@@ -513,6 +513,10 @@ Entscheidung (13.10.2026): Hinweis im Webinterface **und** Knopf für Admins; in
   - Meldung im Log des Produktivsystems: `staff.update` scheitert mit „invalid parameter size“ (Fehler 1541)
   - Notiz: Der Server zählt die 8.192 erlaubten Zeichen einer Channel-Beschreibung als **Bytes** (UTF-8), die Staffliste hat Zeichen gezählt. Jede Zeile der Vorgabe enthält einen Gedankenstrich (3 Bytes), dazu kommen Umlaute – eine Liste, die gekürzt werden musste, landete deshalb immer knapp über dem Limit. `renderStaffList` misst jetzt Bytes (`byteLength`, `truncateBytes` in `src/domain/staff-list.ts`), das Protokoll nennt die Größe in Bytes. Die Größe der betroffenen Liste stand nicht im Log; die Erklärung passt zum Fehler, ist aber am Server noch nicht bestätigt. Nebenbefund: Nach einem gescheiterten Schreiben versucht das Modul es erst wieder, wenn sich der Text ändert – deshalb stand der Fehler nur einmal im Log.
 
+- [x] **Staffliste: verknüpfte Accounts nur einmal** (13.10.2026, Wunsch des Betreibers)
+  - Zweitaccounts von Teammitgliedern standen einzeln in der Liste
+  - Notiz: `StaffModule` fasst Accounts, die als Person verknüpft sind (T5.3), zu einem Eintrag unter dem Haupt-Account zusammen – auch über mehrere Gruppen hinweg und auch dann, wenn nur der Zweitaccount in der Gruppe ist. Status: online, sobald einer der Accounts verbunden ist. Name: aktueller Nickname des Haupt-Accounts, sonst sein zuletzt gespeicherter, sonst der Name aus der Gruppenliste des Servers. Der anklickbare Link zeigt auf den Haupt-Account. Nicht verknüpfte Zweitaccounts bleiben einzeln – verknüpft wird auf der Spielerseite.
+
 ---
 
 ---

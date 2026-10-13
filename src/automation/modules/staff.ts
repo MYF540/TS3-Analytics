@@ -145,11 +145,43 @@ export class StaffModule implements BotModule {
     this.membersKey = key;
   }
 
+  /**
+   * Linked accounts (T5.3) by UID: the main account of the person and all UIDs that belong to
+   * it. Accounts that are not linked to anything are not in the map.
+   */
+  private persons(): Map<string, { uid: string; nickname: string | null; uids: string[] }> {
+    const rows = this.deps.database.sqlite
+      .prepare(
+        `SELECT u.uid AS uid, main.uid AS mainUid,
+                (SELECT n.nick FROM nicknames n WHERE n.user_id = main.id
+                 ORDER BY n.last_seen DESC, n.id DESC LIMIT 1) AS mainNickname
+         FROM person_members m
+         JOIN persons p ON p.id = m.person_id
+         JOIN users u ON u.id = m.user_id
+         JOIN users main ON main.id = p.primary_user_id`,
+      )
+      .all() as { uid: string; mainUid: string; mainNickname: string | null }[];
+    const people = new Map<string, { uid: string; nickname: string | null; uids: string[] }>();
+    for (const row of rows) {
+      const person = people.get(row.mainUid) ?? {
+        uid: row.mainUid,
+        nickname: row.mainNickname,
+        uids: [],
+      };
+      person.uids.push(row.uid);
+      people.set(row.mainUid, person);
+    }
+    const byUid = new Map<string, { uid: string; nickname: string | null; uids: string[] }>();
+    for (const person of people.values()) for (const uid of person.uids) byUid.set(uid, person);
+    return byUid;
+  }
+
   private groups(settings: StaffSettings): StaffGroup[] {
     const { db } = this.deps.database;
     const afk = settings.awayInAfkChannel ? loadActivitySettings(db).afkChannelIds : [];
     const online = this.deps.online();
     const names = new Map(loadGroupWatch(db).knownGroups.map((group) => [group.id, group.name]));
+    const persons = this.persons();
 
     const groups = settings.groups.map(({ groupId, title }) => {
       const listed = new Map(
@@ -159,16 +191,36 @@ export class StaffModule implements BotModule {
       for (const client of online) {
         if (client.serverGroups.includes(groupId)) listed.set(client.uid, client.nickname);
       }
-      const members = [...listed].map(([uid, nickname]) => {
-        const live = online.filter((client) => client.uid === uid);
+
+      // Linked accounts are one person: listed once, under the main account.
+      const entries = new Map<
+        string,
+        { uids: string[]; fallback: string; stored: string | null }
+      >();
+      for (const [uid, nickname] of listed) {
+        const person = persons.get(uid);
+        const key = person?.uid ?? uid;
+        if (entries.has(key)) continue;
+        entries.set(key, {
+          uids: person?.uids ?? [uid],
+          // The name the server knows for the main account, if the main account is in the group.
+          fallback: listed.get(key) ?? nickname,
+          stored: person?.nickname ?? null,
+        });
+      }
+
+      const members = [...entries].map(([uid, entry]) => {
+        // Online with any of the accounts counts.
+        const live = online.filter((client) => entry.uids.includes(client.uid));
         const status: StaffStatus =
           live.length === 0
             ? 'offline'
             : live.every((client) => afk.includes(client.channelId))
               ? 'away'
               : 'online';
-        // The live nickname is newer than the one the server stored at the last disconnect.
-        return { uid, nickname: live[0]?.nickname ?? nickname, status };
+        // The live nickname of the main account is the newest; then what we stored for it.
+        const main = live.find((client) => client.uid === uid);
+        return { uid, nickname: main?.nickname ?? entry.stored ?? entry.fallback, status };
       });
       return { title: title || names.get(groupId) || `Gruppe ${String(groupId)}`, members };
     });

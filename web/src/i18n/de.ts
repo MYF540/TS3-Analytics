@@ -908,7 +908,7 @@ export const de = {
   'staff.channelHint': 'Die vorhandene Beschreibung dieses Channels wird überschrieben.',
   'staff.groups': 'Gruppen der Liste',
   'staff.groupsHint':
-    'Die Reihenfolge hier ist die Reihenfolge in der Liste. Ohne eigene Überschrift steht dort der Name der Gruppe.',
+    'Die Reihenfolge hier ist die Reihenfolge in der Liste. Ohne eigene Überschrift steht dort der Name der Gruppe. Verknüpfte Accounts einer Person erscheinen nur einmal, unter dem Haupt-Account.',
   'staff.noGroups': 'Noch keine Gruppe gewählt.',
   'staff.title': 'Überschrift für {group} (optional)',
   'staff.up': '{group} nach oben',

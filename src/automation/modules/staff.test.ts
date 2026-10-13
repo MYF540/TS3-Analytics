@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppDatabase } from '../../db/client.js';
+import {
+  linkUsers,
+  recordNickname,
+  setPrimaryUser,
+  upsertUser,
+} from '../../db/repositories/index.js';
 import { createTestDatabase } from '../../db/testing.js';
 import { createSilentLogger } from '../../logging/logger.js';
 import { Ts3Connection } from '../../ts3/connection.js';
@@ -151,6 +157,78 @@ describe('StaffModule', () => {
     now += 60;
     await poll();
     expect(description()?.match(/Bob/g)).toHaveLength(2);
+  });
+
+  describe('linked accounts', () => {
+    /** Links the accounts as one person; the first UID is the main account. */
+    function link(mainUid: string, ...otherUids: string[]): void {
+      const ids = [mainUid, ...otherUids].map((uid) =>
+        upsertUser(database.db, { uid, seenAt: now }),
+      );
+      const [main, ...others] = ids;
+      for (const other of others) linkUsers(database.sqlite, main ?? 0, other, 'test', now);
+      setPrimaryUser(database.sqlite, main ?? 0);
+    }
+
+    it('lists a person once, under the main account', async () => {
+      server.groupMembers.set(ADMIN, [
+        { dbid: 101, uid: 'uid-bob', nickname: 'Bob' },
+        { dbid: 105, uid: 'uid-bob-laptop', nickname: 'Bob Laptop' },
+        { dbid: 102, uid: 'uid-zoe', nickname: 'Zoe' },
+      ]);
+      link('uid-bob', 'uid-bob-laptop');
+      configure({ clickable: true });
+      await poll();
+      expect(description()).toContain('[URL=client://0/uid-bob]Bob[/URL] – offline');
+      expect(description()).not.toContain('Laptop');
+      expect(description()?.match(/Bob/g)).toHaveLength(1);
+    });
+
+    it('shows the person as online when only the second account is connected', async () => {
+      link('uid-bob', 'uid-bob-laptop');
+      recordNickname(
+        database.db,
+        upsertUser(database.db, { uid: 'uid-bob', seenAt: now }),
+        'Bob',
+        now,
+      );
+      configure();
+      server.join({ uid: 'uid-bob-laptop', nickname: 'Bob Laptop', serverGroups: [ADMIN] });
+      await poll();
+      expect(description()).toContain('Bob – online');
+      expect(description()).not.toContain('Laptop');
+    });
+
+    it('lists the main account even when only the second account is in the group', async () => {
+      server.groupMembers.set(ADMIN, [{ dbid: 105, uid: 'uid-zweit', nickname: 'Zweitaccount' }]);
+      link('uid-haupt', 'uid-zweit');
+      recordNickname(
+        database.db,
+        upsertUser(database.db, { uid: 'uid-haupt', seenAt: now }),
+        'Hauptaccount',
+        now,
+      );
+      configure({ clickable: true });
+      await poll();
+      expect(description()).toContain('[URL=client://0/uid-haupt]Hauptaccount[/URL] – offline');
+      expect(description()).not.toContain('Zweitaccount');
+    });
+
+    it('counts a person once across groups as well', async () => {
+      server.groupMembers.set(ADMIN, [{ dbid: 101, uid: 'uid-bob', nickname: 'Bob' }]);
+      server.groupMembers.set(MOD, [
+        { dbid: 105, uid: 'uid-bob-laptop', nickname: 'Bob Laptop' },
+        { dbid: 103, uid: 'uid-cleo', nickname: 'Cleo' },
+      ]);
+      link('uid-bob', 'uid-bob-laptop');
+      configure();
+      await poll();
+      expect(description()).toBe(
+        ['[b]Server Admin[/b]', 'Bob – offline', '', '[b]Moderation[/b]', 'Cleo – offline'].join(
+          '\n',
+        ),
+      );
+    });
   });
 
   it('writes nothing while the text stays the same', async () => {
