@@ -34,8 +34,32 @@ export interface StaffTemplate {
   clickable: boolean;
 }
 
-/** Longest channel description the server accepts. */
-export const DESCRIPTION_MAX = 8192;
+/**
+ * Longest channel description the server accepts, in **bytes** of UTF-8 – not characters. A text
+ * with umlauts or a dash is longer for the server than its character count suggests; beyond
+ * the limit it answers "invalid parameter size" (error 1541).
+ */
+export const DESCRIPTION_MAX_BYTES = 8192;
+
+const encoder = new TextEncoder();
+
+/** Size of a text as the server counts it. */
+export function byteLength(text: string): number {
+  return encoder.encode(text).length;
+}
+
+/** The longest beginning of `text` that fits into `maxBytes`, never cutting a character in two. */
+export function truncateBytes(text: string, maxBytes: number): string {
+  if (byteLength(text) <= maxBytes) return text;
+  let result = '';
+  let size = 0;
+  for (const char of text) {
+    size += byteLength(char);
+    if (size > maxBytes) break;
+    result += char;
+  }
+  return result;
+}
 
 const STATUS_ORDER: Record<StaffStatus, number> = { online: 0, away: 1, offline: 2 };
 
@@ -100,7 +124,7 @@ function assemble(groups: readonly string[], template: StaffTemplate): string {
 export function renderStaffList(
   groups: readonly StaffGroup[],
   template: StaffTemplate,
-  max = DESCRIPTION_MAX,
+  maxBytes = DESCRIPTION_MAX_BYTES,
 ): string {
   const visible = groups.filter(
     (group) => !(template.hideEmptyGroups && group.members.length === 0),
@@ -111,9 +135,10 @@ export function renderStaffList(
       visible.map((group, index) => renderGroup(group, template, limits[index])),
       template,
     );
-    if (text.length <= max) return text;
+    if (byteLength(text) <= maxBytes) return text;
     const longest = limits.indexOf(Math.max(...limits));
-    if (longest === -1 || (limits[longest] ?? 0) === 0) return text.slice(0, max);
+    // Nothing left to drop (header and footer alone are too long): cut the text itself.
+    if (longest === -1 || (limits[longest] ?? 0) === 0) return truncateBytes(text, maxBytes);
     limits[longest] = (limits[longest] ?? 0) - 1;
   }
 }

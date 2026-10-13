@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  byteLength,
   dedupeGroups,
   renderStaffList,
   sortMembers,
   type StaffMember,
   type StaffStatus,
   type StaffTemplate,
+  truncateBytes,
 } from './staff-list.js';
 
 const template: StaffTemplate = {
@@ -78,6 +80,34 @@ describe('renderStaffList', () => {
     expect(text).toContain('Anna – online');
     expect(text).toMatch(/… \(\+\d+\)$/);
     expect(text).not.toContain('Spieler49');
+  });
+});
+
+describe('size as the server counts it', () => {
+  it('measures bytes, not characters', () => {
+    expect(byteLength('abc')).toBe(3);
+    expect(byteLength('Jörg – ä')).toBe(12);
+  });
+
+  it('keeps a list of names with umlauts within the byte limit', () => {
+    // 80 characters per line, but more bytes: the dash and the umlauts count double or triple.
+    const members = Array.from({ length: 200 }, (_, i) =>
+      member(`Jörg Müller-Lüdenscheid der ${String(i).padStart(3, '0')}.`, 'online'),
+    );
+    const text = renderStaffList([{ title: 'Team', members }], template);
+    expect(byteLength(text)).toBeLessThanOrEqual(8192);
+    expect(text.length).toBeLessThan(byteLength(text));
+    expect(text).toMatch(/… \(\+\d+\)$/);
+    // As many members as fit are still listed.
+    expect(byteLength(text)).toBeGreaterThan(8000);
+  });
+
+  it('cuts header and footer that are too long on their own, without splitting a character', () => {
+    const text = renderStaffList([], { ...template, header: 'ä'.repeat(5000) });
+    expect(byteLength(text)).toBe(8192);
+    expect(text).toBe('ä'.repeat(4096));
+    expect(truncateBytes('aä€', 3)).toBe('aä');
+    expect(truncateBytes('kurz', 100)).toBe('kurz');
   });
 });
 

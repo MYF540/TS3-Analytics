@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { DbExecutor } from '../../db/repositories/index.js';
 import {
+  byteLength,
   dedupeGroups,
   renderStaffList,
   type StaffGroup,
@@ -128,7 +129,7 @@ export class StaffModule implements BotModule {
     await new ModuleActions(this.deps, { module: this.id, dryRun: settings.dryRun }).run(
       'staff.update',
       undefined,
-      `${String(text.length)} Zeichen`,
+      `${String(byteLength(text))} Bytes`,
       (commands) => commands.channelEdit(channelId, { description: text }),
     );
   }

@@ -9,3 +9,5 @@ coverage/
 
 # Lokale Kopien echter Daten (DBs, Logs) mit personenbezogenen Daten – niemals committen
 /example data/
+# Logs vom Produktivsystem zur Fehlersuche – enthalten Nicknames, niemals committen
+/debug-logs/

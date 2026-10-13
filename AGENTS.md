@@ -67,6 +67,12 @@ Grundsätze:
 - Kein Ersatz für `/data/import`: Importe und Regel 11 bleiben unverändert.
 - Inhalte daraus nie in Tests, Fixtures, Doku, Logs oder Commits übernehmen. Beispiele in Doku und Tests sind anonymisiert bzw. synthetisch.
 
+## Lokale Fehler-Logs (`debug-logs/`)
+
+- Logdateien vom Produktivsystem, die der Betreiber zur Fehlersuche ablegt. Sie enthalten Nicknames und Pfade des Servers.
+- Nur lokal, in `.gitignore` und allen Tool-Configs ausgeschlossen, darf nie committet werden.
+- Es gelten dieselben Regeln wie für `example data/`: nur lesen, nichts daraus in Tests, Fixtures, Doku oder Commits übernehmen.
+
 ## Tech-Stack
 
 | Bereich | Wahl |
