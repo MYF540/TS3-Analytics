@@ -19,7 +19,7 @@ const stored: ProxySettings = {
   },
   groups: [
     { id: 6, name: 'Server Admin' },
-    { id: 142, name: 'VPN' },
+    { id: 50, name: 'VPN' },
   ],
   keyConfigured: true,
   stats: { listed: 12, clean: 340, proxy: 2 },
@@ -74,10 +74,7 @@ describe('ProxyCheckPage', () => {
       'group',
     );
     expect(save()).toBeDisabled();
-    await userEvent.selectOptions(
-      screen.getByLabelText('Servergruppe für erkannte Spieler'),
-      '142',
-    );
+    await userEvent.selectOptions(screen.getByLabelText('Servergruppe für erkannte Spieler'), '50');
     await userEvent.click(
       within(screen.getByRole('list', { name: 'Team benachrichtigen' })).getByLabelText(
         'Server Admin',
@@ -89,7 +86,7 @@ describe('ProxyCheckPage', () => {
     expect(saved()).toEqual({
       ...stored.settings,
       action: 'group',
-      groupId: 142,
+      groupId: 50,
       notifyGroupIds: [6],
       exemptUserIds: [42, 7],
     });

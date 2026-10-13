@@ -195,9 +195,9 @@ describe('checking a new player', () => {
 
 describe('what happens on a hit', () => {
   it('sets the configured group and tells the player', async () => {
-    configure({ action: 'group', groupId: 142 });
+    configure({ action: 'group', groupId: 50 });
     const clid = await join('Evader', VPN, { dbid: 101 });
-    expect(server.groupCommands).toEqual([{ command: 'add', dbid: 101, groupId: 142 }]);
+    expect(server.groupCommands).toEqual([{ command: 'add', dbid: 101, groupId: 50 }]);
     expect(server.moderation).toEqual([
       {
         command: 'message',
@@ -208,8 +208,8 @@ describe('what happens on a hit', () => {
   });
 
   it('never sets a group of the rank ladder', async () => {
-    replaceRanks(database.sqlite, [{ name: 'Neuling', requiredS: 3600, serverGroupId: 142 }], now);
-    configure({ action: 'group', groupId: 142 });
+    replaceRanks(database.sqlite, [{ name: 'Neuling', requiredS: 3600, serverGroupId: 50 }], now);
+    configure({ action: 'group', groupId: 50 });
     await join('Evader', VPN);
     expect(server.groupCommands).toEqual([]);
   });

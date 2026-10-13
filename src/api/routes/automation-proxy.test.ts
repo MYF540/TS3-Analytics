@@ -66,9 +66,9 @@ describe('proxy check routes', () => {
   });
 
   it('save the settings and audit it', async () => {
-    const response = await put({ enabled: true, action: 'group', groupId: 142 });
+    const response = await put({ enabled: true, action: 'group', groupId: 50 });
     expect(response.statusCode).toBe(200);
-    expect(loadProxySettings(database.db)).toMatchObject({ action: 'group', groupId: 142 });
+    expect(loadProxySettings(database.db)).toMatchObject({ action: 'group', groupId: 50 });
     expect(
       database.sqlite.prepare('SELECT action, details FROM audit_log ORDER BY id DESC').get(),
     ).toEqual({
@@ -77,7 +77,7 @@ describe('proxy check routes', () => {
         enabled: true,
         dryRun: true,
         action: 'group',
-        groupId: 142,
+        groupId: 50,
         exemptUsers: 0,
       }),
     });
