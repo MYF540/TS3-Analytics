@@ -94,6 +94,33 @@ describe('rule confirmation routes', () => {
     expect((await put({ enabled: false, viaChat: false })).statusCode).toBe(200);
   });
 
+  it('save the English texts with defaults for what was left out', async () => {
+    await put({ ...valid, english: { enabled: true, rules: ['Be kind.'] } });
+    expect(loadRulesSettings(database.db).english).toEqual({
+      enabled: true,
+      rules: ['Be kind.'],
+      acceptCommand: 'accept',
+      declineCommand: 'decline',
+      prompt: 'Reply with "{accept}" to confirm the rules, or with "{decline}" to decline them.',
+      acceptedMessage: 'Thank you, you have confirmed the rules.',
+      declinedMessage: 'You have declined the rules.',
+      kickReason: 'Rules not confirmed',
+    });
+  });
+
+  it('refuse English without rules and words that mean both things', async () => {
+    expect(await code({ ...valid, english: { enabled: true } })).toBe('RULES_INCOMPLETE');
+    const english = { enabled: true, rules: ['Be kind.'] };
+    expect(await code({ ...valid, english: { ...english, declineCommand: 'Akzeptieren' } })).toBe(
+      'RULES_SAME_COMMAND',
+    );
+    // Switched off, the English words are not looked at.
+    expect(
+      (await put({ ...valid, english: { enabled: false, declineCommand: 'akzeptieren' } }))
+        .statusCode,
+    ).toBe(200);
+  });
+
   it('refuse a group of the rank ladder (rule 6)', async () => {
     replaceRanks(database.sqlite, [{ name: 'Neuling', requiredS: 3600, serverGroupId: 20 }], NOW);
     expect(await code({ ...valid, acceptedGroupId: 20 })).toBe('RULES_RANK_GROUP');

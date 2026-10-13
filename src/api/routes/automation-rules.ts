@@ -37,6 +37,16 @@ export const rulesSettingsResponse = z.object({
     kickOnDecline: z.boolean(),
     deadlineS: z.number().int(),
     kickReason: z.string(),
+    english: z.object({
+      enabled: z.boolean(),
+      rules: z.array(z.string()),
+      acceptCommand: z.string(),
+      declineCommand: z.string(),
+      prompt: z.string(),
+      acceptedMessage: z.string(),
+      declinedMessage: z.string(),
+      kickReason: z.string(),
+    }),
   }),
   groups: named,
   channels: named,
@@ -65,10 +75,14 @@ function problem(
   if (settings.acceptedGroupId !== null && rankGroups.has(settings.acceptedGroupId)) {
     return 'RULES_RANK_GROUP';
   }
-  if (settings.acceptCommand.toLowerCase() === settings.declineCommand.toLowerCase()) {
-    return 'RULES_SAME_COMMAND';
-  }
+  // A word that confirms in one language must not decline in the other.
+  const { english } = settings;
+  const accept = [settings.acceptCommand, ...(english.enabled ? [english.acceptCommand] : [])];
+  const decline = [settings.declineCommand, ...(english.enabled ? [english.declineCommand] : [])];
+  const lower = (words: string[]) => words.map((word) => word.toLowerCase());
+  if (lower(accept).some((word) => lower(decline).includes(word))) return 'RULES_SAME_COMMAND';
   if (!settings.enabled) return undefined;
+  if (english.enabled && english.rules.length === 0) return 'RULES_INCOMPLETE';
   const incomplete =
     settings.rules.length === 0 ||
     (!settings.viaChat && !settings.viaChannel) ||

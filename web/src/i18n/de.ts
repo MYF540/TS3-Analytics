@@ -1007,6 +1007,11 @@ export const de = {
   'rules.newVersion': 'Neue Version: alle müssen erneut bestätigen',
   'rules.newVersionHint':
     'Nur nötig, wenn sich die Regeln inhaltlich geändert haben. Wirkt nach dem Speichern.',
+  'rules.english': 'Englische Fassung',
+  'rules.english.enabled':
+    'Spielern außerhalb des deutschsprachigen Raums die englische Fassung schicken',
+  'rules.english.hint':
+    'Deutsch bekommt, wer aus Deutschland, Österreich, der Schweiz oder Liechtenstein verbunden ist oder dessen Land unbekannt ist; alle anderen bekommen Englisch. Version, Channels, Servergruppe und Frist gelten für beide Fassungen. Die Wörter zum Bestätigen und Ablehnen werden in beiden Sprachen verstanden.',
   'rules.delivery': 'Zustellung',
   'rules.trigger': 'Regeln schicken',
   'rules.trigger.join': 'beim Verbinden mit dem Server',

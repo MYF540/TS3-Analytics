@@ -59,5 +59,6 @@ Die Einstellungen der alten Skripte werden nicht importiert, sondern neu eingetr
 - **Fristen** der Regelbestätigung werden ebenfalls mit der Abfrage geprüft, ein Kick kommt also bis zu eine Minute später.
 - **Chat-Spam und Anstupsen unter Spielern** sieht ein Query-Client nicht.
 - **Temporäre Privat-Channels** ziehen den Bot beim Anlegen kurz hinein; er geht danach in seinen Channel zurück.
+- Die **englische Fassung** der Regelbestätigung richtet sich nach dem Land, aus dem ein Spieler verbunden ist: Deutschland, Österreich, Schweiz und Liechtenstein bekommen Deutsch, alle anderen Englisch. Ist das Land unbekannt, gibt es Deutsch. Das Land meldet der TeamSpeak-Server beim Verbinden; mit GeoLite2-Datenbank wird es zusätzlich aus der IP bestimmt. Ein VPN verfälscht es entsprechend.
 - Die Staffliste führt **verknüpfte Accounts** (Spielerseite → „Accounts“) als eine Person: einmal, unter dem Haupt-Account, und online, sobald einer der Accounts verbunden ist. Zweitaccounts, die nicht verknüpft sind, erscheinen weiterhin einzeln.
 - Die Staffliste zeigt geänderte Einstellungen nach der nächsten Abfrage, neue Gruppenmitglieder, die offline sind, nach spätestens fünf Minuten.

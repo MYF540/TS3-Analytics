@@ -9,7 +9,7 @@ import { SessionTracker } from '../../watcher/tracker.js';
 import { AutomationHost } from '../host.js';
 import { listAutomationLog } from '../log.js';
 import { saveModuleSettings } from '../settings.js';
-import { getRuleState, RulesModule } from './rules.js';
+import { getRuleState, ruleLanguage, RulesModule } from './rules.js';
 
 const RULES = 40;
 const ACCEPT = 41;
@@ -241,6 +241,77 @@ describe('deciding by chat', () => {
     const alice = await join();
     await say(alice, 'akzeptieren');
     expect(server.groupCommands).toEqual([]);
+  });
+});
+
+describe('language by country', () => {
+  const english = { enabled: true, rules: ['Be kind.', 'No spam.'] };
+
+  it('sends German to the German-speaking countries and English to everybody else', async () => {
+    configure({ english });
+    const german = await join('Anna', { country: 'AT' });
+    const foreign = await join('John', { country: 'US' });
+    expect(messages(german)[0]).toBe('Seid freundlich.');
+    expect(messages(foreign)).toEqual([
+      'Be kind.',
+      'No spam.',
+      'Reply with "accept" to confirm the rules, or with "decline" to decline them.',
+    ]);
+  });
+
+  it('falls back to German when the country is unknown or English is switched off', async () => {
+    configure({ english });
+    const unknown = await join('Unbekannt', { country: undefined });
+    expect(messages(unknown)[0]).toBe('Seid freundlich.');
+    configure({ english: { ...english, enabled: false } });
+    const foreign = await join('John', { country: 'US' });
+    expect(messages(foreign)[0]).toBe('Seid freundlich.');
+  });
+
+  it('answers in the language of the player and accepts the word of either language', async () => {
+    configure({ english });
+    const foreign = await join('John', { country: 'GB' });
+    await say(foreign, 'ACCEPT');
+    expect(state(foreign)).toMatchObject({ decision: 'accepted' });
+    expect(messages(foreign).at(-1)).toBe('Thank you, you have confirmed the rules.');
+
+    const german = await join('Anna', { country: 'DE' });
+    await say(german, 'accept');
+    expect(state(german)).toMatchObject({ decision: 'accepted' });
+    expect(messages(german).at(-1)).toBe('Danke, du hast die Regeln bestätigt.');
+
+    const other = await join('Mary', { country: 'FR' });
+    await say(other, 'ablehnen');
+    expect(messages(other).at(-1)).toBe('You have declined the rules.');
+  });
+
+  it('does not understand English words while English is off', async () => {
+    configure();
+    const alice = await join();
+    await say(alice, 'accept');
+    expect(state(alice)).toBeUndefined();
+  });
+
+  it('kicks with the reason in the language of the player', async () => {
+    configure({ english, kickOnDecline: true });
+    const foreign = await join('John', { country: 'US' });
+    await say(foreign, 'decline');
+    expect(server.moderation.at(-1)).toMatchObject({
+      command: 'kick.server',
+      text: 'Rules not confirmed',
+    });
+  });
+
+  it('decides the language from the country code alone', () => {
+    for (const country of ['DE', 'AT', 'CH', 'LI', 'de']) {
+      expect(ruleLanguage(country, true)).toBe('de');
+    }
+    for (const country of ['US', 'GB', 'FR', 'PL', 'NL']) {
+      expect(ruleLanguage(country, true)).toBe('en');
+    }
+    expect(ruleLanguage(null, true)).toBe('de');
+    expect(ruleLanguage('', true)).toBe('de');
+    expect(ruleLanguage('US', false)).toBe('de');
   });
 });
 

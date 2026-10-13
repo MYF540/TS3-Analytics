@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import type { RulesSettings } from '../api/types';
@@ -26,6 +26,16 @@ const stored: RulesSettings = {
     kickOnDecline: false,
     deadlineS: 0,
     kickReason: 'Regeln nicht bestätigt',
+    english: {
+      enabled: false,
+      rules: [],
+      acceptCommand: 'accept',
+      declineCommand: 'decline',
+      prompt: 'Reply with {accept} or {decline}.',
+      acceptedMessage: 'Thank you.',
+      declinedMessage: 'Declined.',
+      kickReason: 'Rules not confirmed',
+    },
   },
   groups: [{ id: 20, name: 'Mitglied' }],
   channels: [
@@ -122,6 +132,36 @@ describe('RulesPage', () => {
     await userEvent.click(screen.getByLabelText('Per Antwort an den Bot'));
     await userEvent.clear(screen.getByLabelText('Wort zum Ablehnen'));
     await userEvent.type(screen.getByLabelText('Wort zum Ablehnen'), 'AKZEPTIEREN');
+    expect(save()).toBeDisabled();
+  });
+
+  it('saves an English version for players from elsewhere', async () => {
+    const { saved } = setup();
+    await userEvent.click(await screen.findByLabelText(/englische Fassung schicken/));
+    const box = within(screen.getByRole('group', { name: 'Englische Fassung' }));
+    await userEvent.type(box.getByLabelText('Regeltext'), 'Be kind.\n\nNo spam.');
+    await userEvent.clear(box.getByLabelText('Wort zum Bestätigen'));
+    await userEvent.type(box.getByLabelText('Wort zum Bestätigen'), 'yes');
+    await userEvent.click(save());
+    await screen.findByText('Gespeichert.');
+    expect(saved()?.english).toEqual({
+      ...stored.settings.english,
+      enabled: true,
+      rules: ['Be kind.', 'No spam.'],
+      acceptCommand: 'yes',
+    });
+  });
+
+  it('wants English rules and unambiguous words once English is on', async () => {
+    setup();
+    await userEvent.click(await screen.findByLabelText('Modul einschalten'));
+    await userEvent.click(screen.getByLabelText(/englische Fassung schicken/));
+    expect(save()).toBeDisabled();
+    const box = within(screen.getByRole('group', { name: 'Englische Fassung' }));
+    await userEvent.type(box.getByLabelText('Regeltext'), 'Be kind.');
+    expect(save()).toBeEnabled();
+    await userEvent.clear(box.getByLabelText('Wort zum Ablehnen'));
+    await userEvent.type(box.getByLabelText('Wort zum Ablehnen'), 'Akzeptieren');
     expect(save()).toBeDisabled();
   });
 

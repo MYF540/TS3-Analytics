@@ -11,6 +11,48 @@ const text = z.string().trim().min(1).max(MESSAGE_MAX);
 const command = z.string().trim().min(1).max(40);
 const channel = z.number().int().positive().nullable().default(null);
 
+/** Countries whose players get the German texts; everybody else gets the English ones. */
+export const GERMAN_SPEAKING = ['DE', 'AT', 'CH', 'LI'] as const;
+
+export type RuleLanguage = 'de' | 'en';
+
+/**
+ * Language of the rule texts for a player. German is the server's own language, so it is also
+ * what a player with an unknown country gets.
+ */
+export function ruleLanguage(
+  country: string | null | undefined,
+  englishEnabled: boolean,
+): RuleLanguage {
+  if (!englishEnabled || !country) return 'de';
+  return (GERMAN_SPEAKING as readonly string[]).includes(country.toUpperCase()) ? 'de' : 'en';
+}
+
+const englishDefaults = {
+  enabled: false,
+  rules: [] as string[],
+  acceptCommand: 'accept',
+  declineCommand: 'decline',
+  prompt: 'Reply with "{accept}" to confirm the rules, or with "{decline}" to decline them.',
+  acceptedMessage: 'Thank you, you have confirmed the rules.',
+  declinedMessage: 'You have declined the rules.',
+  kickReason: 'Rules not confirmed',
+};
+
+/** The English counterpart of the texts, for players from outside the German-speaking countries. */
+const englishTexts = z
+  .object({
+    enabled: z.boolean().default(englishDefaults.enabled),
+    rules: z.array(text).max(30).default(englishDefaults.rules),
+    acceptCommand: command.default(englishDefaults.acceptCommand),
+    declineCommand: command.default(englishDefaults.declineCommand),
+    prompt: text.default(englishDefaults.prompt),
+    acceptedMessage: text.default(englishDefaults.acceptedMessage),
+    declinedMessage: text.default(englishDefaults.declinedMessage),
+    kickReason: z.string().trim().min(1).max(KICK_REASON_MAX).default(englishDefaults.kickReason),
+  })
+  .default(englishDefaults);
+
 export const rulesSettingsSchema = moduleBase.extend({
   /** Raised when the rules changed in a way everybody has to confirm again. */
   version: z.number().int().min(1).max(100_000).default(1),
@@ -41,9 +83,26 @@ export const rulesSettingsSchema = moduleBase.extend({
   /** Seconds to decide before a kick; 0 = no deadline. Checked with every poll. */
   deadlineS: z.number().int().min(0).max(86_400).default(0),
   kickReason: z.string().trim().min(1).max(KICK_REASON_MAX).default('Regeln nicht bestätigt'),
+  /** English texts; the version, the channels, the group and the deadline are shared. */
+  english: englishTexts,
 });
 
 export type RulesSettings = z.infer<typeof rulesSettingsSchema>;
+
+/** The texts a player sees, in one language. */
+export interface RuleTexts {
+  rules: readonly string[];
+  acceptCommand: string;
+  declineCommand: string;
+  prompt: string;
+  acceptedMessage: string;
+  declinedMessage: string;
+  kickReason: string;
+}
+
+export function ruleTexts(settings: RulesSettings, language: RuleLanguage): RuleTexts {
+  return language === 'en' ? settings.english : settings;
+}
 
 export function loadRulesSettings(db: DbExecutor): RulesSettings {
   return loadModuleSettings(db, 'rules', rulesSettingsSchema);
@@ -105,6 +164,14 @@ export class RulesModule implements BotModule {
     });
   }
 
+  /** German or English, by the country the player connects from (or was last seen in). */
+  private texts(settings: RulesSettings, client: BotClient): RuleTexts {
+    const row = this.deps.database.sqlite
+      .prepare('SELECT country FROM users WHERE id = ?')
+      .get(client.userId) as { country: string | null } | undefined;
+    return ruleTexts(settings, ruleLanguage(row?.country, settings.english.enabled));
+  }
+
   private applies(settings: RulesSettings, client: BotClient): boolean {
     return (
       settings.enabled && settings.rules.length > 0 && !isExempt(settings, client.serverGroups)
@@ -150,9 +217,14 @@ export class RulesModule implements BotModule {
     const settings = loadRulesSettings(this.deps.database.db);
     if (!this.applies(settings, client) || !settings.viaChat || settings.dryRun) return;
     const said = message.trim().toLowerCase();
-    if (said === settings.acceptCommand.toLowerCase()) {
+    // Either language's word counts, whatever language the rules were sent in.
+    const words = (pick: (texts: RuleTexts) => string) =>
+      [settings, ...(settings.english.enabled ? [settings.english] : [])].map((texts) =>
+        pick(texts).toLowerCase(),
+      );
+    if (words((texts) => texts.acceptCommand).includes(said)) {
       await this.decide(settings, client, 'accepted', at);
-    } else if (said === settings.declineCommand.toLowerCase()) {
+    } else if (words((texts) => texts.declineCommand).includes(said)) {
       await this.decide(settings, client, 'declined', at);
     }
   }
@@ -170,7 +242,11 @@ export class RulesModule implements BotModule {
     for (const [clid, { client, at }] of this.asked) {
       if (now - at < settings.deadlineS) continue;
       this.asked.delete(clid);
-      await this.actions(settings).kick(client, settings.kickReason, 'Frist abgelaufen');
+      await this.actions(settings).kick(
+        client,
+        this.texts(settings, client).kickReason,
+        'Frist abgelaufen',
+      );
     }
   }
 
@@ -181,13 +257,14 @@ export class RulesModule implements BotModule {
       actions.note('rules.send', client, `Version ${String(settings.version)}`);
       return;
     }
-    for (const [index, rule] of settings.rules.entries()) {
+    const texts = this.texts(settings, client);
+    for (const [index, rule] of texts.rules.entries()) {
       await actions.message(client, rule, `Regel ${String(index + 1)}`);
     }
     if (settings.viaChat) {
-      const prompt = settings.prompt
-        .replaceAll('{accept}', settings.acceptCommand)
-        .replaceAll('{decline}', settings.declineCommand);
+      const prompt = texts.prompt
+        .replaceAll('{accept}', texts.acceptCommand)
+        .replaceAll('{decline}', texts.declineCommand);
       await actions.message(client, prompt, 'Aufforderung');
     }
     this.asked.set(client.clid, { client, at });
@@ -212,7 +289,7 @@ export class RulesModule implements BotModule {
     if (!same) actions.note(`rules.${decision}`, client, `Version ${String(settings.version)}`);
 
     if (decision === 'accepted') {
-      await actions.message(client, settings.acceptedMessage);
+      await actions.message(client, this.texts(settings, client).acceptedMessage);
       await this.ensureGroup(settings, client);
       return;
     }
@@ -220,8 +297,9 @@ export class RulesModule implements BotModule {
     if (group !== null && client.serverGroups.includes(group)) {
       await actions.removeGroup(client, group);
     }
-    await actions.message(client, settings.declinedMessage);
-    if (settings.kickOnDecline) await actions.kick(client, settings.kickReason, 'abgelehnt');
+    const texts = this.texts(settings, client);
+    await actions.message(client, texts.declinedMessage);
+    if (settings.kickOnDecline) await actions.kick(client, texts.kickReason, 'abgelehnt');
   }
 
   /** Gives the group to someone who confirmed but does not have it (yet, or any more). */

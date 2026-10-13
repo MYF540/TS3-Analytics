@@ -517,6 +517,10 @@ Entscheidung (13.10.2026): Hinweis im Webinterface **und** Knopf für Admins; in
   - Zweitaccounts von Teammitgliedern standen einzeln in der Liste
   - Notiz: `StaffModule` fasst Accounts, die als Person verknüpft sind (T5.3), zu einem Eintrag unter dem Haupt-Account zusammen – auch über mehrere Gruppen hinweg und auch dann, wenn nur der Zweitaccount in der Gruppe ist. Status: online, sobald einer der Accounts verbunden ist. Name: aktueller Nickname des Haupt-Accounts, sonst sein zuletzt gespeicherter, sonst der Name aus der Gruppenliste des Servers. Der anklickbare Link zeigt auf den Haupt-Account. Nicht verknüpfte Zweitaccounts bleiben einzeln – verknüpft wird auf der Spielerseite.
 
+- [x] **Regelbestätigung: englische Fassung nach Land** (13.10.2026, Wunsch des Betreibers)
+  - DACH bekommt Deutsch, der Rest Englisch
+  - Notiz: Neuer Abschnitt `english` in den Einstellungen der Regelbestätigung (Regeltext, beide Wörter, Aufforderung, Texte nach der Entscheidung, Kick-Grund), abschaltbar, ab Werk aus – bestehende Einstellungen ändern ihr Verhalten nicht. Die Sprache bestimmt `ruleLanguage`: `DE`, `AT`, `CH`, `LI` → Deutsch, sonst Englisch; unbekanntes Land → Deutsch. Quelle ist `users.country` (vom TeamSpeak-Server beim Verbinden gemeldet, mit GeoLite2 zusätzlich aus der IP). Version, Channels, Servergruppe und Frist sind gemeinsam; die Wörter zum Bestätigen und Ablehnen werden in beiden Sprachen verstanden, egal in welcher Sprache die Regeln kamen. Ein Wort darf nicht in einer Sprache bestätigen und in der anderen ablehnen (API und Seite prüfen das). Die Bestätigung per Channel ist sprachneutral. Offen: Die Texte der übrigen Module (Support, Privat-Channel, Spam, Nickname, Anti-Proxy) sind weiterhin einsprachig.
+
 ---
 
 ---

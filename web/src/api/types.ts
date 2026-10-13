@@ -192,6 +192,16 @@ export interface RulesSettings {
     kickOnDecline: boolean;
     deadlineS: number;
     kickReason: string;
+    english: {
+      enabled: boolean;
+      rules: string[];
+      acceptCommand: string;
+      declineCommand: string;
+      prompt: string;
+      acceptedMessage: string;
+      declinedMessage: string;
+      kickReason: string;
+    };
   };
   groups: { id: number; name: string }[];
   channels: { id: number; name: string }[];

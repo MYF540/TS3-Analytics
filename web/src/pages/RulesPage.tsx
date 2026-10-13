@@ -13,21 +13,33 @@ type TextKey =
 type ChannelKey = 'ruleChannelId' | 'acceptChannelId' | 'returnChannelId';
 
 /** The rules are edited as one text, a blank line between two messages. */
-interface Draft extends Omit<Settings, 'rules' | 'deadlineS'> {
+interface Draft extends Omit<Settings, 'rules' | 'deadlineS' | 'english'> {
   rules: string;
   deadlineMinutes: string;
+  english: Omit<Settings['english'], 'rules'> & { rules: string };
 }
+
+type EnglishKey = TextKey | 'kickReason';
+const ENGLISH_TEXTS: readonly { key: EnglishKey; label: MessageKey; max: number }[] = [
+  { key: 'acceptCommand', label: 'rules.acceptCommand', max: 40 },
+  { key: 'declineCommand', label: 'rules.declineCommand', max: 40 },
+  { key: 'prompt', label: 'rules.prompt', max: 1024 },
+  { key: 'acceptedMessage', label: 'rules.acceptedMessage', max: 1024 },
+  { key: 'declinedMessage', label: 'rules.declinedMessage', max: 1024 },
+  { key: 'kickReason', label: 'rules.kickReason', max: 40 },
+];
 
 const RULE_MAX = 1024;
 const RULES_MAX = 30;
 const DEADLINE_MAX_MINUTES = 1440;
 
 function toDraft(settings: Settings): Draft {
-  const { deadlineS, rules, ...rest } = settings;
+  const { deadlineS, rules, english, ...rest } = settings;
   return {
     ...rest,
     rules: rules.join('\n\n'),
     deadlineMinutes: String(Math.round(deadlineS / 60)),
+    english: { ...english, rules: english.rules.join('\n\n') },
   };
 }
 
@@ -48,9 +60,19 @@ function toSettings(draft: Draft): Settings | undefined {
     'acceptedMessage',
     'declinedMessage',
   ];
+  const english = draft.english;
+  const englishRules = splitRules(english.rules);
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  // A word that confirms in one language must not decline in the other.
+  const clash =
+    english.enabled &&
+    (same(english.acceptCommand, english.declineCommand) ||
+      same(english.acceptCommand, draft.declineCommand) ||
+      same(english.declineCommand, draft.acceptCommand));
   const incomplete =
     draft.enabled &&
-    (rules.length === 0 ||
+    ((english.enabled && englishRules.length === 0) ||
+      rules.length === 0 ||
       (!draft.viaChat && !draft.viaChannel) ||
       (draft.viaChannel && draft.acceptChannelId === null) ||
       (draft.trigger === 'channel' && draft.ruleChannelId === null));
@@ -60,6 +82,10 @@ function toSettings(draft: Draft): Settings | undefined {
     minutes > DEADLINE_MAX_MINUTES ||
     rules.length > RULES_MAX ||
     rules.some((rule) => rule.length > RULE_MAX) ||
+    englishRules.length > RULES_MAX ||
+    englishRules.some((rule) => rule.length > RULE_MAX) ||
+    ENGLISH_TEXTS.some(({ key }) => english[key].trim() === '') ||
+    clash ||
     texts.some((key) => draft[key].trim() === '') ||
     draft.kickReason.trim() === '' ||
     draft.acceptCommand.trim().toLowerCase() === draft.declineCommand.trim().toLowerCase()
@@ -87,6 +113,16 @@ function toSettings(draft: Draft): Settings | undefined {
     kickOnDecline: draft.kickOnDecline,
     deadlineS: minutes * 60,
     kickReason: draft.kickReason.trim(),
+    english: {
+      enabled: english.enabled,
+      rules: englishRules,
+      acceptCommand: english.acceptCommand.trim(),
+      declineCommand: english.declineCommand.trim(),
+      prompt: english.prompt.trim(),
+      acceptedMessage: english.acceptedMessage.trim(),
+      declinedMessage: english.declinedMessage.trim(),
+      kickReason: english.kickReason.trim(),
+    },
   };
 }
 
@@ -265,6 +301,52 @@ function Form({ data }: { data: RulesSettings }) {
         )}
         {draft.enabled && !draft.viaChat && !draft.viaChannel && (
           <p className="alert">{t('rules.noWay')}</p>
+        )}
+      </fieldset>
+
+      <fieldset className="settings-form__channels" aria-label={t('rules.english')}>
+        <legend>{t('rules.english')}</legend>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={draft.english.enabled}
+            onChange={(event) => {
+              change({ english: { ...draft.english, enabled: event.target.checked } });
+            }}
+          />
+          {t('rules.english.enabled')}
+        </label>
+        <p className="muted small">{t('rules.english.hint')}</p>
+        {draft.english.enabled && (
+          <>
+            <label className="field">
+              <span>{t('rules.rules')}</span>
+              <textarea
+                rows={10}
+                lang="en"
+                value={draft.english.rules}
+                aria-invalid={splitRules(draft.english.rules).length === 0}
+                onChange={(event) => {
+                  change({ english: { ...draft.english, rules: event.target.value } });
+                }}
+              />
+            </label>
+            {ENGLISH_TEXTS.map(({ key, label, max }) => (
+              <label className="field" key={key}>
+                <span>{t(label)}</span>
+                <input
+                  type="text"
+                  lang="en"
+                  maxLength={max}
+                  value={draft.english[key]}
+                  aria-invalid={draft.english[key].trim() === ''}
+                  onChange={(event) => {
+                    change({ english: { ...draft.english, [key]: event.target.value } });
+                  }}
+                />
+              </label>
+            ))}
+          </>
         )}
       </fieldset>
 
