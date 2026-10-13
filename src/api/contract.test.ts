@@ -47,6 +47,7 @@ import type { staffSettingsResponse } from './routes/automation-staff.js';
 import type { supportSettingsResponse } from './routes/automation-support.js';
 import type { automationLogEntry, automationOverviewResponse } from './routes/automation.js';
 import type { networkGraphResponse, networkSettingsResponse } from './routes/network.js';
+import type { updateResponse } from './routes/update.js';
 import type { channelUsageResponse, unusedChannelsResponse } from './routes/channels.js';
 import type {
   heatmapResponse,
@@ -91,6 +92,7 @@ export type Contract = [
   Assert<Equals<z.output<typeof rulesSettingsResponse>, Web.RulesSettings>>,
   Assert<Equals<z.output<typeof playerRulesResponse>, Web.PlayerRules>>,
   Assert<Equals<z.output<typeof spamSettingsResponse>, Web.SpamSettings>>,
+  Assert<Equals<z.output<typeof updateResponse>, Web.UpdateInfo>>,
   Assert<Equals<z.output<typeof proxySettingsResponse>, Web.ProxySettings>>,
   Assert<Equals<z.output<typeof proxyClearResponse>, Web.ProxyClear>>,
   Assert<Equals<z.output<typeof playerProxyResponse>, Web.PlayerProxy>>,

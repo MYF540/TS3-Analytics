@@ -250,6 +250,14 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/users/1': sampleUser,
     '/api/users/1/heatmap': { range: '1y', values: sampleHeatmap.values },
     '/api/users/1/notes': { notes: sampleNotes },
+    '/api/update': {
+      enabled: false,
+      currentVersion: 'unbekannt',
+      latest: null,
+      updateAvailable: false,
+      installBlocker: null,
+      lastRun: null,
+    },
     '/api/users/1/rules': { enabled: false, currentVersion: 1, state: null },
     '/api/users/1/proxy': { enabled: false, verdict: null, checkedAt: null },
     '/api/tags': {

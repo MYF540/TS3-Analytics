@@ -40,6 +40,7 @@ describe('parseConfig', () => {
       backup: { dir: './data/backups', keep: 14 },
       paths: { geoipDb: './data/GeoLite2-Country.mmdb' },
       proxy: { apiKey: undefined },
+      update: { check: true, repo: 'MYF540/TS3-Analytics', serviceName: 'ts3-analytics' },
       database: { path: './data/ts3-analytics.sqlite', cacheSizeMb: 64, mmapSizeMb: 256 },
       retention: { ipDays: 90, segmentMonths: 0 },
       watcher: {

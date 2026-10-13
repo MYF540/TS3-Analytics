@@ -59,7 +59,8 @@ export const statusResponse = z.object({
   ),
 });
 
-function readVersion(): string {
+/** Version of the running application, from package.json. */
+export function readVersion(): string {
   try {
     // src/api/routes and dist/api/routes are both three levels below the package root.
     const pkg = JSON.parse(

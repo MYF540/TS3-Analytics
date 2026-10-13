@@ -495,6 +495,16 @@ Grundsätze für alle Module:
   - README, Betriebsdoku (Rechte des Query-Accounts je Modul, Umstieg vom SinusBot), Screenshots aus der synthetischen Datenbank
   - Notiz: Neue Datei `docs/automatik.md` (Grundsätze, Module, Rechte je Modul, Umstieg vom SinusBot, Grenzen); README um Abschnitt, Funktionsliste und Screenshot ergänzt, `docs/betrieb.md` um Verweis und `PROXYCHECK_API_KEY`, `docs/datenschutz.md` schon in T10.10. Die **Sichtprüfung** aller neun Seiten ist nachgeholt (hell, Übersicht auch dunkel) – gegen eine kleine synthetische Datenbank mit erfundenen Einstellungen, ohne TeamSpeak-Verbindung. Dabei behoben: abgeschnittene Auswahlfelder, zu hohe Knöpfe neben Eingabefeldern, Ausrichtung der Gruppennamen in der Staffliste, rechtsbündige Modul-Tabelle. Zwei Screenshots liegen unter `docs/screenshots/`. Die Rechte-Namen in `docs/automatik.md` stammen aus der TeamSpeak-Rechteliste und sind **nicht am echten Server geprüft**. Nicht optisch geprüft: schmale Bildschirme.
 
+## Phase 11 – Updater
+
+Entscheidung (13.10.2026): Hinweis im Webinterface **und** Knopf für Admins; installiert werden ausschließlich veröffentlichte GitHub-Releases, nie von selbst.
+
+- [x] **T11.1 Updater** · `Backend` `Frontend` `Ops` · braucht: T7.1
+  - `setup.ps1 update` holt das neueste Release (oder `-Version`), statt `git pull` auf `main`
+  - Täglicher Blick auf die Releases, Anzeige auf der Seite „Bot-Status“
+  - „Update installieren“ für Admins: Der Dienst übergibt an das Setup-Skript
+  - Notiz: `src/update/updater.ts` (Abfrage von `releases/latest`, Vergleich über `src/domain/version.ts`, Start des Skripts), API `GET /api/update`, `POST /api/update/check`, `POST /api/update/install` (nur Admin, Audit `update.install`), Karte „Version und Updates“ auf der Seite „Bot-Status“, Job `update-check` (täglich), Konfiguration `UPDATE_CHECK`, `UPDATE_REPO`, `SERVICE_NAME`. **Nur Releases:** Entwürfe, Vorabversionen und alles, was nicht `vX.Y.Z` heißt, werden verworfen; die Install-Route nimmt keine Version entgegen, sondern installiert nur das Release der letzten Prüfung – so gelangt kein Text aus einer Anfrage auf eine Kommandozeile. Das Skript checkt das Release-Tag aus (losgelöster HEAD), bricht bei lokalen Änderungen vorher ab, schreibt `data/update-status.json` und stellt bei gescheitertem Build den vorherigen Stand wieder her. Der Dienst startet das Skript über WMI (`Win32_Process.Create`), damit es nicht in seinem Prozessbaum hängt – NSSM beendet beim Anhalten den ganzen Baum. **Praktisch geprüft:** Release-Abfrage und Tag-Auflösung des Skripts gegen das echte Repository, Statusdatei, und dass der über WMI gestartete Prozess `WmiPrvSE.exe` als Elternprozess hat und den Aufrufer überlebt. **Nicht geprüft:** ein vollständiges Update gegen einen echten Windows-Dienst (braucht Administratorrechte und NSSM) – das erste Update auf dem Produktivsystem bitte von Hand mit `setup.ps1 update` beobachten. Offen als Vorschlag: Hinweis in der Navigation und Discord-Meldung bei neuem Release.
+
 ---
 
 ---

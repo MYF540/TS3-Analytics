@@ -131,6 +131,9 @@ export const de = {
   'error.SPAM_INVALID_THRESHOLDS':
     'Bei mindestens einer Art steigen die Schwellen nicht an oder es ist keine Stufe eingeschaltet.',
   'error.PROXY_GROUP_MISSING': 'Für diese Aktion muss eine Servergruppe gewählt sein.',
+  'error.UPDATE_CHECK_FAILED': 'GitHub war nicht erreichbar oder hat kein Release geliefert.',
+  'error.UPDATE_NOT_AVAILABLE': 'Es gibt kein neueres Release.',
+  'error.UPDATE_UNSUPPORTED': 'Diese Installation kann sich nicht selbst aktualisieren.',
   'error.INVALID_PATTERN':
     'Mindestens ein Muster lässt sich nicht verwenden (leer, ungültig oder so verschachtelt, dass die Prüfung sehr lange dauern könnte).',
   'error.MODERATION_DISABLED': 'Moderationsaktionen sind in den Einstellungen ausgeschaltet.',
@@ -438,6 +441,7 @@ export const de = {
   'audit.action.automation.private': 'Privat-Channel geändert',
   'audit.action.automation.rules': 'Regelbestätigung geändert',
   'audit.action.automation.spam': 'Spam-Control geändert',
+  'audit.action.update.install': 'Update gestartet',
   'audit.action.automation.proxy': 'Anti-Proxy geändert',
   'audit.action.automation.proxy.clear': 'Proxy-Befund als Fehlalarm markiert',
   'audit.action.automation.channels.adopt': 'Channels an den Channel-Creator übergeben',
@@ -1098,6 +1102,32 @@ export const de = {
   'proxy.cleared': 'Als sauber markiert.',
   'player.proxy': 'Zuletzt über VPN oder Proxy verbunden (erkannt am {time}).',
   'automation.action.proxy.detected': 'VPN/Proxy erkannt',
+  'update.title': 'Version und Updates',
+  'update.current': 'Installiert: Version {version}',
+  'update.upToDate': 'aktuell',
+  'update.available': 'Version {version} verfügbar',
+  'update.checkedAt': 'Zuletzt bei GitHub nachgesehen: {time}',
+  'update.neverChecked': 'Es wurde noch nicht nach Updates gesucht.',
+  'update.notes': 'Was ist neu in {version}?',
+  'update.noNotes': 'Zu diesem Release gibt es keine Beschreibung.',
+  'update.releasePage': 'Release auf GitHub ansehen',
+  'update.check': 'Nach Updates suchen',
+  'update.install': 'Update auf {version} installieren',
+  'update.confirm':
+    'Update auf Version {version} starten? Der Dienst wird angehalten, gesichert, neu gebaut und wieder gestartet. In dieser Zeit wird nichts erfasst und das Webinterface ist nicht erreichbar.',
+  'update.running':
+    'Update auf {version} läuft. Der Dienst ist gleich für einige Minuten nicht erreichbar; diese Seite fragt von selbst wieder nach.',
+  'update.finished': 'Version {version} ist installiert.',
+  'update.failed': 'Das Update auf {version} am {time} ist fehlgeschlagen: {message}',
+  'update.noMessage': 'keine Angabe – Details in data\\logs\\update.log',
+  'update.hint':
+    'Installiert werden nur veröffentlichte Releases, nie ein Zwischenstand. Vor jedem Update wird die Datenbank gesichert; schlägt der Build fehl, stellt das Skript die vorherige Version wieder her. Protokoll: data\\logs\\update.log.',
+  'update.blocker.platform':
+    'Das Update lässt sich hier nur von Hand einspielen (kein Windows-Dienst).',
+  'update.blocker.no_git':
+    'Diese Installation ist kein Git-Verzeichnis; das Update muss von Hand eingespielt werden.',
+  'update.blocker.no_script':
+    'scripts\\setup.ps1 fehlt; das Update muss von Hand eingespielt werden.',
   'automation.module.nickname': 'Nickname-Checker',
   'automation.module.support': 'Support-Channel',
   'automation.module.staff': 'Staffliste',

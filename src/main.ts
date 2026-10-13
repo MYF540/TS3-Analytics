@@ -29,6 +29,8 @@ import { runNetworkJob } from './network/job.js';
 import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
+import { Updater } from './update/updater.js';
+import { readVersion } from './api/routes/status.js';
 import { RealTs3Transport } from './ts3/real-transport.js';
 import { ConnectionAlerts } from './alerts/connection.js';
 import { alertNewBans, alertNewFlags } from './alerts/dispatch.js';
@@ -158,8 +160,34 @@ async function main(): Promise<void> {
   rankJob.start();
   connection.start();
 
+  const updater = config.update.check
+    ? new Updater({
+        db: database.db,
+        logger,
+        currentVersion: readVersion(),
+        repo: config.update.repo,
+        // The service runs with the installation as its working directory (see docs/betrieb.md).
+        root: process.cwd(),
+        serviceName: config.update.serviceName,
+        now: () => Math.floor(Date.now() / 1000),
+      })
+    : undefined;
+
   const jobs = new JobRunner(
     [
+      ...(updater
+        ? [
+            {
+              // Only looks; installing is always started by an admin.
+              name: 'update-check',
+              intervalS: 86_400,
+              run: async () => {
+                const latest = await updater.check();
+                return { latest: latest.version };
+              },
+            },
+          ]
+        : []),
       {
         name: 'retention',
         intervalS: 86_400,
@@ -219,6 +247,7 @@ async function main(): Promise<void> {
       channels: () => connection.channelList(),
       channelGroups: () => connection.channelGroups(),
       proxyKeyConfigured: config.proxy.apiKey !== undefined,
+      updater,
       ranks: rankJob,
       bot: {
         connection: () => connection.status(),

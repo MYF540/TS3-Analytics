@@ -33,6 +33,7 @@ import { automationStaffRoutes } from './routes/automation-staff.js';
 import { automationSupportRoutes } from './routes/automation-support.js';
 import { automationRoutes } from './routes/automation.js';
 import { networkRoutes } from './routes/network.js';
+import { updateRoutes } from './routes/update.js';
 import { noteRoutes } from './routes/notes.js';
 import { personRoutes } from './routes/persons.js';
 import { playerRankRoutes } from './routes/player-rank.js';
@@ -150,6 +151,7 @@ export async function buildServer(
       await api.register(automationRulesRoutes(context));
       await api.register(automationSpamRoutes(context));
       await api.register(automationProxyRoutes(context));
+      await api.register(updateRoutes(context));
     },
     { prefix: '/api' },
   );

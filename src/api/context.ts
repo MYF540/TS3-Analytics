@@ -5,6 +5,7 @@ import type { ModerationCommands } from '../moderation/actions.js';
 import type { RankRunResult } from '../ranks/job.js';
 import type { ConnectionState, ConnectionStatus } from '../ts3/connection.js';
 import type { Ts3Channel, Ts3ChannelGroup } from '../ts3/types.js';
+import type { Updater } from '../update/updater.js';
 import type { LiveClient } from '../watcher/watcher.js';
 
 /** Everything route handlers may use. Kept small so tests can build it easily. */
@@ -25,6 +26,8 @@ export interface ApiContext {
   channelGroups?: (() => Promise<Ts3ChannelGroup[]>) | undefined;
   /** Whether an API key for the proxy check is configured (the key itself stays in config). */
   proxyKeyConfigured?: boolean | undefined;
+  /** Release check and update start; undefined when the bot is not running or it is off. */
+  updater?: Updater | undefined;
   /** Current time in UTC seconds. */
   now: () => number;
   /** Process start (UTC seconds), for the uptime. */

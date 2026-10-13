@@ -261,6 +261,26 @@ export interface PlayerProxy {
   checkedAt: number | null;
 }
 
+export interface UpdateInfo {
+  enabled: boolean;
+  currentVersion: string;
+  latest: {
+    version: string;
+    url: string;
+    publishedAt: number | null;
+    notes: string;
+    checkedAt: number;
+  } | null;
+  updateAvailable: boolean;
+  installBlocker: 'platform' | 'no_git' | 'no_script' | null;
+  lastRun: {
+    state: 'running' | 'done' | 'failed';
+    version: string;
+    at: number;
+    message: string;
+  } | null;
+}
+
 export interface NicknameTest {
   match: number | null;
 }

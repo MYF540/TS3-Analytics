@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client';
 import type { BotStatus } from '../api/types';
+import { UpdateCard } from '../components/UpdateCard';
 import { useApi } from '../hooks/useApi';
 import {
   formatAgo,
@@ -265,6 +266,7 @@ export function StatusPage() {
               />
             </section>
           </div>
+          <UpdateCard />
           <section className="card">
             <h2>{t('botstatus.jobs.title')}</h2>
             <Jobs jobs={data.jobs} now={now} />

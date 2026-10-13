@@ -24,12 +24,12 @@ Das Skript prüft Node und NSSM, installiert die Abhängigkeiten, legt `.env` au
 | Befehl                     | Was passiert                                                 |
 | -------------------------- | ------------------------------------------------------------ |
 | `setup.ps1 install`        | Abhängigkeiten, `.env`, Build, Dienst einrichten und starten |
-| `setup.ps1 update`         | Anhalten, sichern, neue Version holen, bauen, starten        |
+| `setup.ps1 update`         | Anhalten, sichern, neuestes Release holen, bauen, starten    |
 | `setup.ps1 start` / `stop` | Dienst starten bzw. anhalten                                 |
 | `setup.ps1 status`         | Dienst, `.env`, Datenbank und Health auf einen Blick         |
 | `setup.ps1 uninstall`      | Dienst entfernen; Daten und `.env` bleiben erhalten          |
 
-Optionen: `-ServiceName <name>` (Vorgabe `ts3-analytics`), `-Nssm <pfad>`, falls `nssm.exe` nicht im PATH liegt, `-Yes` ohne Rückfragen, `-SkipBackup` beim Update und `-PurgeData` beim Deinstallieren (löscht Datenbank, Logs und Sicherungen, fragt vorher zusätzlich nach).
+Optionen: `-ServiceName <name>` (Vorgabe `ts3-analytics`), `-Nssm <pfad>`, falls `nssm.exe` nicht im PATH liegt, `-Yes` ohne Rückfragen, `-SkipBackup` und `-Version <vX.Y.Z>` beim Update und `-PurgeData` beim Deinstallieren (löscht Datenbank, Logs und Sicherungen, fragt vorher zusätzlich nach).
 
 Von Hand wären es diese Schritte:
 
@@ -108,16 +108,40 @@ nssm start ts3-analytics
 
 ## Update
 
+Installiert werden ausschließlich **veröffentlichte Releases** des GitHub-Repositorys – nie ein Zwischenstand von `main`, keine Entwürfe und keine Vorabversionen.
+
+### Hinweis im Webinterface
+
+Der Dienst sieht einmal täglich bei GitHub nach (Job `update-check`). Auf der Seite „Bot-Status“ steht unter „Version und Updates“, welche Version läuft, ob es eine neuere gibt und was sich geändert hat; „Nach Updates suchen“ fragt sofort nach. Abschalten lässt sich das mit `UPDATE_CHECK=false` in `.env`, ein anderes Repository mit `UPDATE_REPO`.
+
+### Aus dem Webinterface
+
+Admins können das gefundene Release mit „Update auf … installieren“ einspielen. Der Dienst startet dafür das Setup-Skript als eigenen Prozess, der ihn anhält, sichert, baut und wieder startet; die Seite meldet, wenn die neue Version läuft. Voraussetzungen:
+
+- Die Installation ist ein Git-Verzeichnis (per `git clone` eingerichtet).
+- Der Dienst läuft unter einem Konto mit Administratorrechten (Vorgabe von NSSM: Lokales System) und findet `git`, `node` und `corepack`.
+- Heißt der Dienst nicht `ts3-analytics`, steht sein Name als `SERVICE_NAME` in `.env`.
+- Keine lokalen Änderungen an Dateien der Anwendung – sonst bricht das Skript ab, bevor es etwas anfasst.
+
+Der Ablauf steht in `data\logs\update.log`, das Ergebnis in `data\update-status.json` und auf der Seite. Jeder Start eines Updates steht im Protokoll der Anwendung.
+
+### Von Hand
+
 ```
 powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 update
 ```
 
-Das Skript hält den Dienst an, legt eine Sicherung an, holt die neue Version (`git pull --ff-only`), installiert, baut und startet wieder. Von Hand:
+Das Skript bestimmt das neueste Release (oder nimmt `-Version v1.1.0`), hält den Dienst an, legt eine Sicherung an, checkt das Release aus, installiert, baut und startet wieder. Ist die Version schon installiert, passiert nichts.
+
+**Wenn etwas schiefgeht:** Scheitern Installation oder Build, checkt das Skript den vorherigen Stand wieder aus, baut ihn und startet den Dienst – er bleibt also nicht aus. Die Datenbank wird dabei nicht zurückgedreht; das ist auch nicht nötig, weil Migrationen erst beim Start der neuen Version laufen. Startet die neue Version zwar, läuft aber nicht richtig, hilft die Sicherung von vor dem Update – siehe [backup.md](backup.md) – zusammen mit `setup.ps1 update -Version <alte Version>`.
+
+Ohne Skript:
 
 ```
 nssm stop ts3-analytics
-pnpm backup                       # Sicherung vor dem Update
-git pull                          # oder neue Dateien einspielen
+pnpm backup
+git fetch --tags
+git checkout v1.1.0               # das gewünschte Release
 pnpm install --frozen-lockfile
 pnpm build
 nssm start ts3-analytics
@@ -127,8 +151,6 @@ Migrationen laufen beim Start automatisch. Danach prüfen:
 
 - `curl http://127.0.0.1:8080/api/health` → `status` ist `ok` (oder `degraded`, solange die TeamSpeak-Verbindung noch fehlt)
 - Seite „Bot-Status“: Verbindung, letzter Heartbeat, Jobs, letzte Fehler
-
-Geht etwas schief, hilft die Sicherung von vorhin – siehe [backup.md](backup.md).
 
 ## GeoLite2 aktualisieren
 
@@ -144,12 +166,12 @@ Fehlt die Datei, läuft alles andere normal weiter; es werden dann nur keine Lä
 
 Diese Jobs laufen im Dienst selbst; ihr letzter Lauf steht auf der Seite „Bot-Status“.
 
-| Wann            | Was                                                                                         |
-| --------------- | ------------------------------------------------------------------------------------------- |
-| Alle 15 Minuten | Hinweis-Erkennung (`flag-detection`)                                                        |
-| Stündlich       | Abgelaufene Logins entfernen (`expired-sessions`)                                           |
-| Täglich         | Sicherung (`backup`), Aufbewahrung von IP-Daten (`retention`), Spieler-Netzwerk (`network`) |
-| Wöchentlich     | Datenbank-Wartung (`maintenance`: `optimize`, WAL verkleinern)                              |
+| Wann            | Was                                                                                                                                          |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Alle 15 Minuten | Hinweis-Erkennung (`flag-detection`)                                                                                                         |
+| Stündlich       | Abgelaufene Logins entfernen (`expired-sessions`)                                                                                            |
+| Täglich         | Sicherung (`backup`), Aufbewahrung von IP-Daten (`retention`), Spieler-Netzwerk (`network`), Suche nach einem neuen Release (`update-check`) |
+| Wöchentlich     | Datenbank-Wartung (`maintenance`: `optimize`, WAL verkleinern)                                                                               |
 
 Von Hand:
 

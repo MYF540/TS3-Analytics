@@ -53,6 +53,8 @@ Was der Bot von selbst erledigt, steht unter „Automatik“ – jedes Modul mit
   Benachrichtigung, Staffliste in einer Channel-Beschreibung, Channel-Creator, Privat-Channel,
   Regelbestätigung, Spam-Control und Anti-Proxy. Jedes Modul ist zunächst aus und startet im
   Testmodus. Details in [docs/automatik.md](docs/automatik.md).
+- **Updates**: Der Dienst zeigt auf der Seite „Bot-Status“, wenn es ein neues Release gibt, und
+  Admins können es von dort installieren. Eingespielt werden nur veröffentlichte Releases.
 - **Datenschutz**: Auskunft als JSON-Export und Anonymisierung pro Spieler.
 - **Import der Historie**: alte Serverlogs und die Datenbank des früheren Rangsystems.
 
@@ -95,7 +97,7 @@ Remotedesktop oder SSH-Tunnel. Sie gehört nicht ins offene Internet.
 | Befehl      | Was passiert                                                                            |
 | ----------- | --------------------------------------------------------------------------------------- |
 | `install`   | Abhängigkeiten, `.env` samt `HMAC_SECRET`, Build, Dienst einrichten und starten         |
-| `update`    | Dienst anhalten, sichern, `git pull --ff-only`, neu bauen, Dienst starten               |
+| `update`    | Dienst anhalten, sichern, neuestes Release auschecken, neu bauen, Dienst starten        |
 | `start`     | Dienst starten und auf `/api/health` warten                                             |
 | `stop`      | Dienst anhalten (offene Sitzungen werden sauber geschlossen)                            |
 | `uninstall` | Dienst entfernen; Datenbank, Logs, Sicherungen und `.env` bleiben liegen                |
@@ -104,6 +106,7 @@ Remotedesktop oder SSH-Tunnel. Sie gehört nicht ins offene Internet.
 | Option                | Wirkung                                                                                     |
 | --------------------- | ------------------------------------------------------------------------------------------- |
 | `-ServiceName <name>` | Name des Windows-Dienstes, Vorgabe `ts3-analytics`                                          |
+| `-Version <vX.Y.Z>`   | Nur bei `update`: genau dieses Release statt des neuesten                                   |
 | `-Nssm <pfad>`        | Pfad zu `nssm.exe`, falls sie nicht im PATH liegt                                           |
 | `-Yes`                | keine Rückfragen stellen                                                                    |
 | `-SkipBackup`         | nur bei `update`: keine Sicherung vor dem Update                                            |

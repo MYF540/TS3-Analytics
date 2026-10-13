@@ -23,6 +23,7 @@ import type {
   SpamSettings,
   StaffSettings,
   SupportSettings,
+  UpdateInfo,
   AuthResponse,
   BotStatus,
   ChannelRange,
@@ -225,6 +226,9 @@ export const api = {
     apiPost<ProxyClear>(`/automation/proxy/clear/${String(userId)}`),
   playerProxy: (userId: number, signal?: AbortSignal) =>
     apiGet<PlayerProxy>(`/users/${String(userId)}/proxy`, {}, signal),
+  update: (signal?: AbortSignal) => apiGet<UpdateInfo>('/update', {}, signal),
+  checkUpdate: () => apiPost<UpdateInfo>('/update/check'),
+  installUpdate: () => apiPost<UpdateInfo>('/update/install'),
   testNickname: (body: {
     nickname: string;
     patterns: NicknameSettings['settings']['patterns'];

@@ -47,6 +47,21 @@ const envSchema = z.object({
       .regex(/^[\w-]{6,64}$/)
       .optional(),
   ),
+  // Daily look at the GitHub releases; switch off for installations without internet access.
+  UPDATE_CHECK: optional(z.stringbool().default(true)),
+  UPDATE_REPO: optional(
+    z
+      .string()
+      .regex(/^[\w.-]+\/[\w.-]+$/)
+      .default('MYF540/TS3-Analytics'),
+  ),
+  // Name of the Windows service, for updates started from the web interface.
+  SERVICE_NAME: optional(
+    z
+      .string()
+      .regex(/^[\w-]{1,64}$/)
+      .default('ts3-analytics'),
+  ),
   SQLITE_PATH: optional(z.string().default('./data/ts3-analytics.sqlite')),
   BACKUP_DIR: optional(z.string().default('./data/backups')),
   BACKUP_KEEP: optional(z.coerce.number().int().min(1).max(365).default(14)),
@@ -83,6 +98,13 @@ export interface Config {
   readonly proxy: {
     /** API key of proxycheck.io; never logged, never returned by the API. */
     readonly apiKey: string | undefined;
+  };
+  readonly update: {
+    /** Look for new releases once a day. */
+    readonly check: boolean;
+    /** `owner/name` on GitHub. */
+    readonly repo: string;
+    readonly serviceName: string;
   };
   readonly web: {
     readonly host: string;
@@ -173,6 +195,11 @@ export function parseConfig(env: Readonly<Record<string, string | undefined>>): 
     backup: Object.freeze({ dir: e.BACKUP_DIR, keep: e.BACKUP_KEEP }),
     paths: Object.freeze({ geoipDb: e.GEOIP_DB_PATH }),
     proxy: Object.freeze({ apiKey: e.PROXYCHECK_API_KEY }),
+    update: Object.freeze({
+      check: e.UPDATE_CHECK,
+      repo: e.UPDATE_REPO,
+      serviceName: e.SERVICE_NAME,
+    }),
     database: Object.freeze({
       path: e.SQLITE_PATH,
       cacheSizeMb: e.SQLITE_CACHE_SIZE_MB,

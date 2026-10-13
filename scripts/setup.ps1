@@ -8,7 +8,7 @@
 
   Befehle:
     install    Abhängigkeiten installieren, bauen, Dienst einrichten
-    update     Dienst anhalten, sichern, neu bauen, Dienst starten
+    update     Dienst anhalten, sichern, neuestes Release holen, bauen, Dienst starten
     start      Dienst starten und Gesundheitsprüfung abwarten
     stop       Dienst anhalten (laufende Sitzungen werden sauber geschlossen)
     uninstall  Dienst entfernen; Daten bleiben erhalten
@@ -17,6 +17,7 @@
 .EXAMPLE
   .\scripts\setup.ps1 install
   .\scripts\setup.ps1 update
+  .\scripts\setup.ps1 update -Version v1.1.0
   .\scripts\setup.ps1 uninstall -PurgeData
 
 .NOTES
@@ -42,7 +43,15 @@ param(
     [switch]$PurgeData,
 
     # Nur bei update: keine Sicherung vor dem Update anlegen.
-    [switch]$SkipBackup
+    [switch]$SkipBackup,
+
+    # Nur bei update: genau dieses Release installieren (z. B. v1.1.0) statt des neuesten.
+    [ValidatePattern('^v?\d+\.\d+\.\d+$')]
+    [string]$Version,
+
+    # GitHub-Repository, dessen Releases installiert werden.
+    [ValidatePattern('^[\w.-]+/[\w.-]+$')]
+    [string]$Repo = 'MYF540/TS3-Analytics'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -53,6 +62,11 @@ $Root = Split-Path -Parent $PSScriptRoot
 $EnvFile = Join-Path $Root '.env'
 $EnvExample = Join-Path $Root '.env.example'
 $LogDir = Join-Path $Root 'data\logs'
+# Stand des letzten Updates; das Webinterface liest diese Datei.
+$UpdateStatusFile = Join-Path $Root 'data\update-status.json'
+# Waehrend eines Updates werden Fehler geworfen statt das Skript zu beenden, damit der
+# vorherige Stand wiederhergestellt werden kann.
+$script:ThrowOnError = $false
 $MinNodeMajor = 22
 
 function Write-Step([string]$Text) { Write-Host "==> $Text" -ForegroundColor Cyan }
@@ -61,6 +75,7 @@ function Write-Note([string]$Text) { Write-Host "    $Text" -ForegroundColor Gra
 function Write-Warn([string]$Text) { Write-Host "    $Text" -ForegroundColor Yellow }
 
 function Stop-WithError([string]$Text) {
+    if ($script:ThrowOnError) { throw $Text }
     Write-Host "FEHLER: $Text" -ForegroundColor Red
     exit 1
 }
@@ -359,43 +374,132 @@ function Invoke-Install {
     Write-Note "Weboberfläche danach unter http://127.0.0.1:$(Get-WebPort)/ (nur lokal erreichbar)."
 }
 
+# Git laeuft beim Update aus dem Webinterface unter dem Dienstkonto; ohne safe.directory
+# verweigert es die Arbeit in einem Verzeichnis, das einem anderen Konto gehoert.
+function Invoke-Git {
+    param([string[]]$Arguments, [switch]$IgnoreErrors)
+    Push-Location $Root
+    try {
+        $output = & git -c "safe.directory=*" @Arguments 2>&1
+        $text = ($output | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -and -not $IgnoreErrors) {
+            Stop-WithError "git $($Arguments -join ' ') schlug fehl: $text"
+        }
+        return $text
+    }
+    finally { Pop-Location }
+}
+
+# Das neueste veroeffentlichte Release (keine Entwuerfe, keine Vorabversionen).
+function Get-LatestReleaseTag {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    try {
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -UseBasicParsing -TimeoutSec 20 -Headers @{ 'User-Agent' = 'ts3-analytics-setup' }
+    }
+    catch {
+        Stop-WithError "Das neueste Release von $Repo liess sich nicht abfragen: $($_.Exception.Message)"
+    }
+    $tag = [string]$release.tag_name
+    if ($tag -notmatch '^v?\d+\.\d+\.\d+$') { Stop-WithError "Unerwarteter Release-Name: $tag" }
+    return $tag
+}
+
+function Write-UpdateStatus {
+    param([string]$State, [string]$Target, [string]$Message)
+    $status = [ordered]@{
+        state   = $State
+        version = $Target
+        at      = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+        message = $Message
+    }
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $UpdateStatusFile) | Out-Null
+    # Ohne BOM, damit der Dienst die Datei als JSON lesen kann.
+    [IO.File]::WriteAllText($UpdateStatusFile, ($status | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding($false)))
+}
+
+function Build-App {
+    Write-Step 'Abhängigkeiten installieren'
+    Invoke-Pnpm @('install', '--frozen-lockfile')
+    Write-Step 'Anwendung bauen'
+    Invoke-Pnpm @('build')
+}
+
 function Invoke-Update {
     Assert-Admin 'update'
     Get-NodePath | Out-Null
 
-    Write-Step 'Dienst anhalten'
-    Stop-AppService
-
-    if (-not $SkipBackup) {
-        Write-Step 'Sicherung anlegen'
-        Invoke-Pnpm @('backup')
-    }
-    else {
-        Write-Warn 'Sicherung übersprungen (-SkipBackup).'
+    if (-not (Test-Path (Join-Path $Root '.git'))) {
+        Stop-WithError 'Kein Git-Verzeichnis – ein Update auf ein Release ist so nicht möglich. Neue Dateien von Hand einspielen, dann: pnpm install --frozen-lockfile; pnpm build.'
     }
 
-    if (Test-Path (Join-Path $Root '.git')) {
-        Write-Step 'Neue Version holen'
-        Push-Location $Root
-        try {
-            & git pull --ff-only
-            if ($LASTEXITCODE -ne 0) { Stop-WithError 'git pull schlug fehl – bitte von Hand prüfen.' }
+    Write-Step 'Release bestimmen'
+    $target = if ($Version) { $Version } else { Get-LatestReleaseTag }
+    if ($target -notmatch '^v') { $target = "v$target" }
+    Invoke-Git @('fetch', '--tags', '--force', 'origin') | Out-Null
+    $targetCommit = Invoke-Git @('rev-parse', '--verify', '--quiet', "refs/tags/$target^{commit}") -IgnoreErrors
+    if (-not $targetCommit) { Stop-WithError "Das Release $target gibt es in diesem Repository nicht." }
+    $previousCommit = Invoke-Git @('rev-parse', 'HEAD')
+    if ($previousCommit -eq $targetCommit) {
+        Write-Ok "Version $target ist bereits installiert."
+        Write-UpdateStatus -State 'done' -Target $target -Message 'bereits aktuell'
+        return
+    }
+    $changes = Invoke-Git @('status', '--porcelain', '--untracked-files=no')
+    if ($changes) {
+        Stop-WithError "Es gibt lokale Änderungen an Dateien der Anwendung – bitte zuerst sichern oder verwerfen:`n$changes"
+    }
+    Write-Ok "Update auf $target"
+
+    Write-UpdateStatus -State 'running' -Target $target -Message ''
+    $script:ThrowOnError = $true
+    $switched = $false
+    try {
+        Write-Step 'Dienst anhalten'
+        Stop-AppService
+
+        if (-not $SkipBackup) {
+            Write-Step 'Sicherung anlegen'
+            Invoke-Pnpm @('backup')
         }
-        finally { Pop-Location }
+        else {
+            Write-Warn 'Sicherung übersprungen (-SkipBackup).'
+        }
+
+        Write-Step "Release $target auschecken"
+        Invoke-Git @('checkout', '--quiet', '--detach', $target) | Out-Null
+        $switched = $true
+        Build-App
+
+        Write-Step 'Dienst starten'
+        Start-AppService
+        Write-UpdateStatus -State 'done' -Target $target -Message ''
+        Write-Note 'Migrationen laufen beim Start automatisch. Danach die Seite Bot-Status prüfen.'
     }
-    else {
-        Write-Note 'Kein Git-Verzeichnis – neue Dateien müssen von Hand eingespielt werden.'
+    catch {
+        $reason = "$_"
+        Write-Host "FEHLER: $reason" -ForegroundColor Red
+        $note = $reason
+        try {
+            if ($switched) {
+                # Zurueck zum vorherigen Stand, damit der Dienst nicht aus bleibt. Die Datenbank
+                # wird dabei nicht zurueckgedreht: Migrationen laufen erst beim Start des Dienstes.
+                Write-Step 'Vorherigen Stand wiederherstellen'
+                Invoke-Git @('checkout', '--quiet', '--detach', $previousCommit) | Out-Null
+                Build-App
+                $note = "$reason – vorheriger Stand wiederhergestellt"
+            }
+            Write-Step 'Dienst starten'
+            Start-AppService
+        }
+        catch {
+            $note = "$reason – Wiederherstellung fehlgeschlagen: $_"
+            Write-Host "FEHLER: Wiederherstellung fehlgeschlagen: $_" -ForegroundColor Red
+        }
+        $script:ThrowOnError = $false
+        Write-UpdateStatus -State 'failed' -Target $target -Message $note
+        exit 1
     }
-
-    Write-Step 'Abhängigkeiten installieren'
-    Invoke-Pnpm @('install', '--frozen-lockfile')
-
-    Write-Step 'Anwendung bauen'
-    Invoke-Pnpm @('build')
-
-    Write-Step 'Dienst starten'
-    Start-AppService
-    Write-Note 'Migrationen laufen beim Start automatisch. Danach Seite „Bot-Status“ prüfen.'
+    $script:ThrowOnError = $false
 }
 
 function Invoke-Uninstall {
