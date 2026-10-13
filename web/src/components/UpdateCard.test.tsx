@@ -84,9 +84,9 @@ describe('UpdateCard', () => {
   });
 
   it('offers no button when the installation cannot update itself', async () => {
-    mockApi({ '/api/update': { ...newer, installBlocker: 'no_git' } });
+    mockApi({ '/api/update': { ...newer, installBlocker: 'no_script' } });
     render(<UpdateCard />);
-    expect(await screen.findByText(/kein Git-Verzeichnis/)).toBeInTheDocument();
+    expect(await screen.findByText(/setup\.ps1 fehlt/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /installieren/ })).not.toBeInTheDocument();
   });
 

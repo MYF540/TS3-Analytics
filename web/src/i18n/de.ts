@@ -1124,8 +1124,6 @@ export const de = {
     'Installiert werden nur veröffentlichte Releases, nie ein Zwischenstand. Vor jedem Update wird die Datenbank gesichert; schlägt der Build fehl, stellt das Skript die vorherige Version wieder her. Protokoll: data\\logs\\update.log.',
   'update.blocker.platform':
     'Das Update lässt sich hier nur von Hand einspielen (kein Windows-Dienst).',
-  'update.blocker.no_git':
-    'Diese Installation ist kein Git-Verzeichnis; das Update muss von Hand eingespielt werden.',
   'update.blocker.no_script':
     'scripts\\setup.ps1 fehlt; das Update muss von Hand eingespielt werden.',
   'automation.module.nickname': 'Nickname-Checker',

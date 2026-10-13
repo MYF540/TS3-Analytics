@@ -19,7 +19,7 @@ export const updateResponse = z.object({
     .nullable(),
   updateAvailable: z.boolean(),
   /** Why "update now" is not offered; null when it is. */
-  installBlocker: z.enum(['platform', 'no_git', 'no_script']).nullable(),
+  installBlocker: z.enum(['platform', 'no_script']).nullable(),
   /** The last run of the setup script, as far as it left a status. */
   lastRun: z
     .object({

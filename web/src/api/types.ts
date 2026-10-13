@@ -272,7 +272,7 @@ export interface UpdateInfo {
     checkedAt: number;
   } | null;
   updateAvailable: boolean;
-  installBlocker: 'platform' | 'no_git' | 'no_script' | null;
+  installBlocker: 'platform' | 'no_script' | null;
   lastRun: {
     state: 'running' | 'done' | 'failed';
     version: string;

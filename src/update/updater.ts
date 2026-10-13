@@ -78,7 +78,7 @@ export interface UpdaterOptions {
   currentVersion: string;
   /** `owner/name` of the GitHub repository whose releases are offered. */
   repo: string;
-  /** Root of the installation (contains `scripts/setup.ps1` and `.git`). */
+  /** Root of the installation (contains `scripts/setup.ps1`); a git checkout or plain files. */
   root: string;
   /** Name of the Windows service the setup script restarts. */
   serviceName: string;
@@ -117,9 +117,8 @@ export class Updater {
   }
 
   /** Why an update cannot be started from the web interface; undefined when it can. */
-  installBlocker(): 'platform' | 'no_git' | 'no_script' | undefined {
+  installBlocker(): 'platform' | 'no_script' | undefined {
     if ((this.options.platform ?? process.platform) !== 'win32') return 'platform';
-    if (!existsSync(join(this.options.root, '.git'))) return 'no_git';
     if (!existsSync(this.scriptPath)) return 'no_script';
     return undefined;
   }

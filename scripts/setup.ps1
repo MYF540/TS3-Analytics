@@ -424,29 +424,108 @@ function Build-App {
     Invoke-Pnpm @('build')
 }
 
+# --- Update ohne Git: Release als Archiv -----------------------------------
+
+# Verzeichnisse, die vollstaendig zur Anwendung gehoeren und beim Update ersetzt werden.
+# Alles andere im Installationsordner (data\, .env, node_modules, eigene Dateien) bleibt liegen.
+$ProgramDirs = @('src', 'web', 'drizzle', 'scripts', 'docs')
+# Was innerhalb dieser Verzeichnisse nie angefasst wird.
+$KeepDirs = @('node_modules', 'dist')
+
+function Get-InstalledVersion {
+    $package = Join-Path $Root 'package.json'
+    if (-not (Test-Path $package)) { return '' }
+    return [string](Get-Content $package -Raw -Encoding UTF8 | ConvertFrom-Json).version
+}
+
+# Spiegelt ein Verzeichnis; node_modules und dist bleiben aussen vor.
+function Copy-Mirror {
+    param([string]$From, [string]$To)
+    & robocopy $From $To /MIR /XD @KeepDirs /R:2 /W:2 /NFL /NDL /NJH /NJS /NP | Out-Null
+    # Robocopy meldet Erfolg mit Codes unter 8.
+    if ($LASTEXITCODE -ge 8) { Stop-WithError "Kopieren von $From nach $To schlug fehl (robocopy $LASTEXITCODE)." }
+    $global:LASTEXITCODE = 0
+}
+
+# Legt die Dateien eines Standes (Release oder Sicherung) ueber die Installation.
+function Copy-Program {
+    param([string]$From, [string]$To)
+    foreach ($dir in $ProgramDirs) {
+        $source = Join-Path $From $dir
+        if (Test-Path $source) { Copy-Mirror -From $source -To (Join-Path $To $dir) }
+    }
+    Get-ChildItem -Path $From -File -Force | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination (Join-Path $To $_.Name) -Force
+    }
+}
+
+# Laedt das Release und entpackt es; liefert den Ordner mit seinen Dateien.
+function Get-ReleaseArchive {
+    param([string]$Tag)
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $work = Join-Path ([IO.Path]::GetTempPath()) "ts3-analytics-$Tag-$PID"
+    if (Test-Path $work) { Remove-Item -Recurse -Force $work }
+    New-Item -ItemType Directory -Force -Path $work | Out-Null
+    $zip = Join-Path $work 'release.zip'
+    try {
+        # Ohne Fortschrittsanzeige: sie bremst den Download in Windows PowerShell um ein Vielfaches.
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri "https://github.com/$Repo/archive/refs/tags/$Tag.zip" -OutFile $zip -UseBasicParsing -TimeoutSec 300 -Headers @{ 'User-Agent' = 'ts3-analytics-setup' }
+    }
+    catch {
+        Stop-WithError "Das Release $Tag liess sich nicht herunterladen: $($_.Exception.Message)"
+    }
+    Expand-Archive -Path $zip -DestinationPath $work -Force
+    $inner = @(Get-ChildItem -Path $work -Directory)
+    if ($inner.Count -ne 1) { Stop-WithError 'Das heruntergeladene Archiv hat nicht den erwarteten Aufbau.' }
+    $content = $inner[0].FullName
+    $version = [string](Get-Content (Join-Path $content 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
+    if ("v$version" -ne $Tag -or -not (Test-Path (Join-Path $content 'scripts\setup.ps1'))) {
+        Stop-WithError "Das Archiv enthaelt nicht das Release $Tag (gefunden: $version)."
+    }
+    return $content
+}
+
+# --- Update ----------------------------------------------------------------
+
 function Invoke-Update {
     Assert-Admin 'update'
     Get-NodePath | Out-Null
-
-    if (-not (Test-Path (Join-Path $Root '.git'))) {
-        Stop-WithError 'Kein Git-Verzeichnis – ein Update auf ein Release ist so nicht möglich. Neue Dateien von Hand einspielen, dann: pnpm install --frozen-lockfile; pnpm build.'
-    }
+    $useGit = Test-Path (Join-Path $Root '.git')
 
     Write-Step 'Release bestimmen'
     $target = if ($Version) { $Version } else { Get-LatestReleaseTag }
     if ($target -notmatch '^v') { $target = "v$target" }
-    Invoke-Git @('fetch', '--tags', '--force', 'origin') | Out-Null
-    $targetCommit = Invoke-Git @('rev-parse', '--verify', '--quiet', "refs/tags/$target^{commit}") -IgnoreErrors
-    if (-not $targetCommit) { Stop-WithError "Das Release $target gibt es in diesem Repository nicht." }
-    $previousCommit = Invoke-Git @('rev-parse', 'HEAD')
-    if ($previousCommit -eq $targetCommit) {
+
+    $previousCommit = ''
+    $archive = ''
+    $rollback = Join-Path $Root 'data\update-rollback'
+    if ($useGit) {
+        Invoke-Git @('fetch', '--tags', '--force', 'origin') | Out-Null
+        $targetCommit = Invoke-Git @('rev-parse', '--verify', '--quiet', "refs/tags/$target^{commit}") -IgnoreErrors
+        if (-not $targetCommit) { Stop-WithError "Das Release $target gibt es in diesem Repository nicht." }
+        $previousCommit = Invoke-Git @('rev-parse', 'HEAD')
+        $current = $previousCommit -eq $targetCommit
+    }
+    else {
+        Write-Note 'Kein Git-Verzeichnis – das Release wird als Archiv von GitHub geladen.'
+        $current = "v$(Get-InstalledVersion)" -eq $target
+    }
+    if ($current) {
         Write-Ok "Version $target ist bereits installiert."
         Write-UpdateStatus -State 'done' -Target $target -Message 'bereits aktuell'
         return
     }
-    $changes = Invoke-Git @('status', '--porcelain', '--untracked-files=no')
-    if ($changes) {
-        Stop-WithError "Es gibt lokale Änderungen an Dateien der Anwendung – bitte zuerst sichern oder verwerfen:`n$changes"
+    if ($useGit) {
+        $changes = Invoke-Git @('status', '--porcelain', '--untracked-files=no')
+        if ($changes) {
+            Stop-WithError "Es gibt lokale Änderungen an Dateien der Anwendung – bitte zuerst sichern oder verwerfen:`n$changes"
+        }
+    }
+    else {
+        # Vor dem Anhalten des Dienstes laden: Scheitert der Download, ist nichts passiert.
+        Write-Step "Release $target herunterladen"
+        $archive = Get-ReleaseArchive -Tag $target
     }
     Write-Ok "Update auf $target"
 
@@ -465,9 +544,20 @@ function Invoke-Update {
             Write-Warn 'Sicherung übersprungen (-SkipBackup).'
         }
 
-        Write-Step "Release $target auschecken"
-        Invoke-Git @('checkout', '--quiet', '--detach', $target) | Out-Null
-        $switched = $true
+        if ($useGit) {
+            Write-Step "Release $target auschecken"
+            Invoke-Git @('checkout', '--quiet', '--detach', $target) | Out-Null
+            $switched = $true
+        }
+        else {
+            Write-Step 'Bisherigen Stand merken'
+            if (Test-Path $rollback) { Remove-Item -Recurse -Force $rollback }
+            New-Item -ItemType Directory -Force -Path $rollback | Out-Null
+            Copy-Program -From $Root -To $rollback
+            Write-Step "Dateien von $target einspielen"
+            $switched = $true
+            Copy-Program -From $archive -To $Root
+        }
         Build-App
 
         Write-Step 'Dienst starten'
@@ -484,7 +574,8 @@ function Invoke-Update {
                 # Zurueck zum vorherigen Stand, damit der Dienst nicht aus bleibt. Die Datenbank
                 # wird dabei nicht zurueckgedreht: Migrationen laufen erst beim Start des Dienstes.
                 Write-Step 'Vorherigen Stand wiederherstellen'
-                Invoke-Git @('checkout', '--quiet', '--detach', $previousCommit) | Out-Null
+                if ($useGit) { Invoke-Git @('checkout', '--quiet', '--detach', $previousCommit) | Out-Null }
+                else { Copy-Program -From $rollback -To $Root }
                 Build-App
                 $note = "$reason – vorheriger Stand wiederhergestellt"
             }
@@ -498,6 +589,9 @@ function Invoke-Update {
         $script:ThrowOnError = $false
         Write-UpdateStatus -State 'failed' -Target $target -Message $note
         exit 1
+    }
+    finally {
+        if ($archive) { Remove-Item -Recurse -Force (Split-Path -Parent $archive) -ErrorAction SilentlyContinue }
     }
     $script:ThrowOnError = $false
 }

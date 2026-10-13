@@ -46,7 +46,6 @@ async function start(withUpdater = true): Promise<void> {
 beforeEach(() => {
   database = createTestDatabase();
   root = mkdtempSync(join(tmpdir(), 'ts3-update-api-'));
-  mkdirSync(join(root, '.git'));
   mkdirSync(join(root, 'scripts'));
   writeFileSync(join(root, 'scripts', 'setup.ps1'), '');
   tag = 'v1.2.0';

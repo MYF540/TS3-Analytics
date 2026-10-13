@@ -48,9 +48,8 @@ function updater(options: Partial<UpdaterOptions> & { answer?: unknown; status?:
   return { instance, request };
 }
 
-/** Makes `root` look like an installation that can update itself. */
+/** Makes `root` look like an installation that can update itself – no git checkout needed. */
 function installable(): void {
-  mkdirSync(join(root, '.git'));
   mkdirSync(join(root, 'scripts'));
   writeFileSync(join(root, 'scripts', 'setup.ps1'), '');
 }
@@ -145,8 +144,6 @@ describe('installing', () => {
 
   it('says why an installation cannot update itself', async () => {
     expect(updater({ platform: 'linux' }).instance.installBlocker()).toBe('platform');
-    expect(updater().instance.installBlocker()).toBe('no_git');
-    mkdirSync(join(root, '.git'));
     expect(updater().instance.installBlocker()).toBe('no_script');
     const { instance } = updater();
     await instance.check();

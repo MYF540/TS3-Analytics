@@ -118,10 +118,9 @@ Der Dienst sieht einmal täglich bei GitHub nach (Job `update-check`). Auf der S
 
 Admins können das gefundene Release mit „Update auf … installieren“ einspielen. Der Dienst startet dafür das Setup-Skript als eigenen Prozess, der ihn anhält, sichert, baut und wieder startet; die Seite meldet, wenn die neue Version läuft. Voraussetzungen:
 
-- Die Installation ist ein Git-Verzeichnis (per `git clone` eingerichtet).
 - Der Dienst läuft unter einem Konto mit Administratorrechten (Vorgabe von NSSM: Lokales System) und findet `git`, `node` und `corepack`.
 - Heißt der Dienst nicht `ts3-analytics`, steht sein Name als `SERVICE_NAME` in `.env`.
-- Keine lokalen Änderungen an Dateien der Anwendung – sonst bricht das Skript ab, bevor es etwas anfasst.
+- Der Server erreicht `github.com` und `api.github.com`.
 
 Der Ablauf steht in `data\logs\update.log`, das Ergebnis in `data\update-status.json` und auf der Seite. Jeder Start eines Updates steht im Protokoll der Anwendung.
 
@@ -131,9 +130,14 @@ Der Ablauf steht in `data\logs\update.log`, das Ergebnis in `data\update-status.
 powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 update
 ```
 
-Das Skript bestimmt das neueste Release (oder nimmt `-Version v1.1.0`), hält den Dienst an, legt eine Sicherung an, checkt das Release aus, installiert, baut und startet wieder. Ist die Version schon installiert, passiert nichts.
+Das Skript bestimmt das neueste Release (oder nimmt `-Version v1.1.0`), hält den Dienst an, legt eine Sicherung an, spielt das Release ein, installiert, baut und startet wieder. Ist die Version schon installiert, passiert nichts.
 
-**Wenn etwas schiefgeht:** Scheitern Installation oder Build, checkt das Skript den vorherigen Stand wieder aus, baut ihn und startet den Dienst – er bleibt also nicht aus. Die Datenbank wird dabei nicht zurückgedreht; das ist auch nicht nötig, weil Migrationen erst beim Start der neuen Version laufen. Startet die neue Version zwar, läuft aber nicht richtig, hilft die Sicherung von vor dem Update – siehe [backup.md](backup.md) – zusammen mit `setup.ps1 update -Version <alte Version>`.
+Woher die Dateien kommen, hängt von der Installation ab:
+
+- **Ohne Git** (Dateien kopiert oder als ZIP entpackt): Das Skript lädt das Release als Archiv von GitHub und ersetzt die Verzeichnisse `src`, `web`, `drizzle`, `scripts` und `docs` sowie die Dateien im Hauptordner. `data\`, `.env`, `node_modules` und eigene Dateien im Hauptordner bleiben unberührt. **Eigene Änderungen innerhalb der genannten Verzeichnisse gehen dabei verloren** – auch eine angepasste Kopie von `setup.ps1`. Der vorherige Stand liegt bis zum nächsten Update unter `data\update-rollback`.
+- **Mit Git** (per `git clone`): Das Skript checkt das Release-Tag aus. Bei lokalen Änderungen an Dateien der Anwendung bricht es ab, bevor es etwas anfasst.
+
+**Wenn etwas schiefgeht:** Scheitert schon der Download, ist nichts passiert – der Dienst wurde noch nicht angehalten. Scheitern Installation oder Build, stellt das Skript den vorherigen Stand wieder her, baut ihn und startet den Dienst – er bleibt also nicht aus. Die Datenbank wird dabei nicht zurückgedreht; das ist auch nicht nötig, weil Migrationen erst beim Start der neuen Version laufen. Startet die neue Version zwar, läuft aber nicht richtig, hilft die Sicherung von vor dem Update – siehe [backup.md](backup.md) – zusammen mit `setup.ps1 update -Version <alte Version>`.
 
 Ohne Skript:
 
