@@ -1,6 +1,6 @@
 {
   "name": "ts3-analytics",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "private": true,
   "description": "TeamSpeak 3 watcher with statistics, leaderboards, admin tools and automatic rank system",
   "license": "AGPL-3.0-only",
