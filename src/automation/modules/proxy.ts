@@ -16,8 +16,15 @@ import {
 import type { BotClient, BotModule } from '../host.js';
 import type { ProxyLookup } from '../proxycheck.js';
 import { isExempt, loadModuleSettings, moduleBase } from '../settings.js';
+import {
+  getVouch,
+  ProxyInvites,
+  proxyInviteSchema,
+  removeVouch,
+  type InviteContext,
+} from './proxy-invite.js';
 
-export const PROXY_ACTIONS = ['none', 'message', 'poke', 'kick', 'ban', 'group'] as const;
+export const PROXY_ACTIONS = ['none', 'message', 'poke', 'kick', 'ban', 'group', 'invite'] as const;
 
 export const proxySettingsSchema = moduleBase.extend({
   /** What happens to a player who connects through a VPN or proxy. */
@@ -29,7 +36,10 @@ export const proxySettingsSchema = moduleBase.extend({
     .min(1)
     .max(MESSAGE_MAX)
     .default('VPN oder Proxy erkannt. Bitte melde dich bei einem Admin.'),
-  /** Server group set with the action `group`; never a rank group. */
+  /**
+   * Server group set with the actions `group` and `invite` – for `invite` it is the group that
+   * restricts the player until somebody vouched. Never a rank group.
+   */
   groupId: z.number().int().positive().nullable().default(null),
   banDurationS: z
     .number()
@@ -43,6 +53,8 @@ export const proxySettingsSchema = moduleBase.extend({
   notifyMessage: z.string().trim().min(1).max(MESSAGE_MAX).default('VPN/Proxy erkannt bei {name}.'),
   /** Players that are never checked, by internal id. */
   exemptUserIds: z.array(z.number().int().positive()).max(500).default([]),
+  /** The invite flow of the action `invite`. */
+  invite: proxyInviteSchema,
 });
 
 export type ProxySettings = z.infer<typeof proxySettingsSchema>;
@@ -75,6 +87,8 @@ function setProxyCheck(db: DbExecutor, userId: number, verdict: ProxyVerdict, at
  */
 export function clearProxyVerdict(db: DbExecutor, userId: number, at: number): number {
   const removed = db.delete(proxyIps).where(eq(proxyIps.userId, userId)).run().changes;
+  // Clean players need nobody to vouch for them.
+  removeVouch(db, userId);
   setProxyCheck(db, userId, 'clean', at);
   return removed;
 }
@@ -124,8 +138,56 @@ export class ProxyModule implements BotModule {
   readonly id = 'proxy';
   private lastWarningAt: number | undefined;
   private readonly running = new Set<Promise<void>>();
+  private readonly invites: ProxyInvites;
 
-  constructor(private readonly deps: ProxyDeps) {}
+  constructor(private readonly deps: ProxyDeps) {
+    this.invites = new ProxyInvites(deps);
+  }
+
+  /** The module's own groups: the restricting one and the whitelist of the invite flow. */
+  private actions(settings: ProxySettings): ModuleActions {
+    const own = [settings.groupId, settings.invite.whitelistGroupId].filter(
+      (group): group is number => group !== null,
+    );
+    return new ModuleActions(this.deps, {
+      module: this.id,
+      dryRun: settings.dryRun,
+      ownGroupIds: own,
+    });
+  }
+
+  private inviteContext(settings: ProxySettings): InviteContext | undefined {
+    if (!settings.enabled || settings.action !== 'invite') return undefined;
+    return {
+      settings: settings.invite,
+      blockGroupId: settings.groupId,
+      actions: this.actions(settings),
+    };
+  }
+
+  /** Answers of the invite flow: a number from the player, yes or no from the sponsor. */
+  async onMessage(client: BotClient, message: string): Promise<void> {
+    const context = this.inviteContext(loadProxySettings(this.deps.database.db));
+    if (context) await this.invites.onMessage(client, message, context);
+  }
+
+  async onLeft(client: BotClient): Promise<void> {
+    const waiting = this.invites.onLeft(client);
+    const settings = loadProxySettings(this.deps.database.db);
+    const context = this.inviteContext(settings);
+    if (!waiting || !context) return;
+    await context.actions.message(
+      waiting,
+      fillTemplate(settings.invite.timeoutMessage, { name: client.nickname }),
+      'Einladung: Bürge hat den Server verlassen',
+    );
+  }
+
+  /** Sponsors who did not answer in time are dropped with the poll. */
+  async onSynced(): Promise<void> {
+    const context = this.inviteContext(loadProxySettings(this.deps.database.db));
+    if (context) await this.invites.expire(context);
+  }
 
   /** Resolves when all started checks are done (tests, shutdown). */
   async idle(): Promise<void> {
@@ -155,7 +217,15 @@ export class ProxyModule implements BotModule {
     if (!settings.enabled || settings.exemptUserIds.includes(target.userId)) return;
     const client = this.deps.client(target.clid);
     if (client?.userId !== target.userId || isExempt(settings, client.serverGroups)) return;
-    if (getProxyCheck(db, target.userId)?.verdict === 'clean' || !isPublicAddress(ip)) return;
+    if (!isPublicAddress(ip)) return;
+    // Somebody vouched: the whitelist group says so; without such a group, our own record does.
+    const whitelist = settings.invite.whitelistGroupId;
+    const vouched =
+      whitelist === null
+        ? getVouch(db, target.userId) !== undefined
+        : client.serverGroups.includes(whitelist);
+    if (settings.action === 'invite' && vouched) return;
+    if (getProxyCheck(db, target.userId)?.verdict === 'clean') return;
 
     const listed = db
       .select({ kind: proxyIps.kind })
@@ -179,6 +249,15 @@ export class ProxyModule implements BotModule {
     }
     if (result.verdict === 'clean') {
       setProxyCheck(db, target.userId, 'clean', now);
+      // Back without a proxy: the restriction of an earlier visit goes.
+      const restricted = settings.groupId;
+      if (
+        restricted !== null &&
+        (settings.action === 'invite' || settings.action === 'group') &&
+        client.serverGroups.includes(restricted)
+      ) {
+        await this.actions(settings).removeGroup(client, restricted, 'ohne Proxy verbunden');
+      }
       return;
     }
     this.deps.database.sqlite.transaction(() => {
@@ -197,11 +276,7 @@ export class ProxyModule implements BotModule {
     kind: string | undefined,
     source: string,
   ): Promise<void> {
-    const actions = new ModuleActions(this.deps, {
-      module: this.id,
-      dryRun: settings.dryRun,
-      ownGroupIds: settings.groupId === null ? [] : [settings.groupId],
-    });
+    const actions = this.actions(settings);
     const detail = `${kind ?? 'Proxy'} (${source})`;
     actions.note('proxy.detected', client, detail);
 
@@ -225,6 +300,15 @@ export class ProxyModule implements BotModule {
         }
         await actions.message(client, text, detail);
         break;
+      case 'invite': {
+        if (settings.groupId !== null && !client.serverGroups.includes(settings.groupId)) {
+          const added = await actions.addGroup(client, settings.groupId, detail);
+          if (added) client.serverGroups = [...client.serverGroups, settings.groupId];
+        }
+        const context = this.inviteContext(settings);
+        if (context) await this.invites.start(client, context);
+        break;
+      }
       case 'none':
         break;
     }

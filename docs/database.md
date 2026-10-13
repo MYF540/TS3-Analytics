@@ -62,6 +62,7 @@ Beim Start führt der Dienst alle ausstehenden Migrationen aus (`runMigrations()
 | `managed_channels`          | Channels, die ein Bot-Modul angelegt oder übernommen hat (Regel 13)         |
 | `rule_acceptances`          | Letzte Entscheidung je Spieler zu den Serverregeln, mit Regel-Version       |
 | `proxy_ips`                 | Lokale Liste erkannter VPN-/Proxy-Adressen, nur als HMAC-Hash               |
+| `proxy_vouches`             | Wer für einen Spieler mit VPN/Proxy gebürgt hat (Einladungsablauf)          |
 | `proxy_checks`              | Ergebnis der Proxy-Prüfung je Spieler (`clean` wird nie erneut geprüft)     |
 
 Das maßgebliche Schema steht in `src/db/schema.ts`.

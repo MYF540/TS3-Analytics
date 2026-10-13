@@ -131,6 +131,8 @@ export const de = {
   'error.SPAM_INVALID_THRESHOLDS':
     'Bei mindestens einer Art steigen die Schwellen nicht an oder es ist keine Stufe eingeschaltet.',
   'error.PROXY_GROUP_MISSING': 'Für diese Aktion muss eine Servergruppe gewählt sein.',
+  'error.PROXY_SAME_GROUP':
+    'Die einschränkende Gruppe und die Freigabe-Gruppe müssen verschieden sein.',
   'error.UPDATE_CHECK_FAILED': 'GitHub war nicht erreichbar oder hat kein Release geliefert.',
   'error.UPDATE_NOT_AVAILABLE': 'Es gibt kein neueres Release.',
   'error.UPDATE_UNSUPPORTED': 'Diese Installation kann sich nicht selbst aktualisieren.',
@@ -1086,6 +1088,38 @@ export const de = {
   'proxy.action.group': 'Servergruppe setzen und Nachricht schicken',
   'proxy.action.ban': 'Zeitlich bannen',
   'proxy.group': 'Servergruppe für erkannte Spieler',
+  'proxy.action.invite': 'Einschränken, bis ein Spieler für ihn bürgt',
+  'proxy.invite.blockGroup': 'Einschränkende Servergruppe',
+  'proxy.invite.title': 'Einladung durch einen Bürgen',
+  'proxy.invite.hint':
+    'Der erkannte Spieler bekommt die einschränkende Gruppe und wird gefragt, zu wem er gehört. Er antwortet mit der Nummer aus einer Liste der Spieler, die online sind. Bestätigt der Gewählte, verliert der Spieler die Einschränkung, bekommt die Freigabe-Gruppe und wird in den Channel des Bürgen verschoben – außer das ist ein AFK-Channel. Die einschränkende Gruppe muss Privatnachrichten an den Bot erlauben, sonst kann der Spieler nicht antworten.',
+  'proxy.invite.whitelistGroup': 'Freigabe-Gruppe nach der Bestätigung',
+  'proxy.invite.whitelistHint':
+    'Wer diese Gruppe hat, wird nicht mehr geprüft. Nimmst du sie jemandem weg, gilt die Freigabe nicht mehr. Ohne Gruppe merkt sich der Bot die Bürgschaft selbst.',
+  'proxy.invite.sponsors':
+    'Nur Mitglieder dieser Servergruppen stehen auf der Liste und dürfen bürgen. Ohne Auswahl darf es jeder, der online ist.',
+  'proxy.invite.sponsorsLabel': 'Gruppen, die bürgen dürfen',
+  'proxy.invite.timeoutS': 'Zeit für die Antwort des Bürgen (Sekunden)',
+  'proxy.invite.maxAttempts': 'Wie viele Spieler darf jemand je Verbindung fragen?',
+  'proxy.invite.intro': 'Frage an den erkannten Spieler (darunter folgt die Liste)',
+  'proxy.invite.nobody': 'Text, wenn niemand bürgen kann',
+  'proxy.invite.asked': 'Text an den Spieler, nachdem er gewählt hat',
+  'proxy.invite.question': 'Frage an den gewählten Spieler',
+  'proxy.invite.yes': 'Wort zum Bestätigen',
+  'proxy.invite.no': 'Wort zum Ablehnen',
+  'proxy.invite.accepted': 'Text an den Spieler nach der Bestätigung',
+  'proxy.invite.declined': 'Text an den Spieler nach einer Ablehnung',
+  'proxy.invite.timeout': 'Text an den Spieler, wenn keine Antwort kommt',
+  'proxy.invite.exhausted': 'Text, wenn die Versuche aufgebraucht sind',
+  'proxy.invite.thanks': 'Text an den Bürgen nach der Bestätigung',
+  'proxy.invite.placeholders':
+    '{name} ist jeweils der andere Spieler; {yes} und {no} in der Frage an den Gewählten sind die beiden Wörter.',
+  'player.proxy.vouchedBy': 'Gebürgt hat',
+  'player.proxy.unknownSponsor': 'ein inzwischen gelöschter Spieler',
+  'player.proxy.vouchedAt': '(am {time}).',
+  'automation.action.proxy.invite': 'Bürgen-Liste geschickt',
+  'automation.action.proxy.vouched': 'Bürgschaft bestätigt',
+  'automation.action.proxy.declined': 'Bürgschaft abgelehnt',
   'proxy.message': 'Text für den Spieler (auch Kick- und Ban-Grund)',
   'proxy.notify': 'Team benachrichtigen',
   'proxy.notifyHint':

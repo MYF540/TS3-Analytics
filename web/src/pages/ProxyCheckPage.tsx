@@ -4,7 +4,7 @@ import { api, describeError } from '../api/client';
 import type { ProxySettings } from '../api/types';
 import { ModuleBaseFields } from '../components/ModuleBaseFields';
 import { useApi } from '../hooks/useApi';
-import { formatDateTime, formatNumber, t } from '../i18n';
+import { formatDateTime, formatNumber, t, type MessageKey } from '../i18n';
 import { PageHeader } from './pages';
 
 type Settings = ProxySettings['settings'];
@@ -16,6 +16,36 @@ interface Draft extends Omit<Settings, 'banDurationS' | 'exemptUserIds'> {
 }
 
 const BAN_MAX_MINUTES = 30 * 1440;
+
+type InviteTextKey =
+  | 'intro'
+  | 'nobodyMessage'
+  | 'askedMessage'
+  | 'sponsorQuestion'
+  | 'yesWord'
+  | 'noWord'
+  | 'acceptedMessage'
+  | 'declinedMessage'
+  | 'timeoutMessage'
+  | 'exhaustedMessage'
+  | 'sponsorThanks';
+
+const INVITE_TEXTS: readonly { key: InviteTextKey; label: MessageKey; max: number }[] = [
+  { key: 'intro', label: 'proxy.invite.intro', max: 1024 },
+  { key: 'nobodyMessage', label: 'proxy.invite.nobody', max: 1024 },
+  { key: 'askedMessage', label: 'proxy.invite.asked', max: 1024 },
+  { key: 'sponsorQuestion', label: 'proxy.invite.question', max: 1024 },
+  { key: 'yesWord', label: 'proxy.invite.yes', max: 40 },
+  { key: 'noWord', label: 'proxy.invite.no', max: 40 },
+  { key: 'acceptedMessage', label: 'proxy.invite.accepted', max: 1024 },
+  { key: 'declinedMessage', label: 'proxy.invite.declined', max: 1024 },
+  { key: 'timeoutMessage', label: 'proxy.invite.timeout', max: 1024 },
+  { key: 'exhaustedMessage', label: 'proxy.invite.exhausted', max: 1024 },
+  { key: 'sponsorThanks', label: 'proxy.invite.thanks', max: 1024 },
+];
+
+const inRange = (value: number, min: number, max: number) =>
+  Number.isInteger(value) && value >= min && value <= max;
 
 function toDraft(settings: Settings): Draft {
   const { banDurationS, exemptUserIds, ...rest } = settings;
@@ -44,7 +74,17 @@ function toSettings(draft: Draft): Settings | undefined {
     exemptUserIds === undefined ||
     draft.message.trim() === '' ||
     draft.notifyMessage.trim() === '' ||
-    (draft.action === 'group' && draft.groupId === null)
+    ((draft.action === 'group' || draft.action === 'invite') && draft.groupId === null)
+  ) {
+    return undefined;
+  }
+  const invite = draft.invite;
+  if (
+    !inRange(invite.timeoutS, 30, 3600) ||
+    !inRange(invite.maxAttempts, 1, 10) ||
+    INVITE_TEXTS.some(({ key }) => invite[key].trim() === '') ||
+    invite.yesWord.trim().toLowerCase() === invite.noWord.trim().toLowerCase() ||
+    (invite.whitelistGroupId !== null && invite.whitelistGroupId === draft.groupId)
   ) {
     return undefined;
   }
@@ -59,6 +99,23 @@ function toSettings(draft: Draft): Settings | undefined {
     notifyGroupIds: draft.notifyGroupIds,
     notifyMessage: draft.notifyMessage.trim(),
     exemptUserIds,
+    invite: {
+      whitelistGroupId: invite.whitelistGroupId,
+      sponsorGroupIds: invite.sponsorGroupIds,
+      timeoutS: invite.timeoutS,
+      maxAttempts: invite.maxAttempts,
+      intro: invite.intro.trim(),
+      nobodyMessage: invite.nobodyMessage.trim(),
+      askedMessage: invite.askedMessage.trim(),
+      sponsorQuestion: invite.sponsorQuestion.trim(),
+      yesWord: invite.yesWord.trim(),
+      noWord: invite.noWord.trim(),
+      acceptedMessage: invite.acceptedMessage.trim(),
+      declinedMessage: invite.declinedMessage.trim(),
+      timeoutMessage: invite.timeoutMessage.trim(),
+      exhaustedMessage: invite.exhaustedMessage.trim(),
+      sponsorThanks: invite.sponsorThanks.trim(),
+    },
   };
 }
 
@@ -80,6 +137,10 @@ function Form({ data, reload }: { data: ProxySettings; reload: () => void }) {
   const change = (changes: Partial<Draft>) => {
     setDraft((current) => ({ ...current, ...changes }));
     setMessage(undefined);
+  };
+
+  const changeInvite = (changes: Partial<Settings['invite']>) => {
+    change({ invite: { ...draft.invite, ...changes } });
   };
 
   const submit = (event: SubmitEvent<HTMLFormElement>) => {
@@ -135,13 +196,14 @@ function Form({ data, reload }: { data: ProxySettings; reload: () => void }) {
           <option value="message">{t('nickname.action.message')}</option>
           <option value="poke">{t('nickname.action.poke')}</option>
           <option value="group">{t('proxy.action.group')}</option>
+          <option value="invite">{t('proxy.action.invite')}</option>
           <option value="kick">{t('nickname.action.kick')}</option>
           <option value="ban">{t('proxy.action.ban')}</option>
         </select>
       </label>
-      {draft.action === 'group' && (
+      {(draft.action === 'group' || draft.action === 'invite') && (
         <label className="field field--narrow">
-          <span>{t('proxy.group')}</span>
+          <span>{t(draft.action === 'invite' ? 'proxy.invite.blockGroup' : 'proxy.group')}</span>
           <select
             value={draft.groupId ?? ''}
             aria-invalid={draft.groupId === null}
@@ -189,6 +251,101 @@ function Form({ data, reload }: { data: ProxySettings; reload: () => void }) {
           }}
         />
       </label>
+
+      {draft.action === 'invite' && (
+        <fieldset className="settings-form__channels" aria-label={t('proxy.invite.title')}>
+          <legend>{t('proxy.invite.title')}</legend>
+          <p className="muted small">{t('proxy.invite.hint')}</p>
+          <label className="field field--narrow">
+            <span>{t('proxy.invite.whitelistGroup')}</span>
+            <select
+              value={draft.invite.whitelistGroupId ?? ''}
+              aria-invalid={
+                draft.invite.whitelistGroupId !== null &&
+                draft.invite.whitelistGroupId === draft.groupId
+              }
+              onChange={(event) => {
+                changeInvite({
+                  whitelistGroupId: event.target.value === '' ? null : Number(event.target.value),
+                });
+              }}
+            >
+              <option value="">{t('private.noChannelGroup')}</option>
+              {data.groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="muted small">{t('proxy.invite.whitelistHint')}</p>
+          <p className="muted small">{t('proxy.invite.sponsors')}</p>
+          {data.groups.length > 0 && (
+            <ul className="channel-list" aria-label={t('proxy.invite.sponsorsLabel')}>
+              {data.groups.map((group) => (
+                <li key={group.id}>
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={draft.invite.sponsorGroupIds.includes(group.id)}
+                      onChange={() => {
+                        const current = draft.invite.sponsorGroupIds;
+                        changeInvite({
+                          sponsorGroupIds: current.includes(group.id)
+                            ? current.filter((id) => id !== group.id)
+                            : [...current, group.id],
+                        });
+                      }}
+                    />
+                    {group.name}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+          <label className="field field--narrow">
+            <span>{t('proxy.invite.timeoutS')}</span>
+            <input
+              type="number"
+              min={30}
+              max={3600}
+              value={Number.isNaN(draft.invite.timeoutS) ? '' : draft.invite.timeoutS}
+              aria-invalid={!inRange(draft.invite.timeoutS, 30, 3600)}
+              onChange={(event) => {
+                changeInvite({ timeoutS: event.target.valueAsNumber });
+              }}
+            />
+          </label>
+          <label className="field field--narrow">
+            <span>{t('proxy.invite.maxAttempts')}</span>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={Number.isNaN(draft.invite.maxAttempts) ? '' : draft.invite.maxAttempts}
+              aria-invalid={!inRange(draft.invite.maxAttempts, 1, 10)}
+              onChange={(event) => {
+                changeInvite({ maxAttempts: event.target.valueAsNumber });
+              }}
+            />
+          </label>
+          {INVITE_TEXTS.map(({ key, label, max }) => (
+            <label className="field" key={key}>
+              <span>{t(label)}</span>
+              <input
+                type="text"
+                maxLength={max}
+                value={draft.invite[key]}
+                aria-invalid={draft.invite[key].trim() === ''}
+                onChange={(event) => {
+                  changeInvite({ [key]: event.target.value });
+                }}
+              />
+            </label>
+          ))}
+          <p className="muted small">{t('proxy.invite.placeholders')}</p>
+        </fieldset>
+      )}
 
       <fieldset className="settings-form__channels">
         <legend>{t('proxy.notify')}</legend>

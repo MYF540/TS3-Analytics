@@ -93,6 +93,40 @@ describe('proxy check routes', () => {
     });
   });
 
+  it('save the invite flow and refuse settings that cannot work', async () => {
+    const invite = { whitelistGroupId: 51, sponsorGroupIds: [20] };
+    expect((await put({ action: 'invite', groupId: 50, invite })).statusCode).toBe(200);
+    expect(loadProxySettings(database.db)).toMatchObject({
+      action: 'invite',
+      groupId: 50,
+      invite: { ...invite, timeoutS: 300, maxAttempts: 3, yesWord: 'ja', noWord: 'nein' },
+    });
+
+    const code = async (payload: Record<string, unknown>) =>
+      (await put(payload)).json<{ error?: { code: string } }>().error?.code;
+    expect(await code({ action: 'invite', invite })).toBe('PROXY_GROUP_MISSING');
+    expect(await code({ action: 'invite', groupId: 51, invite })).toBe('PROXY_SAME_GROUP');
+    expect(await code({ action: 'invite', groupId: 50, invite: { ...invite, noWord: 'JA' } })).toBe(
+      'RULES_SAME_COMMAND',
+    );
+    replaceRanks(database.sqlite, [{ name: 'Neuling', requiredS: 3600, serverGroupId: 51 }], NOW);
+    expect(await code({ action: 'invite', groupId: 50, invite })).toBe('RULES_RANK_GROUP');
+  });
+
+  it('show who vouched for a player and forget it when a false alarm is undone', async () => {
+    const guest = player('Gast', 'proxy');
+    const sponsor = player('Anna', 'clean');
+    database.sqlite
+      .prepare('INSERT INTO proxy_vouches (user_id, sponsor_user_id, at) VALUES (?, ?, ?)')
+      .run(guest, sponsor, NOW + 9);
+    const path = `/api/users/${String(guest)}/proxy`;
+    expect((await get(path, moderator)).json()).toMatchObject({
+      vouch: { sponsorUserId: sponsor, sponsorNickname: 'Anna', at: NOW + 9 },
+    });
+    await post(`/api/automation/proxy/clear/${String(guest)}`);
+    expect((await get(path, moderator)).json()).toMatchObject({ verdict: 'clean', vouch: null });
+  });
+
   it('undo a false alarm', async () => {
     const evader = player('Evader', 'proxy');
     const response = await post(`/api/automation/proxy/clear/${String(evader)}`);
@@ -114,6 +148,7 @@ describe('proxy check routes', () => {
       enabled: false,
       verdict: 'proxy',
       checkedAt: NOW,
+      vouch: null,
     });
     expect((await get(path(fresh), moderator)).json()).toMatchObject({ verdict: null });
     expect((await get(path(evader), viewer)).statusCode).toBe(403);

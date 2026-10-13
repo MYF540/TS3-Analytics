@@ -259,7 +259,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
       lastRun: null,
     },
     '/api/users/1/rules': { enabled: false, currentVersion: 1, state: null },
-    '/api/users/1/proxy': { enabled: false, verdict: null, checkedAt: null },
+    '/api/users/1/proxy': { enabled: false, verdict: null, checkedAt: null, vouch: null },
     '/api/tags': {
       tags: [
         { id: 1, name: 'Stammspieler', color: 'green', users: 4 },

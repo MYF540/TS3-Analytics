@@ -29,6 +29,23 @@ export const proxySettingsResponse = z.object({
     notifyGroupIds: z.array(z.number().int()),
     notifyMessage: z.string(),
     exemptUserIds: z.array(z.number().int()),
+    invite: z.object({
+      whitelistGroupId: z.number().int().nullable(),
+      sponsorGroupIds: z.array(z.number().int()),
+      timeoutS: z.number().int(),
+      maxAttempts: z.number().int(),
+      intro: z.string(),
+      nobodyMessage: z.string(),
+      askedMessage: z.string(),
+      sponsorQuestion: z.string(),
+      yesWord: z.string(),
+      noWord: z.string(),
+      acceptedMessage: z.string(),
+      declinedMessage: z.string(),
+      timeoutMessage: z.string(),
+      exhaustedMessage: z.string(),
+      sponsorThanks: z.string(),
+    }),
   }),
   groups: z.array(z.object({ id: z.number().int(), name: z.string() })),
   /** Whether an API key is set in `.env`; the key itself never leaves the server. */
@@ -55,6 +72,14 @@ export const playerProxyResponse = z.object({
   enabled: z.boolean(),
   verdict: z.enum(PROXY_VERDICTS).nullable(),
   checkedAt: z.number().int().nullable(),
+  /** Who vouched for the player in the invite flow, if anybody. */
+  vouch: z
+    .object({
+      sponsorUserId: z.number().int().nullable(),
+      sponsorNickname: z.string().nullable(),
+      at: z.number().int(),
+    })
+    .nullable(),
 });
 
 /** Settings of the proxy check (T10.10), undoing a false alarm, and a player's result. */
@@ -97,11 +122,24 @@ export function automationProxyRoutes(context: ApiContext): FastifyPluginAsyncZo
       },
       (request) => {
         const settings = request.body;
-        if (settings.action === 'group' && settings.groupId === null) {
-          throw new ApiError(400, 'PROXY_GROUP_MISSING', 'The group action needs a group');
+        const needsGroup = settings.action === 'group' || settings.action === 'invite';
+        if (needsGroup && settings.groupId === null) {
+          throw new ApiError(400, 'PROXY_GROUP_MISSING', 'This action needs a group');
         }
-        if (settings.groupId !== null && rankGroupIds(context.database).has(settings.groupId)) {
+        const { whitelistGroupId, yesWord, noWord } = settings.invite;
+        const rankGroups = rankGroupIds(context.database);
+        if ([settings.groupId, whitelistGroupId].some((g) => g !== null && rankGroups.has(g))) {
           throw new ApiError(400, 'RULES_RANK_GROUP', 'A rank group cannot be used');
+        }
+        if (whitelistGroupId !== null && whitelistGroupId === settings.groupId) {
+          throw new ApiError(
+            400,
+            'PROXY_SAME_GROUP',
+            'Restricting and whitelist group must differ',
+          );
+        }
+        if (yesWord.toLowerCase() === noWord.toLowerCase()) {
+          throw new ApiError(400, 'RULES_SAME_COMMAND', 'Yes and no must differ');
         }
         request.audit({
           action: 'automation.proxy',
@@ -147,10 +185,21 @@ export function automationProxyRoutes(context: ApiContext): FastifyPluginAsyncZo
           throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
         }
         const result = getProxyCheck(db, request.params.id);
+        const vouch = sqlite
+          .prepare(
+            `SELECT v.sponsor_user_id AS sponsorUserId,
+                    (SELECT n.nick FROM nicknames n WHERE n.user_id = v.sponsor_user_id
+                     ORDER BY n.last_seen DESC, n.id DESC LIMIT 1) AS sponsorNickname,
+                    v.at
+             FROM proxy_vouches v WHERE v.user_id = ?`,
+          )
+          .get(request.params.id) as
+          { sponsorUserId: number | null; sponsorNickname: string | null; at: number } | undefined;
         return {
           enabled: loadProxySettings(db).enabled,
           verdict: result?.verdict ?? null,
           checkedAt: result?.checkedAt ?? null,
+          vouch: vouch ?? null,
         };
       },
     );

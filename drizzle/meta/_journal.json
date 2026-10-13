@@ -127,6 +127,13 @@
       "when": 1791044001209,
       "tag": "0017_proxy_check",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1791888136681,
+      "tag": "0018_proxy_vouches",
+      "breakpoints": true
     }
   ]
 }

@@ -24,6 +24,25 @@ Die Module übernehmen, was vorher einzelne SinusBot-Skripte erledigt haben. Ein
 | Spam-Control     | Zählt Channel-Wechsel, angelegte Channels, Umbenennungen, Neuverbindungen und Privat-Channel-Anfragen – je Art eigene Schwellen: Warnung, Kick, Ban | Verschoben werden zählt nicht. Chat-Spam ist für einen Query-Client nicht sichtbar                                       |
 | Anti-Proxy       | Prüft neue Spieler bei proxycheck.io auf VPN/Proxy                                                                                                  | Gibt IP-Adressen an einen Dritten weiter – siehe [datenschutz.md](datenschutz.md). Schlüssel: `PROXYCHECK_API_KEY`       |
 
+## Anti-Proxy als Einladungssystem
+
+Mit der Aktion „Einschränken, bis ein Spieler für ihn bürgt“ wird aus der Proxy-Erkennung ein Einladungssystem:
+
+1. Wer über VPN oder Proxy verbindet, bekommt die **einschränkende Gruppe** und eine Privatnachricht mit einer nummerierten Liste der Spieler, die online sind.
+2. Er antwortet dem Bot mit der Nummer des Spielers, zu dem er gehört.
+3. Der Gewählte wird gefragt und antwortet mit „ja“ oder „nein“ (Wörter einstellbar).
+4. Bei „ja“ verliert der Spieler die Einschränkung, bekommt die **Freigabe-Gruppe** und wird in den Channel des Bürgen verschoben – außer das ist ein AFK-Channel. Wer gebürgt hat, steht danach auf der Spielerseite und im Automatik-Protokoll.
+
+Was man dazu wissen muss:
+
+- **Die einschränkende Gruppe richtest du selbst auf dem TeamSpeak-Server ein.** Sie muss Privatnachrichten an den Bot erlauben (`i_client_private_textmessage_power` ausreichend für den Query-Client), sonst kann der Spieler nicht antworten. Der Bot setzt und entfernt nur die Gruppe; was sie sperrt, bestimmst du.
+- Wer die Freigabe-Gruppe hat, wird nicht mehr geprüft. Nimmst du sie jemandem weg, beginnt der Ablauf beim nächsten Verbinden mit Proxy von vorn. Ohne Freigabe-Gruppe merkt sich der Bot die Bürgschaft selbst.
+- Auf der Liste stehen höchstens 60 Spieler, nach Namen sortiert, jede Person einmal. Mit „Gruppen, die bürgen dürfen“ lässt sie sich auf z. B. Mitglieder beschränken. Andere eingeschränkte Spieler stehen nie darauf.
+- Je Verbindung darf ein Spieler eine einstellbare Zahl von Leuten fragen (Vorgabe 3); antwortet der Gewählte nicht innerhalb der Frist (Vorgabe 5 Minuten, geprüft bei jeder Abfrage) oder geht er offline, darf neu gewählt werden.
+- Kommt ein eingeschränkter Spieler später ohne Proxy wieder, verliert er die einschränkende Gruppe.
+- Der Stand des Ablaufs liegt nur im Speicher: Nach einem Neustart des Dienstes bekommt der Spieler die Liste beim nächsten Verbinden erneut.
+- Die Liste zeigt einem Unbekannten, wer gerade online ist. Das sieht er im TeamSpeak-Client in der Regel ohnehin; wenn deine einschränkende Gruppe genau das verbergen soll, die Liste über „Gruppen, die bürgen dürfen“ klein halten.
+
 ## Rechte des Query-Accounts
 
 Zusätzlich zu den Rechten für den Grundbetrieb (siehe README). Die Namen stammen aus der Rechteliste von TeamSpeak 3; **am eigenen Server prüfen** – fehlt eines, steht die fehlgeschlagene Aktion mit der Meldung des Servers im Automatik-Protokoll.

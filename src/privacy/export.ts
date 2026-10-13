@@ -126,6 +126,11 @@ export function exportUser(database: AppDatabase, userId: number, now: number) {
     proxyCheck:
       one('SELECT verdict, checked_at AS checkedAt FROM proxy_checks WHERE user_id = ?', userId) ??
       null,
+    proxyVouch: one('SELECT at FROM proxy_vouches WHERE user_id = ?', userId) ?? null,
+    proxyVouchedFor: all(
+      'SELECT at FROM proxy_vouches WHERE sponsor_user_id = ? ORDER BY at',
+      userId,
+    ),
     automation: all(
       'SELECT at, module, action, detail, result FROM automation_log WHERE user_id = ? ORDER BY at',
       userId,

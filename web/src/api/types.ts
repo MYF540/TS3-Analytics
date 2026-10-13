@@ -247,13 +247,30 @@ export interface ProxySettings {
     enabled: boolean;
     dryRun: boolean;
     exemptGroupIds: number[];
-    action: 'none' | 'message' | 'poke' | 'kick' | 'ban' | 'group';
+    action: 'none' | 'message' | 'poke' | 'kick' | 'ban' | 'group' | 'invite';
     message: string;
     groupId: number | null;
     banDurationS: number;
     notifyGroupIds: number[];
     notifyMessage: string;
     exemptUserIds: number[];
+    invite: {
+      whitelistGroupId: number | null;
+      sponsorGroupIds: number[];
+      timeoutS: number;
+      maxAttempts: number;
+      intro: string;
+      nobodyMessage: string;
+      askedMessage: string;
+      sponsorQuestion: string;
+      yesWord: string;
+      noWord: string;
+      acceptedMessage: string;
+      declinedMessage: string;
+      timeoutMessage: string;
+      exhaustedMessage: string;
+      sponsorThanks: string;
+    };
   };
   groups: { id: number; name: string }[];
   keyConfigured: boolean;
@@ -269,6 +286,7 @@ export interface PlayerProxy {
   enabled: boolean;
   verdict: 'clean' | 'proxy' | null;
   checkedAt: number | null;
+  vouch: { sponsorUserId: number | null; sponsorNickname: string | null; at: number } | null;
 }
 
 export interface UpdateInfo {

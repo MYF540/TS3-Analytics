@@ -777,3 +777,20 @@ export const proxyChecks = sqliteTable(
     check('proxy_checks_verdict_check', sql`${t.verdict} IN ('clean', 'proxy')`),
   ],
 );
+
+/**
+ * Who vouched for a player that connects through a VPN or proxy (invite flow of the proxy
+ * check). One row per vouched player; the sponsor stays on record for accountability.
+ */
+export const proxyVouches = sqliteTable(
+  'proxy_vouches',
+  {
+    userId: integer('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Null once the sponsor's data was erased. */
+    sponsorUserId: integer('sponsor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    at: integer('at').notNull(),
+  },
+  (t) => [index('proxy_vouches_sponsor_idx').on(t.sponsorUserId)],
+);

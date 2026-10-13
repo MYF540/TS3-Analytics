@@ -16,6 +16,23 @@ const stored: ProxySettings = {
     notifyGroupIds: [],
     notifyMessage: 'VPN/Proxy erkannt bei {name}.',
     exemptUserIds: [],
+    invite: {
+      whitelistGroupId: null,
+      sponsorGroupIds: [],
+      timeoutS: 300,
+      maxAttempts: 3,
+      intro: 'Zu wem gehörst du?',
+      nobodyMessage: 'Niemand da.',
+      askedMessage: '{name} wurde gefragt.',
+      sponsorQuestion: 'Gehört {name} zu dir? {yes} oder {no}.',
+      yesWord: 'ja',
+      noWord: 'nein',
+      acceptedMessage: 'Freigeschaltet.',
+      declinedMessage: 'Abgelehnt.',
+      timeoutMessage: 'Keine Antwort.',
+      exhaustedMessage: 'Zu viele Versuche.',
+      sponsorThanks: 'Danke.',
+    },
   },
   groups: [
     { id: 6, name: 'Server Admin' },
@@ -110,6 +127,51 @@ describe('ProxyCheckPage', () => {
     expect(saved()).toMatchObject({ action: 'ban', banDurationS: 7200 });
   });
 
+  it('saves the invite flow with both groups and who may vouch', async () => {
+    const { saved } = setup({
+      ...stored,
+      groups: [...stored.groups, { id: 51, name: 'Freigegeben' }],
+    });
+    await userEvent.selectOptions(
+      await screen.findByLabelText('Was soll bei einem Treffer passieren?'),
+      'invite',
+    );
+    expect(save()).toBeDisabled();
+    await userEvent.selectOptions(screen.getByLabelText('Einschränkende Servergruppe'), '50');
+    const box = within(screen.getByRole('group', { name: 'Einladung durch einen Bürgen' }));
+    await userEvent.selectOptions(box.getByLabelText('Freigabe-Gruppe nach der Bestätigung'), '50');
+    expect(save()).toBeDisabled();
+    await userEvent.selectOptions(box.getByLabelText('Freigabe-Gruppe nach der Bestätigung'), '51');
+    await userEvent.click(
+      within(box.getByRole('list', { name: 'Gruppen, die bürgen dürfen' })).getByLabelText(
+        'Server Admin',
+      ),
+    );
+    const timeout = box.getByLabelText('Zeit für die Antwort des Bürgen (Sekunden)');
+    await userEvent.clear(timeout);
+    expect(save()).toBeDisabled();
+    await userEvent.type(timeout, '120');
+    await userEvent.click(save());
+    await screen.findByText('Gespeichert.');
+    expect(saved()).toEqual({
+      ...stored.settings,
+      action: 'invite',
+      groupId: 50,
+      invite: {
+        ...stored.settings.invite,
+        whitelistGroupId: 51,
+        sponsorGroupIds: [6],
+        timeoutS: 120,
+      },
+    });
+  });
+
+  it('hides the invite settings for the other actions', async () => {
+    setup();
+    await screen.findByLabelText('Was soll bei einem Treffer passieren?');
+    expect(screen.queryByRole('group', { name: 'Einladung durch einen Bürgen' })).toBeNull();
+  });
+
   it('marks a flagged player as clean', async () => {
     const { posted } = setup();
     expect(await screen.findByRole('link', { name: 'Evader' })).toHaveAttribute(
@@ -125,15 +187,39 @@ describe('ProxyCheckPage', () => {
 describe('PlayerProxyNotice', () => {
   it('warns on the player page when a VPN or proxy was seen', async () => {
     mockApi({
-      '/api/users/1/proxy': { enabled: true, verdict: 'proxy', checkedAt: 1_789_800_000 },
+      '/api/users/1/proxy': {
+        enabled: true,
+        verdict: 'proxy',
+        checkedAt: 1_789_800_000,
+        vouch: null,
+      },
     });
     renderAt('/spieler/1');
     expect(await screen.findByText(/^Zuletzt über VPN oder Proxy verbunden/)).toBeInTheDocument();
   });
 
+  it('names who vouched for the player', async () => {
+    mockApi({
+      '/api/users/1/proxy': {
+        enabled: true,
+        verdict: 'proxy',
+        checkedAt: 1_789_800_000,
+        vouch: { sponsorUserId: 5, sponsorNickname: 'Anna', at: 1_789_800_100 },
+      },
+    });
+    renderAt('/spieler/1');
+    expect(await screen.findByRole('link', { name: 'Anna' })).toHaveAttribute('href', '/spieler/5');
+    expect(screen.getByText(/Gebürgt hat/)).toBeInTheDocument();
+  });
+
   it('says nothing for a clean player', async () => {
     mockApi({
-      '/api/users/1/proxy': { enabled: true, verdict: 'clean', checkedAt: 1_789_800_000 },
+      '/api/users/1/proxy': {
+        enabled: true,
+        verdict: 'clean',
+        checkedAt: 1_789_800_000,
+        vouch: null,
+      },
     });
     renderAt('/spieler/1');
     await screen.findByRole('heading', { level: 1 });
