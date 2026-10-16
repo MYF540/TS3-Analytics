@@ -253,3 +253,45 @@ describe('private channel helpers', () => {
     expect(password).toMatch(/^[a-km-zA-HJ-NP-Z2-9]+$/);
   });
 });
+
+describe('English texts (T12.1)', () => {
+  const english = { enabled: true, createdMessage: 'Your room is ready.' };
+
+  it('writes to players from outside the German-speaking countries in English', async () => {
+    configure({ english }, { password: true });
+    const john = server.join({ uid: 'uid-j', nickname: 'John', country: 'US' });
+    const anna = server.join({ uid: 'uid-a', nickname: 'Anna', country: 'DE' });
+    await host.idle();
+    await enter(john);
+    await enter(anna);
+    expect(messages(john)).toEqual([
+      'Your room is ready.',
+      'The password of your channel is: geheim42',
+    ]);
+    expect(messages(anna)).toEqual([
+      'Dein privater Channel wurde angelegt.',
+      'Das Passwort deines Channels lautet: geheim42',
+    ]);
+  });
+
+  it('turns players away in their language', async () => {
+    configure({ english }, { allowedGroupIds: [20] });
+    const john = server.join({ uid: 'uid-j', nickname: 'John', country: 'GB' });
+    await host.idle();
+    await enter(john);
+    expect(messages(john)).toEqual(['You cannot get a private channel here.']);
+  });
+
+  it('stays German for an unknown country and while English is off', async () => {
+    configure({ english: { ...english, enabled: false } });
+    const john = server.join({ uid: 'uid-j', nickname: 'John', country: 'US' });
+    await host.idle();
+    await enter(john);
+    configure({ english });
+    const unknown = server.join({ uid: 'uid-u', nickname: 'Unbekannt', country: undefined });
+    await host.idle();
+    await enter(unknown);
+    expect(messages(john)).toEqual(['Dein privater Channel wurde angelegt.']);
+    expect(messages(unknown)).toEqual(['Dein privater Channel wurde angelegt.']);
+  });
+});

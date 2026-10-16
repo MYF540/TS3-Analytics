@@ -376,3 +376,56 @@ describe('candidate list', () => {
     expect(messages.join('\n').split('\n')).toHaveLength(60);
   });
 });
+
+describe('English texts (T12.1)', () => {
+  const english = { enabled: true };
+
+  it('talks to guest and sponsor each in their own language', async () => {
+    configure({ english });
+    const anna = await join('Anna', HOME, { country: 'DE' });
+    const guest = await join('Guest', VPN, { country: 'US' });
+    expect(messages(guest)).toEqual([expect.stringContaining('Who do you belong to?'), '1 – Anna']);
+    await say(guest, '1');
+    expect(messages(anna)).toEqual([expect.stringContaining('Antworte mir mit „ja“')]);
+    expect(messages(guest).at(-1)).toBe('Anna has been asked. Please wait for the answer.');
+    await say(anna, 'ja');
+    expect(messages(guest).at(-1)).toBe('Anna vouched for you. You are now unlocked.');
+    expect(messages(anna).at(-1)).toContain('du bürgst für diesen Spieler');
+  });
+
+  it('understands the answer words of both languages', async () => {
+    configure({ english });
+    const john = await join('John', HOME, { country: 'GB' });
+    const zoe = await join('Zoe', HOME, { country: 'AT' });
+    const guest = await join('Gast', VPN, { country: 'DE' });
+    await say(guest, '1');
+    expect(messages(john)).toEqual([expect.stringContaining('Reply with "yes"')]);
+    await say(john, 'nein');
+    expect(messages(guest).at(-1)).toBe(
+      'John hat nicht bestätigt. Du kannst eine andere Nummer wählen.',
+    );
+    await say(guest, '2');
+    await say(zoe, 'YES');
+    expect(groups(guest)).toContain(TRUSTED);
+  });
+
+  it('ignores English words while English is off', async () => {
+    configure();
+    const anna = await join('Anna', HOME, { country: 'US' });
+    const guest = await join('Gast', VPN, { country: 'US' });
+    expect(messages(guest)[0]).toContain('Zu wem gehörst du?');
+    await say(guest, '1');
+    await say(anna, 'yes');
+    expect(groups(guest)).not.toContain(TRUSTED);
+  });
+
+  it('tells a waiting guest in their language that the sponsor left', async () => {
+    configure({ english });
+    const anna = await join('Anna', HOME, { country: 'DE' });
+    const guest = await join('Guest', VPN, { country: 'NL' });
+    await say(guest, '1');
+    server.leave(anna);
+    await settle();
+    expect(messages(guest).at(-1)).toBe('Anna did not answer. You can choose another number.');
+  });
+});

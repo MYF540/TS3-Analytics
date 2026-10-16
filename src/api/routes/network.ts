@@ -10,6 +10,7 @@ import {
   loadNetworkState,
   saveNetworkSettings,
 } from '../../network/settings.js';
+import { loadGroupWatch } from '../../watcher/group-settings.js';
 import { loadActivitySettings } from '../../watcher/settings.js';
 import type { ApiContext } from '../context.js';
 
@@ -32,6 +33,11 @@ export const networkGraphResponse = z.object({
       nickname: z.string().nullable(),
       seconds: z.number().int(),
       accounts: z.number().int(),
+      community: z.number().int().nullable(),
+      country: z.string().nullable(),
+      lastSeen: z.number().int(),
+      rankId: z.number().int().nullable(),
+      serverGroups: z.array(z.number().int()),
     }),
   ),
   edges: z.array(
@@ -47,6 +53,10 @@ export const networkGraphResponse = z.object({
   /** Connections stored for this window, even when only some are shown. */
   edgesTotal: z.number().int(),
   strongestS: z.number().int(),
+  /** The rank ladder, lowest first – for colouring by rank (T12.2). */
+  ranks: z.array(z.object({ id: z.number().int(), name: z.string() })),
+  /** Server groups seen on the server, for the group filter. */
+  groups: z.array(z.object({ id: z.number().int(), name: z.string() })),
 });
 
 const rangeState = z.object({
@@ -112,12 +122,23 @@ export function networkRoutes(context: ApiContext): FastifyPluginAsyncZod {
             range: z.enum(NETWORK_RANGES).default('30d'),
             /** How many of the strongest connections to draw – the slider on the page. */
             limit: z.coerce.number().int().min(10).max(2000).default(200),
+            /** Only connections with at least this many seconds together. */
+            minS: z.coerce.number().int().min(0).max(100_000_000).default(0),
+            /** Only this player's surroundings (T12.2). */
+            focus: z.coerce.number().int().positive().optional(),
+            depth: z.coerce
+              .number()
+              .int()
+              .min(1)
+              .max(2)
+              .default(1)
+              .transform((value) => value as 1 | 2),
           }),
           response: { 200: networkGraphResponse },
         },
       },
       (request) => {
-        const { range, limit } = request.query;
+        const { range, limit, minS, focus, depth } = request.query;
         const state = loadNetworkState(db);
         const window = state?.ranges[range];
         return {
@@ -125,7 +146,16 @@ export function networkRoutes(context: ApiContext): FastifyPluginAsyncZod {
           computedAt: state?.computedAt ?? null,
           from: window?.from ?? null,
           to: window?.to ?? null,
-          ...networkGraph(context.database.sqlite, { range, limit }),
+          ...networkGraph(context.database.sqlite, {
+            range,
+            limit,
+            minS,
+            focus: focus === undefined ? undefined : { userId: focus, depth },
+          }),
+          ranks: context.database.sqlite
+            .prepare(`SELECT id, name FROM ranks ORDER BY sort_order`)
+            .all() as { id: number; name: string }[],
+          groups: loadGroupWatch(db).knownGroups,
         };
       },
     );

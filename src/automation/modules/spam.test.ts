@@ -268,3 +268,53 @@ describe('spam rules', () => {
     expect(thresholdsAscend({ warnAt: 3, kickAt: 0, banAt: 2 })).toBe(false);
   });
 });
+
+describe('English texts (T12.1)', () => {
+  const english = {
+    enabled: true,
+    channelSwitch: { warnMessage: 'Slow down!', reason: 'Spam: hopping' },
+  };
+  const texts = () => server.moderation.map((m) => [m.command, m.text]);
+
+  it('warns and kicks players by their country', async () => {
+    configure({ channelSwitch: switching, english });
+    const john = server.join({ uid: 'uid-j', nickname: 'John', country: 'US' });
+    const anna = server.join({ uid: 'uid-a', nickname: 'Anna', country: 'AT' });
+    await host.idle();
+    await hop(john, 5);
+    await hop(anna, 3);
+    expect(texts()).toEqual([
+      ['poke', 'Slow down!'],
+      ['kick.server', 'Spam: hopping'],
+      ['poke', 'Bitte langsamer: Channel-Wechsel.'],
+    ]);
+  });
+
+  it('has English defaults for every kind', async () => {
+    configure({
+      nickname: { enabled: true, windowS: 600, warnAt: 1, kickAt: 0, banAt: 0 },
+      english: { enabled: true },
+    });
+    const john = server.join({ uid: 'uid-j', nickname: 'John', country: 'GB' });
+    await host.idle();
+    now += 60;
+    server.update(john, { nickname: 'Johnny' });
+    await poll();
+    expect(texts()).toEqual([['poke', 'Please slow down: changing your nickname.']]);
+  });
+
+  it('stays German for an unknown country and while English is off', async () => {
+    configure({ channelSwitch: switching, english: { ...english, enabled: false } });
+    const john = server.join({ uid: 'uid-j', nickname: 'John', country: 'US' });
+    await host.idle();
+    await hop(john, 3);
+    configure({ channelSwitch: switching, english });
+    const unknown = server.join({ uid: 'uid-u', nickname: 'Unbekannt', country: undefined });
+    await host.idle();
+    await hop(unknown, 3);
+    expect(texts()).toEqual([
+      ['poke', 'Bitte langsamer: Channel-Wechsel.'],
+      ['poke', 'Bitte langsamer: Channel-Wechsel.'],
+    ]);
+  });
+});

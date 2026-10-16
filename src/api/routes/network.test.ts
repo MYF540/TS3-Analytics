@@ -9,6 +9,8 @@ import {
   upsertChannels,
   upsertUser,
 } from '../../db/repositories/index.js';
+import { linkUsers } from '../../db/repositories/persons.js';
+import { replaceRanks } from '../../db/repositories/ranks.js';
 import { createTestDatabase } from '../../db/testing.js';
 import { runNetworkJob } from '../../network/job.js';
 import { loadNetworkSettings } from '../../network/settings.js';
@@ -139,6 +141,99 @@ describe('GET /api/network', () => {
     const body = res.json<{ edges: unknown[]; edgesTotal: number }>();
     expect(body.edges).toHaveLength(3);
     expect(body.edgesTotal).toBe(3);
+  });
+
+  /** A chain a – b – c – d: strong at the start, weaker towards the end. */
+  function chain() {
+    upsertChannels(database.db, [
+      { id: 2, name: 'Zwei', seenAt: NOW },
+      { id: 3, name: 'Drei', seenAt: NOW },
+    ]);
+    const seen = NOW - 10 * 86_400;
+    const a = upsertUser(database.db, {
+      uid: 'uid-a',
+      seenAt: seen,
+      country: 'AT',
+      serverGroups: [7],
+    });
+    const b = upsertUser(database.db, { uid: 'uid-b', seenAt: seen });
+    const c = upsertUser(database.db, { uid: 'uid-c', seenAt: seen });
+    const d = upsertUser(database.db, { uid: 'uid-d', seenAt: seen });
+    visit(a, 1, NOW - 3 * 86_400, 10 * H);
+    visit(b, 1, NOW - 3 * 86_400, 10 * H);
+    visit(b, 2, NOW - 2 * 86_400, 4 * H);
+    visit(c, 2, NOW - 2 * 86_400, 4 * H);
+    visit(c, 3, NOW - 86_400, 2 * H);
+    visit(d, 3, NOW - 86_400, 2 * H);
+    return { a, b, c, d };
+  }
+
+  const fetchGraph = async (query: string) =>
+    (
+      await app.inject({ method: 'GET', url: `/api/network?${query}`, headers: { cookie: admin } })
+    ).json<{
+      nodes: {
+        userId: number;
+        community: number | null;
+        country: string | null;
+        lastSeen: number;
+        rankId: number | null;
+        serverGroups: number[];
+      }[];
+      edges: { a: number; b: number }[];
+      ranks: { id: number; name: string }[];
+      groups: unknown[];
+    }>();
+
+  const pairs = (edges: { a: number; b: number }[]) => edges.map((edge) => [edge.a, edge.b]);
+
+  it('describes every player: group, country, last sighting, rank and server groups', async () => {
+    const { a, b } = chain();
+    // A second account of Alice: seen later, in another group – both count for the person.
+    const alt = upsertUser(database.db, { uid: 'uid-a2', seenAt: NOW - 3600, serverGroups: [8] });
+    linkUsers(database.sqlite, a, alt, 'admin', NOW);
+    const [rank] = replaceRanks(
+      database.sqlite,
+      [{ name: 'Stammgast', requiredS: 3600, serverGroupId: 30 }],
+      NOW,
+    );
+    database.sqlite
+      .prepare(`INSERT INTO rank_state (user_id, rank_id, pending, decided_at) VALUES (?, ?, 0, ?)`)
+      .run(a, rank?.id, NOW);
+    runNetworkJob(database, NOW);
+
+    const body = await fetchGraph('range=30d');
+    const alice = body.nodes.find((n) => n.userId === a);
+    expect(alice).toMatchObject({
+      country: 'AT',
+      lastSeen: NOW - 3600,
+      rankId: rank?.id,
+      serverGroups: [7, 8],
+    });
+    expect(alice?.community).toBe(body.nodes.find((n) => n.userId === b)?.community);
+    expect(body.nodes.every((n) => n.community !== null)).toBe(true);
+    expect(body.ranks).toEqual([{ id: rank?.id, name: 'Stammgast' }]);
+  });
+
+  it('leaves out connections below the minimum time', async () => {
+    const { a, b, c } = chain();
+    runNetworkJob(database, NOW);
+    const body = await fetchGraph(`range=30d&minS=${String(3 * H)}`);
+    expect(pairs(body.edges)).toEqual([
+      [a, b],
+      [b, c],
+    ]);
+  });
+
+  it('shows the surroundings of one player, one or two steps deep', async () => {
+    const { a, b, c } = chain();
+    runNetworkJob(database, NOW);
+    expect(pairs((await fetchGraph(`range=30d&focus=${String(a)}`)).edges)).toEqual([[a, b]]);
+    expect(pairs((await fetchGraph(`range=30d&focus=${String(a)}&depth=2`)).edges)).toEqual([
+      [a, b],
+      [b, c],
+    ]);
+    expect(pairs((await fetchGraph(`range=30d&focus=${String(c)}`)).edges)).toHaveLength(2);
   });
 
   it('answers with an empty graph while the job never ran', async () => {

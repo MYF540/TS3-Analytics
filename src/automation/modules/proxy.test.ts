@@ -327,3 +327,35 @@ describe('proxycheck.io', () => {
     ).toEqual(Array(8).fill(false));
   });
 });
+
+describe('English texts (T12.1)', () => {
+  const texts = () => server.moderation.map((m) => [m.command, m.text]);
+
+  it('tells the player in their language and the team in German', async () => {
+    configure({
+      action: 'message',
+      notifyGroupIds: [6],
+      english: { enabled: true, message: 'VPN detected, sorry.' },
+    });
+    await join('Mod', HOME, { serverGroups: [6] });
+    await join('John', VPN, { country: 'US' });
+    await join('Anna', VPN, { country: 'DE' });
+    expect(texts()).toEqual([
+      ['message', 'VPN detected, sorry.'],
+      ['message', 'VPN/Proxy erkannt bei John.'],
+      ['message', 'VPN oder Proxy erkannt. Bitte melde dich bei einem Admin.'],
+      ['message', 'VPN/Proxy erkannt bei Anna.'],
+    ]);
+  });
+
+  it('kicks with the English default while the German text stays for everybody else', async () => {
+    configure({ action: 'kick', english: { enabled: true } });
+    await join('John', VPN, { country: 'GB' });
+    configure({ action: 'kick' });
+    await join('Jane', VPN, { country: 'GB' });
+    expect(texts()).toEqual([
+      ['kick.server', 'VPN or proxy detected. Please contact an admin.'.slice(0, 40)],
+      ['kick.server', 'VPN oder Proxy erkannt. Bitte melde dich bei einem Admin.'.slice(0, 40)],
+    ]);
+  });
+});

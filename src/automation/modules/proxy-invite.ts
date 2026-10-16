@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { DbExecutor } from '../../db/repositories/index.js';
 import { proxyVouches } from '../../db/schema.js';
+import type { Language } from '../../domain/language.js';
 import { fillTemplate } from '../../domain/support.js';
 import { loadActivitySettings } from '../../watcher/settings.js';
 import { MESSAGE_MAX, type AutomationDeps, type ModuleActions } from '../actions.js';
@@ -59,6 +60,42 @@ export const proxyInviteSchema = z
   .default(defaults);
 
 export type ProxyInviteSettings = z.infer<typeof proxyInviteSchema>;
+
+const englishDefaults = {
+  intro:
+    'You are connected through a VPN or proxy and therefore restricted. Who do you belong to? Reply with the number from the list.',
+  nobodyMessage: 'Nobody who could vouch for you is online right now. Please try again later.',
+  askedMessage: '{name} has been asked. Please wait for the answer.',
+  sponsorQuestion:
+    '{name} is connected through a VPN or proxy and says they belong to you. Reply with "{yes}" if that is true, otherwise with "{no}".',
+  yesWord: 'yes',
+  noWord: 'no',
+  acceptedMessage: '{name} vouched for you. You are now unlocked.',
+  declinedMessage: '{name} did not confirm. You can choose another number.',
+  timeoutMessage: '{name} did not answer. You can choose another number.',
+  exhaustedMessage: 'That was too many attempts. Please contact an admin.',
+  sponsorThanks: 'Thank you. {name} is now unlocked – you are vouching for this player.',
+};
+
+/** English texts of the invite flow (T12.1); groups, deadline and attempts are shared. */
+export const englishInviteSchema = z
+  .object({
+    intro: text.default(englishDefaults.intro),
+    nobodyMessage: text.default(englishDefaults.nobodyMessage),
+    askedMessage: text.default(englishDefaults.askedMessage),
+    sponsorQuestion: text.default(englishDefaults.sponsorQuestion),
+    yesWord: word.default(englishDefaults.yesWord),
+    noWord: word.default(englishDefaults.noWord),
+    acceptedMessage: text.default(englishDefaults.acceptedMessage),
+    declinedMessage: text.default(englishDefaults.declinedMessage),
+    timeoutMessage: text.default(englishDefaults.timeoutMessage),
+    exhaustedMessage: text.default(englishDefaults.exhaustedMessage),
+    sponsorThanks: text.default(englishDefaults.sponsorThanks),
+  })
+  .default(englishDefaults);
+
+/** The texts of the invite flow in one language. */
+export type InviteTexts = z.infer<typeof englishInviteSchema>;
 
 export interface Vouch {
   sponsorUserId: number | null;
@@ -136,6 +173,21 @@ export function candidateMessages(candidates: readonly Candidate[]): string[] {
   return messages;
 }
 
+/** The invite texts for one client, in their language. */
+export function inviteTexts(context: InviteContext, client: BotClient): InviteTexts {
+  const { english, language } = context;
+  return english && language?.(client) === 'en' ? english : context.settings;
+}
+
+/** Answers are understood in both languages, whichever the question was asked in. */
+function answerOf(context: InviteContext, message: string): 'yes' | 'no' | undefined {
+  const said = message.trim().toLowerCase();
+  const sets = [context.settings, ...(context.english ? [context.english] : [])];
+  if (sets.some((texts) => said === texts.yesWord.toLowerCase())) return 'yes';
+  if (sets.some((texts) => said === texts.noWord.toLowerCase())) return 'no';
+  return undefined;
+}
+
 /** A player who was shown the list and has not been vouched for yet. */
 interface Request {
   player: BotClient;
@@ -152,6 +204,10 @@ interface Question {
 
 export interface InviteContext {
   settings: ProxyInviteSettings;
+  /** English texts; undefined while they are switched off. */
+  english?: InviteTexts | undefined;
+  /** Language of a client, by their country. */
+  language?: (client: BotClient) => Language;
   /** Group that restricts the player until somebody vouched; null = none. */
   blockGroupId: number | null;
   actions: ModuleActions;
@@ -185,11 +241,12 @@ export class ProxyInvites {
       sponsorGroupIds: settings.sponsorGroupIds,
     });
     this.requests.set(player.clid, { player, candidates, attempts: 0, asking: undefined });
+    const texts = inviteTexts(context, player);
     if (candidates.length === 0) {
-      await actions.message(player, settings.nobodyMessage, 'niemand zum Bürgen online');
+      await actions.message(player, texts.nobodyMessage, 'niemand zum Bürgen online');
       return;
     }
-    await actions.message(player, settings.intro, 'Einladung: Auswahl');
+    await actions.message(player, texts.intro, 'Einladung: Auswahl');
     for (const message of candidateMessages(candidates)) {
       await actions.message(player, message, 'Einladung: Liste');
     }
@@ -210,15 +267,16 @@ export class ProxyInvites {
   private async choose(request: Request, message: string, context: InviteContext): Promise<void> {
     const { settings, actions } = context;
     const { player } = request;
+    const texts = inviteTexts(context, player);
     if (request.asking !== undefined) return;
     const number = /^\s*#?(\d{1,3})\s*$/.exec(message)?.[1];
     const candidate = number === undefined ? undefined : request.candidates[Number(number) - 1];
     if (!candidate) {
-      await actions.message(player, settings.intro, 'Einladung: keine gültige Nummer');
+      await actions.message(player, texts.intro, 'Einladung: keine gültige Nummer');
       return;
     }
     if (request.attempts >= settings.maxAttempts) {
-      await actions.message(player, settings.exhaustedMessage, 'Einladung: Versuche aufgebraucht');
+      await actions.message(player, texts.exhaustedMessage, 'Einladung: Versuche aufgebraucht');
       return;
     }
     // The sponsor may have left or may be answering somebody else right now.
@@ -228,7 +286,7 @@ export class ProxyInvites {
     if (!sponsor) {
       await actions.message(
         player,
-        fillTemplate(settings.timeoutMessage, { name: candidate.nickname }),
+        fillTemplate(texts.timeoutMessage, { name: candidate.nickname }),
         'Einladung: Bürge nicht erreichbar',
       );
       return;
@@ -236,13 +294,15 @@ export class ProxyInvites {
     request.attempts++;
     request.asking = sponsor.clid;
     this.questions.set(sponsor.clid, { requesterClid: player.clid, askedAt: this.deps.now() });
-    const question = fillTemplate(settings.sponsorQuestion, { name: player.nickname })
-      .replaceAll('{yes}', settings.yesWord)
-      .replaceAll('{no}', settings.noWord);
+    // The sponsor is asked in their own language, with the words of that language.
+    const asked = inviteTexts(context, sponsor);
+    const question = fillTemplate(asked.sponsorQuestion, { name: player.nickname })
+      .replaceAll('{yes}', asked.yesWord)
+      .replaceAll('{no}', asked.noWord);
     await actions.message(sponsor, question, `Anfrage von „${player.nickname}“`);
     await actions.message(
       player,
-      fillTemplate(settings.askedMessage, { name: sponsor.nickname }),
+      fillTemplate(texts.askedMessage, { name: sponsor.nickname }),
       `Bürge gefragt: „${sponsor.nickname}“`,
     );
   }
@@ -254,9 +314,9 @@ export class ProxyInvites {
     context: InviteContext,
   ): Promise<boolean> {
     const { settings, actions } = context;
-    const said = message.trim().toLowerCase();
-    const yes = said === settings.yesWord.toLowerCase();
-    if (!yes && said !== settings.noWord.toLowerCase()) return false;
+    const answer = answerOf(context, message);
+    if (answer === undefined) return false;
+    const yes = answer === 'yes';
     this.questions.delete(sponsor.clid);
     const request = this.requests.get(question.requesterClid);
     if (!request) return true;
@@ -264,7 +324,7 @@ export class ProxyInvites {
     const { player } = request;
     if (!yes) {
       actions.note('proxy.declined', player, `abgelehnt von „${sponsor.nickname}“`);
-      await this.retry(request, settings.declinedMessage, sponsor.nickname, context);
+      await this.retry(request, 'declinedMessage', sponsor.nickname, context);
       return true;
     }
 
@@ -292,9 +352,12 @@ export class ProxyInvites {
     }
     await actions.message(
       player,
-      fillTemplate(settings.acceptedMessage, { name: sponsor.nickname }),
+      fillTemplate(inviteTexts(context, player).acceptedMessage, { name: sponsor.nickname }),
     );
-    await actions.message(sponsor, fillTemplate(settings.sponsorThanks, { name: player.nickname }));
+    await actions.message(
+      sponsor,
+      fillTemplate(inviteTexts(context, sponsor).sponsorThanks, { name: player.nickname }),
+    );
     const afk = loadActivitySettings(db).afkChannelIds;
     if (!afk.includes(sponsor.channelId) && sponsor.channelId !== player.channelId) {
       await actions.move(player, sponsor.channelId, `zu „${sponsor.nickname}“`);
@@ -305,14 +368,15 @@ export class ProxyInvites {
   /** Tells the player that this sponsor did not work out and whether they may try another. */
   private async retry(
     request: Request,
-    template: string,
+    template: 'declinedMessage' | 'timeoutMessage',
     sponsorName: string,
     context: InviteContext,
   ): Promise<void> {
     const { settings, actions } = context;
-    await actions.message(request.player, fillTemplate(template, { name: sponsorName }));
+    const texts = inviteTexts(context, request.player);
+    await actions.message(request.player, fillTemplate(texts[template], { name: sponsorName }));
     if (request.attempts >= settings.maxAttempts) {
-      await actions.message(request.player, settings.exhaustedMessage, 'Versuche aufgebraucht');
+      await actions.message(request.player, texts.exhaustedMessage, 'Versuche aufgebraucht');
     }
   }
 
@@ -327,7 +391,7 @@ export class ProxyInvites {
       request.asking = undefined;
       const name =
         this.deps.online().find((client) => client.clid === sponsorClid)?.nickname ?? '?';
-      await this.retry(request, context.settings.timeoutMessage, name, context);
+      await this.retry(request, 'timeoutMessage', name, context);
     }
   }
 

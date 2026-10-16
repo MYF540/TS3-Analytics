@@ -1271,3 +1271,34 @@ td .badge {
   background: color-mix(in srgb, var(--accent) calc(var(--share, 0) * 45%), transparent);
   font-variant-numeric: tabular-nums;
 }
+
+/* Network page (T12.2): legend with a switch per category. */
+.network-legend {
+  border: 0;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.network-legend__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0 0 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.network-legend__swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+}
+
+.network-focus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}

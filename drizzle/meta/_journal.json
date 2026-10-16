@@ -138,15 +138,15 @@
     {
       "idx": 19,
       "version": "6",
-      "when": 1792115928254,
-      "tag": "0019_achievements",
+      "when": 1792116196898,
+      "tag": "0019_network_communities",
       "breakpoints": true
     },
     {
       "idx": 20,
       "version": "6",
-      "when": 1792118027026,
-      "tag": "0020_loyalty",
+      "when": 1792194177822,
+      "tag": "0020_achievements_loyalty",
       "breakpoints": true
     }
   ]

@@ -36,6 +36,13 @@ export const privateSettingsResponse = z.object({
     movedMessage: z.string(),
     deniedMessage: z.string(),
     passwordMessage: z.string(),
+    english: z.object({
+      enabled: z.boolean(),
+      createdMessage: z.string(),
+      movedMessage: z.string(),
+      deniedMessage: z.string(),
+      passwordMessage: z.string(),
+    }),
   }),
   groups: named,
   channels: named,

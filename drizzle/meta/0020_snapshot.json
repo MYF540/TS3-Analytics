@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5ea71668-d5c4-49eb-b550-e6dcd25ad09f",
-  "prevId": "87636e91-e753-42b2-a40c-45429381949c",
+  "id": "d5814263-fe19-4ba2-a5ef-2f35bfe0a57a",
+  "prevId": "1488ecf0-f5c9-4786-827c-95240a6676fb",
   "tables": {
     "achievements_earned": {
       "name": "achievements_earned",
@@ -1583,6 +1583,13 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "community": {
+          "name": "community",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         }
       },

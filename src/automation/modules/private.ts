@@ -6,6 +6,7 @@ import { Cooldown, fillTemplate } from '../../domain/support.js';
 import type { Ts3Channel } from '../../ts3/types.js';
 import { MESSAGE_MAX, ModuleActions, type AutomationDeps } from '../actions.js';
 import type { BotClient, BotModule, JoinInfo } from '../host.js';
+import { clientLanguage, englishSection } from '../language.js';
 import { addManaged, listManaged, removeManaged } from '../managed-channels.js';
 import { isExempt, loadModuleSettings, moduleBase } from '../settings.js';
 
@@ -49,9 +50,19 @@ export const privateSettingsSchema = moduleBase.extend({
   deniedMessage: text.default('Du kannst hier keinen privaten Channel bekommen.'),
   /** `{password}` is the generated password. */
   passwordMessage: text.default('Das Passwort deines Channels lautet: {password}'),
+  /** English texts for players outside the German-speaking countries (T12.1). */
+  english: englishSection({
+    createdMessage: text.default('Your private channel has been created.'),
+    movedMessage: text.default('Welcome back to your private channel.'),
+    deniedMessage: text.default('You cannot get a private channel here.'),
+    passwordMessage: text.default('The password of your channel is: {password}'),
+  }),
 });
 
 export type PrivateSettings = z.infer<typeof privateSettingsSchema>;
+
+/** The texts a player sees, in one language. */
+export type PrivateTexts = Omit<PrivateSettings['english'], 'enabled'>;
 
 export function loadPrivateSettings(db: DbExecutor): PrivateSettings {
   return loadModuleSettings(db, 'private', privateSettingsSchema);
@@ -126,6 +137,12 @@ export class PrivateModule implements BotModule {
     }
   }
 
+  /** German or English, by the country of the player. */
+  private texts(settings: PrivateSettings, client: BotClient): PrivateTexts {
+    const language = clientLanguage(this.deps.database, client.userId, settings.english.enabled);
+    return language === 'en' ? settings.english : settings;
+  }
+
   private async serve(
     client: BotClient,
     lobby: PrivateLobby,
@@ -134,12 +151,13 @@ export class PrivateModule implements BotModule {
   ): Promise<void> {
     const { db } = this.deps.database;
     const actions = new ModuleActions(this.deps, { module: this.id, dryRun: settings.dryRun });
+    const texts = this.texts(settings, client);
     const allowed =
       lobby.allowedGroupIds.length === 0 ||
       client.serverGroups.some((group) => lobby.allowedGroupIds.includes(group));
     if (!allowed) {
-      await actions.message(client, settings.deniedMessage, 'nicht erlaubte Gruppe');
-      await actions.kickFromChannel(client, settings.deniedMessage);
+      await actions.message(client, texts.deniedMessage, 'nicht erlaubte Gruppe');
+      await actions.kickFromChannel(client, texts.deniedMessage);
       return;
     }
 
@@ -149,7 +167,7 @@ export class PrivateModule implements BotModule {
     if (own) {
       const moved = await actions.move(client, own.channelId, 'eigener Channel');
       if (moved) {
-        await actions.message(client, settings.movedMessage);
+        await actions.message(client, texts.movedMessage);
         return;
       }
       if (settings.dryRun) return;
@@ -175,6 +193,7 @@ export class PrivateModule implements BotModule {
     lobby: PrivateLobby,
     settings: PrivateSettings,
   ): Promise<void> {
+    const texts = this.texts(settings, client);
     const password = lobby.password ? (this.deps.password ?? generatePassword)() : undefined;
     // A temporary channel pulls its creator in; remember where the bot has to go back to.
     const self = lobby.kind === 'temporary' ? await this.deps.commands.self() : undefined;
@@ -220,12 +239,12 @@ export class PrivateModule implements BotModule {
         c.move(self.clid, self.channelId),
       );
     }
-    await actions.message(client, settings.createdMessage);
+    await actions.message(client, texts.createdMessage);
     if (password !== undefined) {
       // The password itself must not end up in the automation log.
       await actions.message(
         client,
-        settings.passwordMessage.replaceAll('{password}', password),
+        texts.passwordMessage.replaceAll('{password}', password),
         'Passwort mitgeteilt',
       );
     }

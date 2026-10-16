@@ -16,11 +16,17 @@ const settingsOutput = z.object({
   dryRun: z.boolean(),
   exemptGroupIds: z.array(z.number().int()),
   patterns: z.array(
-    z.object({ pattern: z.string(), regex: z.boolean(), message: z.string().optional() }),
+    z.object({
+      pattern: z.string(),
+      regex: z.boolean(),
+      message: z.string().optional(),
+      messageEnglish: z.string().optional(),
+    }),
   ),
   lookalikes: z.boolean(),
   action: z.enum(['message', 'poke', 'kick']),
   message: z.string(),
+  english: z.object({ enabled: z.boolean(), message: z.string() }),
 });
 
 export const nicknameSettingsResponse = z.object({

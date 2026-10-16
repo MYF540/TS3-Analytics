@@ -26,9 +26,10 @@ Darunter zeigt dieselbe Seite, wann dieser Spieler üblicherweise online ist:
 | ------------------------------------ | ------------------------------------------ |
 | ![Ränge](docs/screenshots/ranks.png) | ![Channels](docs/screenshots/channels.png) |
 
-Wer verbringt Zeit mit wem? Das Netzwerk verbindet Spieler, die gemeinsam im selben Channel waren:
+Wer verbringt Zeit mit wem? Das Netzwerk verbindet Spieler, die gemeinsam im selben Channel waren, und färbt sie nach Freundeskreis, Rang, Land oder Aktivität (hell und dunkel):
 
-![Spieler-Netzwerk](docs/screenshots/network.png)
+| ![Spieler-Netzwerk](docs/screenshots/network.png) | ![Spieler-Netzwerk dunkel](docs/screenshots/network-dark.png) |
+| ------------------------------------------------- | ------------------------------------------------------------- |
 
 Was der Bot von selbst erledigt, steht unter „Automatik“ – jedes Modul mit Testmodus und Protokoll:
 
@@ -55,7 +56,9 @@ Was der Bot von selbst erledigt, steht unter „Automatik“ – jedes Modul mit
   wieder da), Monatsbilanz aus neuen, wiedergekehrten und verlorenen Spielern und eine Liste
   vermisster Stammspieler mit CSV-Export. Wird einmal täglich berechnet.
 - **Spieler-Netzwerk**: Kraft-gerichteter Graph, wer häufig mit wem im selben Channel ist –
-  AFK-Zeiten und ausgewählte Channels bleiben außen vor. Wird einmal täglich berechnet.
+  AFK-Zeiten und ausgewählte Channels bleiben außen vor. Wird einmal täglich berechnet. Spielersuche
+  mit Umfeld (ein oder zwei Schritte), Mindestzeit, Filter nach Servergruppe, Farben nach
+  Freundeskreis, Rang, Land oder Aktivität mit Legende zum Ausblenden; alles steht in der URL.
 - **Automatik** (ersetzt typische SinusBot-Skripte): Nickname-Checker, Support-Channel mit
   Benachrichtigung, Staffliste in einer Channel-Beschreibung, Channel-Creator, Privat-Channel,
   Regelbestätigung, Spam-Control und Anti-Proxy. Jedes Modul ist zunächst aus und startet im

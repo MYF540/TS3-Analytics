@@ -1,90 +1,9 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "87636e91-e753-42b2-a40c-45429381949c",
+  "id": "1488ecf0-f5c9-4786-827c-95240a6676fb",
   "prevId": "0c389f2b-ff4f-43f2-824a-daacd81dd284",
   "tables": {
-    "achievements_earned": {
-      "name": "achievements_earned",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "achievement_id": {
-          "name": "achievement_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "tier": {
-          "name": "tier",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "earned_at": {
-          "name": "earned_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "backfilled": {
-          "name": "backfilled",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        }
-      },
-      "indexes": {
-        "achievements_earned_achievement_idx": {
-          "name": "achievements_earned_achievement_idx",
-          "columns": ["achievement_id", "tier"],
-          "isUnique": false
-        },
-        "achievements_earned_at_idx": {
-          "name": "achievements_earned_at_idx",
-          "columns": ["earned_at"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "achievements_earned_user_id_users_id_fk": {
-          "name": "achievements_earned_user_id_users_id_fk",
-          "tableFrom": "achievements_earned",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "achievements_earned_user_id_achievement_id_tier_pk": {
-          "columns": ["user_id", "achievement_id", "tier"],
-          "name": "achievements_earned_user_id_achievement_id_tier_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {
-        "achievements_earned_tier_check": {
-          "name": "achievements_earned_tier_check",
-          "value": "\"achievements_earned\".\"tier\" >= 1"
-        },
-        "achievements_earned_backfilled_check": {
-          "name": "achievements_earned_backfilled_check",
-          "value": "\"achievements_earned\".\"backfilled\" IN (0, 1)"
-        }
-      }
-    },
     "activity_segments": {
       "name": "activity_segments",
       "columns": {
@@ -1411,6 +1330,13 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "community": {
+          "name": "community",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         }
       },

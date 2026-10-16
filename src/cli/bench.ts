@@ -23,6 +23,7 @@ import {
   weekdayHourHeatmap,
 } from '../db/queries/stats.js';
 import { berlinDay, berlinDayStart } from '../domain/time.js';
+import { networkGraph } from '../db/queries/network.js';
 import { computeNetwork } from '../network/job.js';
 import { FactsReader } from '../achievements/facts.js';
 import { globalFacts, runAchievementJob } from '../achievements/job.js';
@@ -111,6 +112,11 @@ function main(): void {
       .prepare(`SELECT user_id FROM user_totals ORDER BY online_s DESC LIMIT 1`)
       .pluck()
       .get() as number;
+    const networkFocus =
+      (sqlite
+        .prepare(`SELECT user_id FROM network_nodes WHERE range = '1y' ORDER BY seconds DESC`)
+        .pluck()
+        .get() as number | undefined) ?? heavyUser;
     const page = { limit: 25, offset: 0 };
 
     const results: Result[] = [
@@ -167,6 +173,17 @@ function main(): void {
         runs,
         () => computeNetwork(database, '90d', now, firstHour, DEFAULT_NETWORK_SETTINGS, []),
         JOB_BUDGET_MS,
+      ),
+      // Reading the stored network (T12.2) – only meaningful after the job ran on this file.
+      measure('Netzwerk lesen 1 Jahr, 1.500 Verbindungen', runs, () =>
+        networkGraph(sqlite, { range: '1y', limit: 1500 }),
+      ),
+      measure('Netzwerk Umfeld eines Spielers, 2 Schritte', runs, () =>
+        networkGraph(sqlite, {
+          range: '1y',
+          limit: 1500,
+          focus: { userId: networkFocus, depth: 2 },
+        }),
       ),
       measure('Leaderboard Jahr, Anzahl (Paginierung)', runs, () =>
         countLeaderboardForDays(sqlite, 'online', daysBack(364), today),

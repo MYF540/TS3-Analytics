@@ -27,6 +27,14 @@ const stored: SpamSettings = {
     nickname: rules({ windowS: 600, warnAt: 3, kickAt: 5 }),
     reconnect: rules({ windowS: 300, warnAt: 0, kickAt: 0, banAt: 8 }),
     lobby: rules({ windowS: 60, warnAt: 3, kickAt: 6 }),
+    english: {
+      enabled: false,
+      channelSwitch: { warnMessage: 'Please slow down.', reason: 'Spam: switching channels' },
+      channelCreate: { warnMessage: 'Please slow down.', reason: 'Spam: creating channels' },
+      nickname: { warnMessage: 'Please slow down.', reason: 'Spam: nickname' },
+      reconnect: { warnMessage: 'Please slow down.', reason: 'Spam: reconnecting' },
+      lobby: { warnMessage: 'Please slow down.', reason: 'Spam: private channels' },
+    },
   },
   groups: [{ id: 6, name: 'Server Admin' }],
 };

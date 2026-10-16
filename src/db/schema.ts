@@ -611,6 +611,8 @@ export const networkNodes = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     seconds: integer('seconds').notNull(),
+    /** Group of players who mostly meet each other (T12.2); 0 is the largest. Null before 0019. */
+    community: integer('community'),
   },
   (t) => [
     primaryKey({ columns: [t.range, t.userId] }),

@@ -14,6 +14,7 @@ import type { AppDatabase } from '../db/client.js';
 import { HIDDEN_USERS } from '../db/queries/stats.js';
 import { NETWORK_RANGES, type NetworkRange } from '../db/schema.js';
 import { buildCoPresence, type CoPresenceSegment } from '../domain/co-presence.js';
+import { detectCommunities } from '../domain/communities.js';
 import { loadActivitySettings } from '../watcher/settings.js';
 import {
   loadNetworkSettings,
@@ -169,7 +170,7 @@ function computeRange(
   const result = computeNetwork(database, range, now, firstData, settings, excluded);
 
   const insertNode = sqlite.prepare(
-    `INSERT INTO network_nodes (range, user_id, seconds) VALUES (?, ?, ?)`,
+    `INSERT INTO network_nodes (range, user_id, seconds, community) VALUES (?, ?, ?, ?)`,
   );
   const insertEdge = sqlite.prepare(
     `INSERT INTO network_edges (range, user_a, user_b, seconds, encounters) VALUES (?, ?, ?, ?, ?)`,
@@ -181,11 +182,22 @@ function computeRange(
     connected.add(edge.b);
   }
 
+  // Groups that mostly meet each other, for the colours of the network page (T12.2).
+  const communities = detectCommunities(
+    [],
+    result.edges.map((edge) => ({ a: edge.a, b: edge.b, weight: edge.seconds })),
+  );
+
   sqlite.transaction(() => {
     sqlite.prepare(`DELETE FROM network_edges WHERE range = ?`).run(range);
     sqlite.prepare(`DELETE FROM network_nodes WHERE range = ?`).run(range);
     for (const subject of connected) {
-      insertNode.run(range, subject, result.nodes.get(subject) ?? 0);
+      insertNode.run(
+        range,
+        subject,
+        result.nodes.get(subject) ?? 0,
+        communities.get(subject) ?? null,
+      );
     }
     for (const edge of result.edges) {
       insertEdge.run(range, edge.a, edge.b, edge.seconds, edge.encounters);

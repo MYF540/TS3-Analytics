@@ -1,0 +1,1 @@
+ALTER TABLE `network_nodes` ADD `community` integer;

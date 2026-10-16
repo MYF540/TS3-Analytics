@@ -53,6 +53,7 @@ describe('nickname checker routes', () => {
         lookalikes: true,
         action: 'kick',
         message: 'Dieser Nickname ist hier nicht erlaubt.',
+        english: { enabled: false, message: 'This nickname is not allowed here.' },
       },
       groups: [],
     });
@@ -61,7 +62,10 @@ describe('nickname checker routes', () => {
   it('save the settings, write the audit log and show up in the overview', async () => {
     const response = await put(valid);
     expect(response.statusCode).toBe(200);
-    expect(loadNicknameSettings(database.db)).toEqual(valid);
+    expect(loadNicknameSettings(database.db)).toEqual({
+      ...valid,
+      english: { enabled: false, message: 'This nickname is not allowed here.' },
+    });
     expect(
       database.sqlite.prepare('SELECT action, details FROM audit_log ORDER BY id DESC').get(),
     ).toEqual({

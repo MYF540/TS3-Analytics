@@ -11,11 +11,26 @@ import {
 import { saveModuleSettings } from '../../automation/settings.js';
 import { getUserById } from '../../db/repositories/index.js';
 import { PROXY_VERDICTS } from '../../db/schema.js';
+import { wordsCollide } from '../../domain/language.js';
 import { loadGroupWatch } from '../../watcher/group-settings.js';
 import type { ApiContext } from '../context.js';
 import { ApiError } from '../errors.js';
 
 const idParams = z.object({ id: z.coerce.number().int().positive() });
+
+const inviteTextsOutput = z.object({
+  intro: z.string(),
+  nobodyMessage: z.string(),
+  askedMessage: z.string(),
+  sponsorQuestion: z.string(),
+  yesWord: z.string(),
+  noWord: z.string(),
+  acceptedMessage: z.string(),
+  declinedMessage: z.string(),
+  timeoutMessage: z.string(),
+  exhaustedMessage: z.string(),
+  sponsorThanks: z.string(),
+});
 
 export const proxySettingsResponse = z.object({
   settings: z.object({
@@ -29,22 +44,16 @@ export const proxySettingsResponse = z.object({
     notifyGroupIds: z.array(z.number().int()),
     notifyMessage: z.string(),
     exemptUserIds: z.array(z.number().int()),
-    invite: z.object({
+    invite: inviteTextsOutput.extend({
       whitelistGroupId: z.number().int().nullable(),
       sponsorGroupIds: z.array(z.number().int()),
       timeoutS: z.number().int(),
       maxAttempts: z.number().int(),
-      intro: z.string(),
-      nobodyMessage: z.string(),
-      askedMessage: z.string(),
-      sponsorQuestion: z.string(),
-      yesWord: z.string(),
-      noWord: z.string(),
-      acceptedMessage: z.string(),
-      declinedMessage: z.string(),
-      timeoutMessage: z.string(),
-      exhaustedMessage: z.string(),
-      sponsorThanks: z.string(),
+    }),
+    english: z.object({
+      enabled: z.boolean(),
+      message: z.string(),
+      invite: inviteTextsOutput,
     }),
   }),
   groups: z.array(z.object({ id: z.number().int(), name: z.string() })),
@@ -127,6 +136,7 @@ export function automationProxyRoutes(context: ApiContext): FastifyPluginAsyncZo
           throw new ApiError(400, 'PROXY_GROUP_MISSING', 'This action needs a group');
         }
         const { whitelistGroupId, yesWord, noWord } = settings.invite;
+        const { english } = settings;
         const rankGroups = rankGroupIds(context.database);
         if ([settings.groupId, whitelistGroupId].some((g) => g !== null && rankGroups.has(g))) {
           throw new ApiError(400, 'RULES_RANK_GROUP', 'A rank group cannot be used');
@@ -138,7 +148,10 @@ export function automationProxyRoutes(context: ApiContext): FastifyPluginAsyncZo
             'Restricting and whitelist group must differ',
           );
         }
-        if (yesWord.toLowerCase() === noWord.toLowerCase()) {
+        // Answers are understood in both languages: no word may mean yes in one and no in the other.
+        const yes = [yesWord, ...(english.enabled ? [english.invite.yesWord] : [])];
+        const no = [noWord, ...(english.enabled ? [english.invite.noWord] : [])];
+        if (wordsCollide(yes, no)) {
           throw new ApiError(400, 'RULES_SAME_COMMAND', 'Yes and no must differ');
         }
         request.audit({

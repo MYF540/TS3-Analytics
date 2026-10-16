@@ -55,10 +55,16 @@ export interface NicknameSettings {
     enabled: boolean;
     dryRun: boolean;
     exemptGroupIds: number[];
-    patterns: { pattern: string; regex: boolean; message?: string | undefined }[];
+    patterns: {
+      pattern: string;
+      regex: boolean;
+      message?: string | undefined;
+      messageEnglish?: string | undefined;
+    }[];
     lookalikes: boolean;
     action: 'message' | 'poke' | 'kick';
     message: string;
+    english: { enabled: boolean; message: string };
   };
   groups: { id: number; name: string }[];
 }
@@ -82,6 +88,7 @@ export interface SupportSettings {
       openMaxClients: number;
       closedMaxClients: number;
     };
+    english: { enabled: boolean; userMessage: string; nobodyMessage: string };
   };
   groups: { id: number; name: string }[];
   channels: { id: number; name: string }[];
@@ -163,6 +170,13 @@ export interface PrivateSettings {
     movedMessage: string;
     deniedMessage: string;
     passwordMessage: string;
+    english: {
+      enabled: boolean;
+      createdMessage: string;
+      movedMessage: string;
+      deniedMessage: string;
+      passwordMessage: string;
+    };
   };
   groups: { id: number; name: string }[];
   channels: { id: number; name: string }[];
@@ -228,6 +242,12 @@ export interface SpamRules {
   reason: string;
 }
 
+/** English warning and reason of one kind of action (T12.1). */
+export interface SpamTexts {
+  warnMessage: string;
+  reason: string;
+}
+
 export interface SpamSettings {
   settings: {
     enabled: boolean;
@@ -238,8 +258,31 @@ export interface SpamSettings {
     nickname: SpamRules;
     reconnect: SpamRules;
     lobby: SpamRules;
+    english: {
+      enabled: boolean;
+      channelSwitch: SpamTexts;
+      channelCreate: SpamTexts;
+      nickname: SpamTexts;
+      reconnect: SpamTexts;
+      lobby: SpamTexts;
+    };
   };
   groups: { id: number; name: string }[];
+}
+
+/** Texts of the proxy invite flow in one language. */
+export interface InviteTexts {
+  intro: string;
+  nobodyMessage: string;
+  askedMessage: string;
+  sponsorQuestion: string;
+  yesWord: string;
+  noWord: string;
+  acceptedMessage: string;
+  declinedMessage: string;
+  timeoutMessage: string;
+  exhaustedMessage: string;
+  sponsorThanks: string;
 }
 
 export interface ProxySettings {
@@ -271,6 +314,7 @@ export interface ProxySettings {
       exhaustedMessage: string;
       sponsorThanks: string;
     };
+    english: { enabled: boolean; message: string; invite: InviteTexts };
   };
   groups: { id: number; name: string }[];
   keyConfigured: boolean;
@@ -448,7 +492,17 @@ export interface NetworkGraph {
   computedAt: number | null;
   from: number | null;
   to: number | null;
-  nodes: { userId: number; nickname: string | null; seconds: number; accounts: number }[];
+  nodes: {
+    userId: number;
+    nickname: string | null;
+    seconds: number;
+    accounts: number;
+    community: number | null;
+    country: string | null;
+    lastSeen: number;
+    rankId: number | null;
+    serverGroups: number[];
+  }[];
   edges: {
     a: number;
     b: number;
@@ -459,6 +513,8 @@ export interface NetworkGraph {
   }[];
   edgesTotal: number;
   strongestS: number;
+  ranks: { id: number; name: string }[];
+  groups: { id: number; name: string }[];
 }
 
 /** Settings of the player network and the result of the last daily run (T9.1). */
