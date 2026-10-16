@@ -558,6 +558,75 @@ Aufgenommen am 16.10.2026 auf Wunsch des Betreibers. Details, die er nicht festg
   - Fertig wenn: Tests für Cluster-Funktion (getrennte Gruppen, eine Gruppe, leerer Graph, deterministisch), Route (neue Felder, Filter, Rechte) und Seite (Filter lösen Anfragen aus bzw. blenden aus, Legende, Farbmodus); Screenshot hell und dunkel; README und `docs/performance.md` ergänzt
 
 
+## Phase 13 – Bindung & Achievements
+
+Aufgenommen am 16.10.2026 auf Wunsch des Betreibers. Details, die er nicht festgelegt hat, sind als Vorschlag markiert und vor Beginn kurz mit ihm abzustimmen.
+
+Grundsätze (Vorschlag):
+
+- Alles auf **Personenebene** (verknüpfte UIDs zusammen, wie T5.3). Ein Achievement gehört der Person und erscheint auf allen ihren UIDs.
+- Spielzeit-Achievements zählen die **Rangzeit** (Legacy-Zeit bis `legacy_cutoff` plus Live-Zeit, Regel 12), damit langjährige Spieler sie nicht neu erspielen müssen. Achievements nach Uhrzeit, Serie oder Aktivität brauchen Live-Daten und gelten erst ab Live-Tracking; die Seite weist darauf hin (wie T8.7).
+- Achievements werden nur vergeben, nie entzogen. Ausnahme: das Löschen nach DSGVO (T7.2) entfernt sie mit.
+- Schwellen und Texte stehen in einem festen Katalog im Code (`/domain`). Im Webinterface lässt sich jedes Achievement nur ein- oder ausschalten.
+- Ausgewertet wird in einem Job aus den Aggregaten (`user_daily_stats`, `user_totals`, `server_hourly`, `network_edges`) und den Sessions des letzten Laufs, nie per Vollscan über Rohdaten bei jedem Aufruf.
+
+Vorschlag Katalog (Stufen Bronze / Silber / Gold / Platin, wo angegeben):
+
+| Gruppe | Achievement | Bedingung |
+|---|---|---|
+| Spielzeit | **Stammgast** (Stufen) | 10 / 100 / 500 / 1.000 / 2.500 h Rangzeit |
+| Spielzeit | **Aktivposten** (Stufen) | 50 / 250 / 1.000 h aktive Zeit (ohne idle/AFK) |
+| Treue | **Urgestein** (Stufen) | 1 / 2 / 5 / 10 Jahre seit dem ersten Besuch, im letzten Jahr noch gesehen |
+| Treue | **Pionier** | unter den ersten 100 Nutzern des Servers (nach `first_seen`) |
+| Treue | **Comeback** | nach mindestens 180 Tagen Pause wieder da |
+| Serie | **Dauerbrenner** (Stufen) | an 7 / 30 / 100 Tagen in Folge mindestens 15 min online |
+| Serie | **Wochenendkrieger** | an 10 Wochenenden in Folge Samstag oder Sonntag online |
+| Session | **Marathon** (Stufen) | eine Session von 4 / 8 / 12 h |
+| Uhrzeit | **Nachteule** | 25 Sessions, die zwischen 0 und 5 Uhr (Berlin) laufen |
+| Uhrzeit | **Frühaufsteher** | 25 Sessions, die vor 7 Uhr (Berlin) beginnen |
+| Uhrzeit | **Silvester** | zum Jahreswechsel um Mitternacht online |
+| Uhrzeit | **Geburtstagskind** | am Jahrestag des ersten Besuchs online |
+| Sozial | **Gesellig** (Stufen) | mit 10 / 25 / 50 verschiedenen Spielern je mindestens 1 h gemeinsam online (Netzwerk, Zeitraum „gesamt“) |
+| Sozial | **Unzertrennlich** | 250 h gemeinsam mit derselben Person |
+| Sozial | **Rekordnacht** | online, als der Server einen neuen Allzeit-Rekord an Nutzern erreicht hat |
+| Server | **Weltenbummler** | in 25 verschiedenen Channels gewesen |
+| Server | **Gipfelstürmer** | den höchsten Rang der Rangleiter erreicht |
+| Geheim | **Geheim-Achievements** | auf der Seite als „???“ angezeigt, bis jemand sie hat (z. B. genau 1 Minute nach Mitternacht am 1.1. verbunden, 1.000. Session) |
+
+- [ ] **T13.1 Bindung & Abwanderung** · `Backend` `Frontend` · braucht: T3.2, T5.3
+  - Neue Seite unter Statistik (alle Rollen, Liste vermisster Spieler wie die Spielerseiten)
+  - **Kohorten:** Personen nach Monat des ersten Besuchs; Anteil, der nach 7 / 30 / 90 Tagen wieder online war (mind. ein Tag mit Online-Zeit ab Tag N), als Tabelle mit Farbskala
+  - **Monatsbilanz:** je Monat aktive Personen, davon neu, wiedergekehrt (nach ≥ 90 Tagen Pause) und verloren (im Vormonat aktiv, seitdem nicht mehr), als Diagramm
+  - **Vermisste Stammspieler:** Personen mit mindestens X h in den 90 Tagen vor ihrem letzten Besuch, die seit Y Wochen fehlen (X, Y in der Seite einstellbar, Vorschlag 20 h und 4 Wochen); Spalten letzter Besuch, Gesamtzeit, Rang; Link zur Spielerseite; CSV-Export wie T3.8
+  - Berechnung im täglichen Job in eine Cache-Tabelle (Migration), da Kohorten über den Zeitraum „gesamt“ zu teuer für eine Live-Abfrage sind; importierte Sessions zählen mit (Online-Zeit reicht)
+  - Fertig wenn: reine Funktionen in `/domain` mit Tests (leere Kohorte, Rückkehr genau an Tag N, verknüpfte UIDs, Tagesgrenze Berlin); Route- und Seitentests; Abfrage < 100 ms auf dem synthetischen Datensatz, Ergebnis in `docs/performance.md`
+
+- [ ] **T13.2 Achievement-Katalog & Engine** · `DB` `Backend` · braucht: T5.3, T6.1
+  - Katalog als Daten in `/domain/achievements` (ID, Gruppe, Stufen, Schwellen, geheim ja/nein); Namen und Beschreibungen in der Übersetzungsdatei
+  - Reine Funktion: aus den Kennzahlen einer Person (Rangzeit, aktive Zeit, Serien, längste Session, Sessions nach Uhrzeit, Kontakte, Channels, Rang) die erreichten Stufen und das Erreichungsdatum bestimmen
+  - Migration: Tabelle `achievements_earned` (person bzw. user, achievement_id, Stufe, earned_at, `backfilled`), eindeutig je Person, Achievement und Stufe; Fortschritt wird nicht gespeichert, sondern beim Anzeigen aus den Aggregaten berechnet
+  - Fertig wenn: Tests je Achievement für Grenzwerte (knapp darunter, genau, darüber), Stufen, verknüpfte UIDs, Legacy-Zeit, Sommer-/Winterzeit bei den Uhrzeit-Achievements; DSGVO-Löschung und -Export (T7.2) enthalten die neue Tabelle
+
+- [ ] **T13.3 Achievement-Job & Nachberechnung** · `Backend` · braucht: T13.2
+  - Läuft nach dem Schreiben der Aggregate (Vorschlag alle 15 min) und prüft nur Personen, die seit dem letzten Lauf online waren; Voll-Lauf nach Katalog- oder Einstellungsänderung
+  - Erster Lauf berechnet alle Achievements aus der vorhandenen Historie nach (`backfilled = 1`, Datum so genau wie die Daten es hergeben), ohne Nachrichten zu verschicken
+  - Schreiben gebündelt in einer Transaktion; ein erneuter Lauf erzeugt keine Duplikate
+  - Fertig wenn: Tests für inkrementellen Lauf, Voll-Lauf, Idempotenz und Nachberechnung auf Seed-Daten; Laufzeit des Voll-Laufs auf dem synthetischen Datensatz in `docs/performance.md`
+
+- [ ] **T13.4 Achievements im Webinterface** · `Backend` `Frontend` · braucht: T13.3
+  - Spielerseite: Abzeichen mit Stufe und Datum, Fortschritt zur nächsten Stufe („noch 37 h bis Gold“), nachberechnete als solche gekennzeichnet
+  - Übersichtsseite: alle Achievements mit Seltenheit (Anteil der Personen, die es haben), wer es zuletzt erreicht hat, Liste der Inhaber; geheime bleiben „???“, bis jemand sie hat
+  - Dashboard: Kachel „Zuletzt erreicht“
+  - Einstellungen (nur Admin): Achievements einzeln ein-/ausschalten, Eintrag im Audit-Log (Regel 10); ausgeschaltete werden ausgeblendet, nicht gelöscht
+  - Fertig wenn: Route- und Seitentests (Rechte, geheime Achievements, Fortschritt, Seltenheit); Abfragen < 100 ms
+
+- [ ] **T13.5 Benachrichtigung bei neuen Achievements (optional)** · `Backend` `Frontend` · braucht: T13.4, T5.4
+  - Private TS3-Nachricht an den Spieler (Text je Achievement anpassbar, Platzhalter für Name und Stufe), optional zusätzlich Discord; beides ab Werk aus, Testmodus an (Regel 7)
+  - Nachrichten laufen über `ModuleActions` und die Query-Queue (Regel 5, 13), höchstens eine Nachricht je Person und Lauf (mehrere Achievements zusammengefasst); nachberechnete lösen nie eine Nachricht aus
+  - Sprachwahl nach Land wie T12.1, sobald diese Aufgabe erledigt ist
+  - Fertig wenn: Tests für Testmodus, Zusammenfassen, keine Nachricht bei Nachberechnung, offline gewordene Spieler (Nachricht beim nächsten Join oder verwerfen, Vorschlag: verwerfen)
+
+
 ---
 
 ## Gefundene Punkte
