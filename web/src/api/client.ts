@@ -244,8 +244,10 @@ export const api = {
   heatmap: (range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>('/stats/heatmap', { range }, signal),
   dataSources: (signal?: AbortSignal) => apiGet<DataSources>('/stats/sources', {}, signal),
-  network: (query: { range: NetworkRange; limit: number }, signal?: AbortSignal) =>
-    apiGet<NetworkGraph>('/network', query, signal),
+  network: (
+    query: { range: NetworkRange; limit: number; minS?: number; focus?: number; depth?: 1 | 2 },
+    signal?: AbortSignal,
+  ) => apiGet<NetworkGraph>('/network', query, signal),
   networkSettings: (signal?: AbortSignal) =>
     apiGet<NetworkSettings>('/settings/network', {}, signal),
   saveNetworkSettings: (settings: NetworkSettings['settings']) =>

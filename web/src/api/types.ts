@@ -492,7 +492,17 @@ export interface NetworkGraph {
   computedAt: number | null;
   from: number | null;
   to: number | null;
-  nodes: { userId: number; nickname: string | null; seconds: number; accounts: number }[];
+  nodes: {
+    userId: number;
+    nickname: string | null;
+    seconds: number;
+    accounts: number;
+    community: number | null;
+    country: string | null;
+    lastSeen: number;
+    rankId: number | null;
+    serverGroups: number[];
+  }[];
   edges: {
     a: number;
     b: number;
@@ -503,6 +513,8 @@ export interface NetworkGraph {
   }[];
   edgesTotal: number;
   strongestS: number;
+  ranks: { id: number; name: string }[];
+  groups: { id: number; name: string }[];
 }
 
 /** Settings of the player network and the result of the last daily run (T9.1). */
