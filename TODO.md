@@ -527,6 +527,37 @@ Entscheidung (13.10.2026): Hinweis im Webinterface **und** Knopf für Admins; in
 
 ---
 
+## Phase 12 – Ausbau
+
+Aufgenommen am 16.10.2026 auf Wunsch des Betreibers. Details, die er nicht festgelegt hat, sind als Vorschlag markiert und vor Beginn kurz mit ihm abzustimmen.
+
+- [ ] **T12.1 Englische Texte für alle Bot-Module** · `Backend` `Frontend` · braucht: T10.11
+  - Anlass: Offener Punkt aus „Regelbestätigung: englische Fassung nach Land“. Bisher sprechen nur die Regeln Englisch; Support-Channel, Privat-Channel, Spam-Control, Nickname-Checker und Anti-Proxy (inkl. Einladungssystem) schreiben Spielern nur auf Deutsch
+  - Sprachwahl wie bei den Regeln über `ruleLanguage` (`DE`, `AT`, `CH`, `LI` → Deutsch, sonst Englisch, unbekanntes Land → Deutsch); die Funktion dafür aus `rules.ts` in eine gemeinsame Stelle unter `/domain` ziehen
+  - Je Modul ein Abschnitt `english` mit allen Texten, die **Spieler** sehen (Nachrichten, Pokes, Kick-Gründe), abschaltbar, ab Werk aus; bestehende Einstellungen ändern ihr Verhalten nicht. Texte an das Team (z. B. die Benachrichtigung der Supporter) bleiben einsprachig
+  - Wörter zum Antworten (Anti-Proxy-Einladung ja/nein) werden in beiden Sprachen verstanden, unabhängig von der Sprache der Frage; ein Wort darf nicht in einer Sprache zustimmen und in der anderen ablehnen (API und Seite prüfen das, wie bei den Regeln)
+  - Einstellungsseiten: englische Felder je Modul in einem eigenen, einklappbaren Bereich; gemeinsame Bausteine statt sechsmal derselben Karte
+  - Fertig wenn: Tests je Modul für Deutsch, Englisch, unbekanntes Land und ausgeschalteten Abschnitt; Migration bestehender Einstellungen ohne Verhaltensänderung; `docs/automatik.md` ergänzt
+
+- [ ] **T12.2 Netzwerk-Seite ausbauen: Filter und Farben** · `Backend` `Frontend` · braucht: T9.2
+  - Ziel: Im Graphen schneller sehen, wer zu welcher Gruppe gehört, und gezielt einzelne Spieler oder Kreise betrachten
+  - Vorschlag Filter (Zustand in der URL, wie der Zeitraum):
+    - Spielersuche: Spieler hervorheben und auf ihn zoomen; Umschalter „nur sein Umfeld“ (direkte Nachbarn, optional zweiter Grad)
+    - Mindestzeit je Verbindung zusätzlich zur Anzahl gezeigter Verbindungen
+    - Nach Servergruppe bzw. Rang und nach Land ein- oder ausblenden
+    - Einzelne Knoten ohne Verbindung nach dem Filtern ausblenden
+    - Umschalter Kantengewicht „gemeinsame Stunden“ / „Anteil an der eigenen Zeit“ (die API liefert `shareA`/`shareB` bereits, siehe Entscheidung in Phase 9)
+  - Vorschlag Farben, auswählbar mit Legende:
+    - **Gruppen (Communities):** Der Tagesjob bestimmt Cluster (z. B. Louvain als reine Funktion in `/domain`) und speichert sie je Zeitraum am Knoten (Migration); Farbe je Cluster
+    - **Rang** (Rangleiter aus `ranks`) oder **höchste Servergruppe** (`users.server_groups`)
+    - **Land** (`users.country`)
+    - **Aktivität:** zuletzt gesehen (z. B. aktiv / länger weg / inaktiv)
+  - Farben aus der vorhandenen Palette (`web/src/charts/palette.ts`), hell und dunkel lesbar; bei mehr Kategorien als Farben die kleinsten als „Sonstige“ zusammenfassen
+  - API: `GET /api/network` liefert je Knoten zusätzlich Cluster, Rang, Servergruppen, Land und zuletzt gesehen; Filter, die die Datenmenge verkleinern (Mindestzeit, Spieler-Umfeld), serverseitig; reine Darstellungsfilter im Frontend. Weiterhin nur Admin, weiterhin unter 100 ms (gegen `data/synthetic.sqlite` messen)
+  - Tabelle der stärksten Paare folgt denselben Filtern
+  - Fertig wenn: Tests für Cluster-Funktion (getrennte Gruppen, eine Gruppe, leerer Graph, deterministisch), Route (neue Felder, Filter, Rechte) und Seite (Filter lösen Anfragen aus bzw. blenden aus, Legende, Farbmodus); Screenshot hell und dunkel; README und `docs/performance.md` ergänzt
+
+
 ---
 
 ## Gefundene Punkte
