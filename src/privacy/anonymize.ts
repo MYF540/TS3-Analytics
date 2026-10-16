@@ -54,6 +54,7 @@ export function anonymizeUser(
     run('DELETE FROM rank_state WHERE user_id = ?', userId);
     run('DELETE FROM rank_history WHERE user_id = ?', userId);
     run('DELETE FROM achievements_earned WHERE user_id = ?', userId);
+    run('DELETE FROM loyalty_players WHERE user_id = ?', userId);
     run('DELETE FROM automation_log WHERE user_id = ?', userId);
     run('DELETE FROM rule_acceptances WHERE user_id = ?', userId);
     run('DELETE FROM proxy_checks WHERE user_id = ?', userId);

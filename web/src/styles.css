@@ -1265,3 +1265,9 @@ td .badge {
   margin: 0;
   padding: 0;
 }
+
+/* Retention cohorts (T13.1): the cell tint grows with the share that came back. */
+.cohort-cell {
+  background: color-mix(in srgb, var(--accent) calc(var(--share, 0) * 45%), transparent);
+  font-variant-numeric: tabular-nums;
+}

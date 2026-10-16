@@ -7,7 +7,7 @@
  * `null`). The value drives the progress bar on the player page; the times drive the date shown
  * next to a badge. Names and descriptions live in the web translation file, keyed by `id`.
  */
-import { berlinDay, berlinDayStart, berlinOffset, HOUR_S } from './time.js';
+import { berlinDay, berlinDayStart, berlinOffset, dayNumber, HOUR_S } from './time.js';
 
 export const ACHIEVEMENT_GROUPS = [
   'playtime',
@@ -96,13 +96,6 @@ export interface AchievementDefinition {
 
 const DAY_S = 86_400;
 const H = HOUR_S;
-
-/** Days since 1970-01-01 for a YYYYMMDD day (calendar arithmetic without time zones). */
-export function dayNumber(day: number): number {
-  return (
-    Date.UTC(Math.floor(day / 10000), (Math.floor(day / 100) % 100) - 1, day % 100) / 1000 / DAY_S
-  );
-}
 
 /** 0 = Sunday … 6 = Saturday. */
 function weekday(day: number): number {

@@ -5,6 +5,8 @@ import type {
   AchievementList,
   AchievementSettings,
   PlayerAchievements,
+  LoyaltyOverview,
+  MissingRegulars,
   ChannelUsage,
   Health,
   Heatmap,
@@ -150,6 +152,36 @@ export const samplePlayerAchievements: PlayerAchievements = {
       earned: [],
       value: 42,
       nextThreshold: 1000,
+    },
+  ],
+};
+
+export const sampleLoyalty: LoyaltyOverview = {
+  computedAt: 1_789_790_000,
+  returnAfterDays: [7, 30, 90],
+  cohorts: [
+    { month: 202608, size: 40, eligible: [40, 40, 0], returned: [30, 10, 0] },
+    { month: 202609, size: 20, eligible: [20, 0, 0], returned: [5, 0, 0] },
+  ],
+  months: [
+    { month: 202608, active: 120, newcomers: 40, returners: 3, lost: 12 },
+    { month: 202609, active: 110, newcomers: 20, returners: 1, lost: 9 },
+  ],
+};
+
+export const sampleMissingRegulars: MissingRegulars = {
+  computedAt: 1_789_790_000,
+  total: 1,
+  page: 1,
+  pageSize: 50,
+  items: [
+    {
+      userId: 1,
+      nickname: 'Alice',
+      lastDay: 20260910,
+      recentS: 90_000,
+      totalS: 1_000_000,
+      rank: 'Stammgast',
     },
   ],
 };
@@ -365,6 +397,8 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/channels/unused': sampleUnusedChannels,
     '/api/settings/network': sampleNetworkSettings,
     '/api/achievements': sampleAchievements,
+    '/api/loyalty/missing': sampleMissingRegulars,
+    '/api/loyalty': sampleLoyalty,
     '/api/settings/achievements': sampleAchievementSettings,
     '/api/users/1/achievements': samplePlayerAchievements,
     '/api/users': sampleUsers,

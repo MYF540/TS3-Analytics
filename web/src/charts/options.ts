@@ -1,4 +1,4 @@
-import type { SeriesPoint, UserDetail } from '../api/types';
+import type { LoyaltyMonth, SeriesPoint, UserDetail } from '../api/types';
 import { formatDay, formatDuration, formatNumber, t, type MessageKey } from '../i18n';
 import { eachDay } from '../util/days';
 import type { ChartOption } from './EChart';
@@ -383,6 +383,76 @@ export function networkChartOption(
           lineStyle: { width: 0.6 + 4.4 * (edge.seconds / maxEdge) },
         })),
       },
+    ],
+  };
+}
+
+const monthFormat = new Intl.DateTimeFormat('de-DE', {
+  timeZone: 'UTC',
+  month: 'short',
+  year: 'numeric',
+});
+
+/** YYYYMM → "Okt. 2026". */
+export function formatMonth(month: number): string {
+  return monthFormat.format(new Date(Date.UTC(Math.floor(month / 100), (month % 100) - 1, 15)));
+}
+
+export const LOYALTY_SERIES = [
+  ['newcomers', 'loyalty.months.newcomers'],
+  ['returners', 'loyalty.months.returners'],
+  ['lost', 'loyalty.months.lost'],
+] as const satisfies readonly (readonly [keyof LoyaltyMonth, MessageKey])[];
+
+/**
+ * Monthly balance (T13.1): new, returning and lost persons as grouped bars, active persons as a
+ * line on the same axis (all counts of persons).
+ */
+export function loyaltyChartOption(months: LoyaltyMonth[], palette: ChartPalette): ChartOption {
+  const colors = [palette.states[2], palette.states[3], palette.series[1]];
+  return {
+    animation: false,
+    grid: { left: 8, right: 8, top: 60, bottom: 8, containLabel: true },
+    legend: {
+      top: 0,
+      left: 0,
+      icon: 'roundRect',
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: { color: palette.text },
+    },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, ...tooltipStyle(palette) },
+    xAxis: {
+      type: 'category',
+      data: months.map((m) => formatMonth(m.month)),
+      ...axisStyle(palette),
+      splitLine: { show: false },
+    },
+    yAxis: {
+      type: 'value',
+      name: t('loyalty.months.persons'),
+      nameTextStyle: { color: palette.muted },
+      min: 0,
+      minInterval: 1,
+      ...axisStyle(palette),
+    },
+    series: [
+      {
+        name: t('loyalty.months.active'),
+        type: 'line',
+        showSymbol: false,
+        data: months.map((m) => m.active),
+        itemStyle: { color: palette.series[0] },
+        lineStyle: { width: 2 },
+      },
+      ...LOYALTY_SERIES.map(([key, label], index) => ({
+        name: t(label),
+        type: 'bar',
+        barMaxWidth: 16,
+        data: months.map((m) => m[key]),
+        itemStyle: { color: colors[index] },
+        emphasis: { focus: 'series' },
+      })),
     ],
   };
 }

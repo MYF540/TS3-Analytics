@@ -66,6 +66,12 @@ beforeEach(async () => {
     .run(userId);
   database.sqlite
     .prepare(
+      `INSERT INTO loyalty_players (user_id, first_day, last_day, recent_s, total_s)
+       VALUES (?, 20231114, 20231114, 3600, 3600)`,
+    )
+    .run(userId);
+  database.sqlite
+    .prepare(
       `INSERT INTO bans (id, uid, user_id, ip_hash, subnet_hash, created_at, duration_s,
          first_synced, last_synced, last_nickname) VALUES (1, ?, ?, x'01', x'02', 1, 0, 1, 1, 'Troll')`,
     )
@@ -155,6 +161,7 @@ describe('GDPR anonymization', () => {
     expect(counts('SELECT count(*) FROM player_notes WHERE user_id = ?')).toBe(0);
     expect(counts('SELECT count(*) FROM rank_overrides WHERE user_id = ?')).toBe(0);
     expect(counts('SELECT count(*) FROM achievements_earned WHERE user_id = ?')).toBe(0);
+    expect(counts('SELECT count(*) FROM loyalty_players WHERE user_id = ?')).toBe(0);
     expect(counts('SELECT count(*) FROM person_members WHERE user_id = ?')).toBe(0);
     expect(
       database.sqlite.prepare('SELECT uid, user_id AS userId, ip_hash AS ipHash FROM bans').get(),

@@ -34,6 +34,8 @@ import {
 } from '../db/queries/achievements.js';
 import { achievementProgress, ACHIEVEMENT_IDS } from '../domain/achievements.js';
 import { DEFAULT_NETWORK_SETTINGS } from '../network/settings.js';
+import { loyaltyCohorts, loyaltyMonths, missingRegulars } from '../db/queries/loyalty.js';
+import { runLoyaltyJob } from '../loyalty/job.js';
 
 export const BUDGET_MS = 100;
 
@@ -268,6 +270,40 @@ function main(): void {
     } finally {
       sqlite.exec('ROLLBACK TO bench_achievements');
       sqlite.exec('RELEASE bench_achievements');
+    }
+
+    // Retention (T13.1): the daily job fills the cache, the page only reads it. Rolled back too.
+    sqlite.exec('SAVEPOINT bench_loyalty');
+    try {
+      results.push(
+        measure('Bindung Neuberechnung (Job)', 1, () => runLoyaltyJob(database, now), 60_000, 0),
+      );
+      const fourWeeksAgo = berlinDay(now - 28 * 86_400);
+      results.push(
+        measure('Bindung Kohorten und Monatsbilanz', runs, () => {
+          loyaltyCohorts(sqlite);
+          loyaltyMonths(sqlite);
+        }),
+        measure('Bindung vermisste Stammspieler (20 h, 4 Wochen, Seite 1)', runs, () =>
+          missingRegulars(sqlite, {
+            minRecentS: 20 * 3600,
+            lastDayBefore: fourWeeksAgo,
+            limit: 50,
+            offset: 0,
+          }),
+        ),
+        measure('Bindung vermisste Stammspieler (CSV, alle)', runs, () =>
+          missingRegulars(sqlite, {
+            minRecentS: 20 * 3600,
+            lastDayBefore: fourWeeksAgo,
+            limit: 1_000_000,
+            offset: 0,
+          }),
+        ),
+      );
+    } finally {
+      sqlite.exec('ROLLBACK TO bench_loyalty');
+      sqlite.exec('RELEASE bench_loyalty');
     }
 
     const fmt = (n: number) => n.toFixed(1);

@@ -4,6 +4,8 @@ import type {
   AchievementList,
   AchievementSettings,
   PlayerAchievements,
+  LoyaltyOverview,
+  MissingRegulars,
   ActivitySettings,
   ActivitySettingsResponse,
   AlertEvent,
@@ -268,6 +270,12 @@ export const api = {
   saveAchievementSettings: (disabled: string[]) =>
     apiSend<AchievementSettings>('PUT', '/settings/achievements', { disabled }),
   runAchievementJob: () => apiPost<AchievementSettings>('/settings/achievements/run'),
+  loyalty: (signal?: AbortSignal) => apiGet<LoyaltyOverview>('/loyalty', {}, signal),
+  missingRegulars: (
+    query: { minHours: number; weeks: number; page: number; pageSize: number },
+    signal?: AbortSignal,
+  ) => apiGet<MissingRegulars>('/loyalty/missing', query, signal),
+  runLoyaltyJob: () => apiPost<LoyaltyOverview>('/loyalty/run'),
   playerHeatmap: (userId: number, range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>(`/users/${String(userId)}/heatmap`, { range }, signal),
   importComparison: (

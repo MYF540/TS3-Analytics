@@ -881,3 +881,45 @@ export interface AchievementSettings {
   catalog: AchievementDefinition[];
   state: AchievementState | null;
 }
+
+export interface LoyaltyCohort {
+  /** YYYYMM of the first visit. */
+  month: number;
+  size: number;
+  /** Per entry of `returnAfterDays`. */
+  eligible: number[];
+  returned: number[];
+}
+
+export interface LoyaltyMonth {
+  month: number;
+  active: number;
+  newcomers: number;
+  returners: number;
+  lost: number;
+}
+
+export interface LoyaltyOverview {
+  computedAt: number | null;
+  returnAfterDays: number[];
+  cohorts: LoyaltyCohort[];
+  months: LoyaltyMonth[];
+}
+
+export interface MissingRegular {
+  userId: number;
+  nickname: string | null;
+  /** YYYYMMDD (Europe/Berlin). */
+  lastDay: number;
+  recentS: number;
+  totalS: number;
+  rank: string | null;
+}
+
+export interface MissingRegulars {
+  computedAt: number | null;
+  total: number;
+  page: number;
+  pageSize: number;
+  items: MissingRegular[];
+}

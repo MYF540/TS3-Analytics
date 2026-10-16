@@ -13,6 +13,7 @@ import { ImportPage } from './pages/ImportPage';
 import { NetworkPage } from './pages/NetworkPage';
 import { NicknameCheckPage } from './pages/NicknameCheckPage';
 import { LeaderboardsPage } from './pages/LeaderboardsPage';
+import { LoyaltyPage } from './pages/LoyaltyPage';
 import { ErrorPage, NotFoundPage } from './pages/pages';
 import { PlayerPage } from './pages/PlayerPage';
 import { PlayersPage } from './pages/PlayersPage';
@@ -47,6 +48,7 @@ export const routes: RouteObject[] = [
               { path: 'leaderboards', element: <LeaderboardsPage /> },
               { path: 'channels', element: <ChannelsPage /> },
               { path: 'achievements', element: <AchievementsPage /> },
+              { path: 'bindung', element: <LoyaltyPage /> },
               {
                 element: <RequireRole role="moderator" />,
                 children: [{ path: 'hinweise', element: <FlagsPage /> }],

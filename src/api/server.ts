@@ -14,6 +14,7 @@ import { errorBody, registerErrorHandler } from './errors.js';
 import { registerAudit } from './audit/plugin.js';
 import { registerAuth, type RouteAuth } from './auth/plugin.js';
 import { achievementRoutes } from './routes/achievements.js';
+import { loyaltyRoutes } from './routes/loyalty.js';
 import { auditRoutes } from './routes/audit.js';
 import { channelRoutes } from './routes/channels.js';
 import { alertRoutes } from './routes/alerts.js';
@@ -144,6 +145,7 @@ export async function buildServer(
       await api.register(importRoutes(context));
       await api.register(networkRoutes(context));
       await api.register(achievementRoutes(context));
+      await api.register(loyaltyRoutes(context));
       await api.register(automationRoutes(context));
       await api.register(automationNicknameRoutes(context));
       await api.register(automationSupportRoutes(context));

@@ -12,7 +12,7 @@ IP-Adressen werden nie gespeichert, nur nicht umkehrbare Prüfsummen. Der Export
 
 Zur Bestätigung muss die UID des Spielers eingetippt werden.
 
-**Entfernt werden:** UID (ersetzt durch eine zufällige Kennung), Client-Datenbank-ID, Nicknames, Plattform/Version/Land, IP-Prüfsummen, Notizen samt Verlauf, Tags, Hinweise, Account-Verknüpfungen, alle Rang-Daten, die Achievements, die Einträge des Automatik-Protokolls, die Entscheidung zu den Serverregeln und das Ergebnis der Proxy-Prüfung. In der gespiegelten Banliste und im Servergruppen-Verlauf wird der Personenbezug entfernt.
+**Entfernt werden:** UID (ersetzt durch eine zufällige Kennung), Client-Datenbank-ID, Nicknames, Plattform/Version/Land, IP-Prüfsummen, Notizen samt Verlauf, Tags, Hinweise, Account-Verknüpfungen, alle Rang-Daten, die Achievements, die Zeile in der Bindungs-Statistik, die Einträge des Automatik-Protokolls, die Entscheidung zu den Serverregeln und das Ergebnis der Proxy-Prüfung. In der gespiegelten Banliste und im Servergruppen-Verlauf wird der Personenbezug entfernt.
 
 **Erhalten bleiben:** Sessions, Aktivitätssegmente und die Tages- und Gesamtwerte – als anonymer Eintrag. Damit stimmen Serverstatistiken wie „wie viele waren gleichzeitig online“ weiterhin.
 

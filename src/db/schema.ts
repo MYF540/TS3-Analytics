@@ -824,3 +824,46 @@ export const achievementsEarned = sqliteTable(
     check('achievements_earned_backfilled_check', sql`${t.backfilled} IN (0, 1)`),
   ],
 );
+
+/**
+ * Retention cache (T13.1), rewritten by the daily loyalty job. Cohorts over the whole history
+ * are too expensive for a live query; the page only reads these rows.
+ */
+export const loyaltyCohorts = sqliteTable('loyalty_cohorts', {
+  /** YYYYMM (Europe/Berlin) of the first visit. */
+  month: integer('month').primaryKey(),
+  size: integer('size').notNull(),
+  eligible7: integer('eligible_7').notNull(),
+  returned7: integer('returned_7').notNull(),
+  eligible30: integer('eligible_30').notNull(),
+  returned30: integer('returned_30').notNull(),
+  eligible90: integer('eligible_90').notNull(),
+  returned90: integer('returned_90').notNull(),
+});
+
+export const loyaltyMonths = sqliteTable('loyalty_months', {
+  /** YYYYMM (Europe/Berlin). */
+  month: integer('month').primaryKey(),
+  active: integer('active').notNull(),
+  /** First visit in this month. */
+  newcomers: integer('newcomers').notNull(),
+  /** Back after a pause of at least 90 days. */
+  returners: integer('returners').notNull(),
+  lost: integer('lost').notNull(),
+});
+
+/** One row per person (its primary account), for the list of missing regulars. */
+export const loyaltyPlayers = sqliteTable(
+  'loyalty_players',
+  {
+    userId: integer('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    firstDay: integer('first_day').notNull(),
+    lastDay: integer('last_day').notNull(),
+    /** Online seconds in the 90 days up to and including the last visit. */
+    recentS: integer('recent_s').notNull(),
+    totalS: integer('total_s').notNull(),
+  },
+  (t) => [index('loyalty_players_last_day_idx').on(t.lastDay, t.recentS)],
+);

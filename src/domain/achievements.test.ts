@@ -4,7 +4,6 @@ import {
   achievementById,
   achievementProgress,
   crossings,
-  dayNumber,
   emptyFacts,
   evaluateAchievements,
   type AchievementEvaluation,
@@ -12,7 +11,7 @@ import {
   type PersonFacts,
   type SessionFact,
 } from './achievements.js';
-import { berlinDay, berlinDayStart, nextDay } from './time.js';
+import { berlinDay, berlinDayStart, dayNumber, nextDay } from './time.js';
 
 const H = 3600;
 const DAY = 86_400;

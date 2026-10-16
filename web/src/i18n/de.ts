@@ -21,6 +21,7 @@ export const de = {
   'nav.automation': 'Automatik',
   'nav.import': 'Abgleich',
   'nav.achievements': 'Achievements',
+  'nav.loyalty': 'Bindung',
 
   'theme.toggle': 'Farbschema wechseln',
   'theme.light': 'Hell',
@@ -439,6 +440,7 @@ export const de = {
   'audit.action.settings.network': 'Netzwerk-Einstellungen geändert',
   'audit.action.settings.achievements': 'Achievements ein- oder ausgeschaltet',
   'audit.action.achievements.run': 'Achievements neu ausgewertet',
+  'audit.action.loyalty.run': 'Bindung neu berechnet',
   'audit.action.network.run': 'Netzwerk neu berechnet',
   'audit.action.automation.nickname': 'Nickname-Checker geändert',
   'audit.action.automation.support': 'Support-Channel geändert',
@@ -1310,6 +1312,45 @@ export const de = {
   'settings.achievements.lastRun':
     'Zuletzt ausgewertet {time}: {checked} Spieler geprüft, {awarded} neue Stufen.',
   'settings.achievements.never': 'Noch nie ausgewertet.',
+
+  'page.loyalty.title': 'Bindung & Abwanderung',
+  'page.loyalty.intro':
+    'Wer bleibt, wer kommt zurück, wer fehlt? Verknüpfte Accounts zählen als eine Person, importierte Sessions zählen mit.',
+  'loyalty.computedAt': 'Stand: {time} (wird täglich neu berechnet)',
+  'loyalty.never': 'Noch nicht berechnet. Die Berechnung läuft einmal täglich.',
+  'loyalty.run': 'Jetzt berechnen',
+  'loyalty.done': 'Neu berechnet.',
+  'loyalty.cohorts.title': 'Kohorten',
+  'loyalty.cohorts.intro':
+    'Personen nach Monat ihres ersten Besuchs und wie viele von ihnen nach 7, 30 und 90 Tagen noch einmal online waren.',
+  'loyalty.cohorts.month': 'Erster Besuch',
+  'loyalty.cohorts.size': 'Personen',
+  'loyalty.cohorts.after': 'nach {days} Tagen',
+  'loyalty.cohorts.cell': '{returned} von {eligible}',
+  'loyalty.cohorts.tooEarly': 'Noch zu früh',
+  'loyalty.cohorts.empty': 'Noch keine Daten.',
+  'loyalty.months.title': 'Monatsbilanz',
+  'loyalty.months.intro':
+    'Aktive Personen je Monat; neu = erster Besuch, wiedergekehrt = nach mindestens 90 Tagen Pause, verloren = letzter Besuch in diesem Monat und seit 30 Tagen nicht mehr da.',
+  'loyalty.months.label': 'Monatsbilanz: aktive, neue, wiedergekehrte und verlorene Personen',
+  'loyalty.months.month': 'Monat',
+  'loyalty.months.persons': 'Personen',
+  'loyalty.months.active': 'Aktiv',
+  'loyalty.months.newcomers': 'Neu',
+  'loyalty.months.returners': 'Wiedergekehrt',
+  'loyalty.months.lost': 'Verloren',
+  'loyalty.missing.title': 'Vermisste Stammspieler',
+  'loyalty.missing.intro':
+    'Personen mit mindestens {hours} h in den 90 Tagen vor ihrem letzten Besuch, die seit {weeks} Wochen nicht mehr da waren.',
+  'loyalty.missing.minHours': 'Mindestens Stunden',
+  'loyalty.missing.weeks': 'Fehlt seit Wochen',
+  'loyalty.missing.count': '{count} Personen',
+  'loyalty.missing.nickname': 'Spieler',
+  'loyalty.missing.lastDay': 'Letzter Besuch',
+  'loyalty.missing.recent': 'Spielzeit davor (90 Tage)',
+  'loyalty.missing.total': 'Gesamtzeit',
+  'loyalty.missing.rank': 'Rang',
+  'loyalty.missing.empty': 'Niemand vermisst.',
 } as const;
 
 export type MessageKey = keyof typeof de;

@@ -593,13 +593,14 @@ Vorschlag Katalog (Stufen Bronze / Silber / Gold / Platin, wo angegeben):
 | Server | **Gipfelstürmer** | den höchsten Rang der Rangleiter erreicht |
 | Geheim | **Geheim-Achievements** | auf der Seite als „???“ angezeigt, bis jemand sie hat (z. B. genau 1 Minute nach Mitternacht am 1.1. verbunden, 1.000. Session) |
 
-- [ ] **T13.1 Bindung & Abwanderung** · `Backend` `Frontend` · braucht: T3.2, T5.3
+- [x] **T13.1 Bindung & Abwanderung** · `Backend` `Frontend` · braucht: T3.2, T5.3
   - Neue Seite unter Statistik (alle Rollen, Liste vermisster Spieler wie die Spielerseiten)
   - **Kohorten:** Personen nach Monat des ersten Besuchs; Anteil, der nach 7 / 30 / 90 Tagen wieder online war (mind. ein Tag mit Online-Zeit ab Tag N), als Tabelle mit Farbskala
   - **Monatsbilanz:** je Monat aktive Personen, davon neu, wiedergekehrt (nach ≥ 90 Tagen Pause) und verloren (im Vormonat aktiv, seitdem nicht mehr), als Diagramm
   - **Vermisste Stammspieler:** Personen mit mindestens X h in den 90 Tagen vor ihrem letzten Besuch, die seit Y Wochen fehlen (X, Y in der Seite einstellbar, Vorschlag 20 h und 4 Wochen); Spalten letzter Besuch, Gesamtzeit, Rang; Link zur Spielerseite; CSV-Export wie T3.8
   - Berechnung im täglichen Job in eine Cache-Tabelle (Migration), da Kohorten über den Zeitraum „gesamt“ zu teuer für eine Live-Abfrage sind; importierte Sessions zählen mit (Online-Zeit reicht)
   - Fertig wenn: reine Funktionen in `/domain` mit Tests (leere Kohorte, Rückkehr genau an Tag N, verknüpfte UIDs, Tagesgrenze Berlin); Route- und Seitentests; Abfrage < 100 ms auf dem synthetischen Datensatz, Ergebnis in `docs/performance.md`
+  - Notiz: Logik in `src/domain/loyalty.ts`, täglicher Job `loyalty` (`src/loyalty/job.ts`) schreibt Migration 0020 (`loyalty_cohorts`, `loyalty_months`, `loyalty_players`, STRICT); Seite `/bindung`, API `/api/loyalty`, `/api/loyalty/missing(.csv)`, Neuberechnung für Admins mit Audit-Eintrag. Grundlage sind die Tage aus `user_daily_stats` (Berliner Kalendertage, damit ist die Tagesgrenze schon richtig). Abweichung: „verloren“ zählt im Monat des letzten Besuchs, sobald jemand 30 Tage nicht mehr da war (nicht „im Vormonat aktiv“), damit der laufende Monat nicht jeden als verloren zeigt, der nur zwei Wochen fehlt. Rückkehr nach N Tagen heißt: letzter Besuch mindestens N Tage nach dem ersten. Gemessen: Seite 0,3–6 ms, Job 0,6 s.
 
 - [x] **T13.2 Achievement-Katalog & Engine** · `DB` `Backend` · braucht: T5.3, T6.1
   - Katalog als Daten in `/domain/achievements` (ID, Gruppe, Stufen, Schwellen, geheim ja/nein); Namen und Beschreibungen in der Übersetzungsdatei

@@ -141,6 +141,13 @@
       "when": 1792115928254,
       "tag": "0019_achievements",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1792118027026,
+      "tag": "0020_loyalty",
+      "breakpoints": true
     }
   ]
 }

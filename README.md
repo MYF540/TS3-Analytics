@@ -51,6 +51,9 @@ Was der Bot von selbst erledigt, steht unter „Automatik“ – jedes Modul mit
   besondere Momente, teils in Stufen von Bronze bis Diamant, dazu einige geheime. Die vorhandene
   Historie wird beim ersten Lauf nachträglich ausgewertet. Details in
   [docs/achievements.md](docs/achievements.md).
+- **Bindung & Abwanderung**: Kohorten nach Monat des ersten Besuchs (wer war nach 7, 30, 90 Tagen
+  wieder da), Monatsbilanz aus neuen, wiedergekehrten und verlorenen Spielern und eine Liste
+  vermisster Stammspieler mit CSV-Export. Wird einmal täglich berechnet.
 - **Spieler-Netzwerk**: Kraft-gerichteter Graph, wer häufig mit wem im selben Channel ist –
   AFK-Zeiten und ausgewählte Channels bleiben außen vor. Wird einmal täglich berechnet.
 - **Automatik** (ersetzt typische SinusBot-Skripte): Nickname-Checker, Support-Channel mit
@@ -204,7 +207,7 @@ Erfassung danach – nie beides.
 - **Logs** liegen in `data/logs`, eine Datei pro Tag. Passwörter, Tokens und IP-Adressen werden
   geschwärzt. Die letzten Warnungen stehen auch auf der Seite „Bot-Status“.
 - **Automatische Jobs**: Hinweis-Erkennung und Achievements (15 min), abgelaufene Logins (stündlich), Sicherung,
-  Aufbewahrung und Spieler-Netzwerk (täglich), Datenbank-Wartung (wöchentlich).
+  Aufbewahrung, Spieler-Netzwerk und Bindungs-Statistik (täglich), Datenbank-Wartung (wöchentlich).
 - Alles Weitere: [docs/betrieb.md](docs/betrieb.md).
 
 ## Entwicklung

@@ -172,6 +172,17 @@ Verworfene erste Ansätze:
 - Die Übersicht hat die Stufen pro Person in SQL über einen Join auf `persons` gruppiert, dreimal (Inhaber, Neueste, Zuletzt erreicht): 80 ms, p95 114 ms. Jetzt werden alle Zeilen einmal gelesen und im Speicher gruppiert.
 - Die Spielerseite hat für den Fortschritt die Rekordstunden (Scan über alle 52.584 Stundenzeilen, 37 ms) und die Pioniere bei jedem Aufruf neu bestimmt: 93 ms, p95 119 ms. Beides ist für alle Spieler gleich und wird jetzt vom Job im Zustand gespeichert.
 
+### Bindung & Abwanderung T13.1 (2026-10-16)
+
+Gleicher Rechner und Datensatz wie oben, `pnpm bench --runs 10`. Kohorten und Monatsbilanz über den gesamten Zeitraum rechnet der tägliche Job `loyalty` (liest alle Tageszeilen mit Online-Zeit einmal, verknüpfte Accounts zusammengefasst) und schreibt sie in `loyalty_cohorts`, `loyalty_months` und `loyalty_players`; die Seite liest nur diese kleinen Tabellen.
+
+| Fall                                             | Median (ms) | p95 (ms) | Budget |
+| ------------------------------------------------ | ----------: | -------: | :----: |
+| Neuberechnung (Job)                              |         621 |      621 |  60 s  |
+| Kohorten und Monatsbilanz                        |         0,1 |      0,3 | 100 ms |
+| Vermisste Stammspieler (20 h, 4 Wochen, Seite 1) |         3,6 |      3,8 | 100 ms |
+| Vermisste Stammspieler (alle, wie im CSV-Export) |         4,0 |      6,0 | 100 ms |
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

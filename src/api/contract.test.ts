@@ -30,6 +30,7 @@ import type {
   achievementSettingsResponse,
   playerAchievementsResponse,
 } from './routes/achievements.js';
+import { loyaltyResponse, missingRegularsResponse } from './routes/loyalty.js';
 import type { moderationAction } from '../moderation/actions.js';
 import type { onlineResponse } from './routes/online.js';
 import type { importComparisonResponse } from './routes/import.js';
@@ -126,6 +127,8 @@ export type Contract = [
   Assert<Equals<z.output<typeof achievementHoldersResponse>, Web.AchievementHolders>>,
   Assert<Equals<z.output<typeof playerAchievementsResponse>, Web.PlayerAchievements>>,
   Assert<Equals<z.output<typeof achievementSettingsResponse>, Web.AchievementSettings>>,
+  Assert<Equals<z.output<typeof loyaltyResponse>, Web.LoyaltyOverview>>,
+  Assert<Equals<z.output<typeof missingRegularsResponse>, Web.MissingRegulars>>,
   Assert<Equals<ApiErrorBody, Web.ApiErrorBody>>,
 ];
 
