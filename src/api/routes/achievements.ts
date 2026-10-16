@@ -9,9 +9,8 @@ import {
 } from '../../achievements/settings.js';
 import {
   achievementHolders,
-  achievementSummary,
+  achievementOverview,
   personAchievements,
-  recentAchievements,
 } from '../../db/queries/achievements.js';
 import { HIDDEN_USERS } from '../../db/queries/stats.js';
 import { getPersonOfUser, personUserIds } from '../../db/repositories/index.js';
@@ -149,7 +148,11 @@ export function achievementRoutes(context: ApiContext): FastifyPluginAsyncZod {
 
     app.get('/achievements', { schema: { response: { 200: achievementListResponse } } }, () => {
       const list = enabled();
-      const summary = achievementSummary(sqlite);
+      const summary = achievementOverview(
+        sqlite,
+        list.map((a) => a.id),
+        10,
+      );
       const byId = new Map(summary.achievements.map((a) => [a.achievementId, a]));
       return {
         persons: summary.persons,
@@ -163,11 +166,7 @@ export function achievementRoutes(context: ApiContext): FastifyPluginAsyncZod {
             latest: found?.latest ?? null,
           };
         }),
-        recent: recentAchievements(
-          sqlite,
-          list.map((a) => a.id),
-          10,
-        ),
+        recent: summary.recent,
         state: publicState(loadAchievementState(db)),
       };
     });
@@ -216,7 +215,7 @@ export function achievementRoutes(context: ApiContext): FastifyPluginAsyncZod {
         const primary = getPersonOfUser(sqlite, id)?.primaryUserId ?? id;
         const list = enabled();
         const earned = personAchievements(sqlite, userIds);
-        const { globals } = globalFacts(sqlite, db, context.now());
+        const { globals } = globalFacts(sqlite, db, context.now(), loadAchievementState(db));
         const facts = new FactsReader(sqlite, globals).read(primary, userIds);
         const progress = facts ? achievementProgress(facts, list) : [];
         return {

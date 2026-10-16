@@ -100,15 +100,24 @@ function groupByPerson(
   return result;
 }
 
-export function globalFacts(sqlite: Database.Database, db: AppDatabase['db'], now: number) {
+/**
+ * Facts that are the same for everybody. `cached` (the last run's state) saves the scans of the
+ * whole hourly table and user list on the player page; the job always computes them fresh.
+ */
+export function globalFacts(
+  sqlite: Database.Database,
+  db: AppDatabase['db'],
+  now: number,
+  cached?: Pick<AchievementState, 'recordHours' | 'pioneers'>,
+) {
   const primaries = primaryMap(sqlite);
   const cutoff = getSetting(db, LEGACY_CUTOFF_KEY, z.number().int());
   const globals: GlobalFacts = {
     now,
     cutoff,
     cutoffDay: cutoff === undefined ? 0 : berlinDay(cutoff),
-    recordHours: recordHours(sqlite),
-    pioneers: pioneers(sqlite, primaries),
+    recordHours: cached?.recordHours ?? recordHours(sqlite),
+    pioneers: cached ? new Set(cached.pioneers) : pioneers(sqlite, primaries),
     topRankId: sqlite
       .prepare(`SELECT id FROM ranks ORDER BY sort_order DESC LIMIT 1`)
       .pluck()
@@ -177,6 +186,8 @@ export function runAchievementJob(database: AppDatabase, now: number): Achieveme
         checked: persons.size,
         awarded: awarded.length,
         seconds: (Date.now() - started) / 1000,
+        recordHours: globals.recordHours,
+        pioneers: [...globals.pioneers],
       },
       now,
     );

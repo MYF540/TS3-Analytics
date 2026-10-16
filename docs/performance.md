@@ -155,6 +155,23 @@ Bei einem Jahr sind fast alle möglichen Paare der 200 Kandidaten vorhanden (19.
 
 Die Seite selbst liest nur noch: `GET /api/network` braucht mit 200 gezeigten Verbindungen 28 ms und mit 1.500 rund 33 ms (jeweils einschließlich HTTP, gemessen über die laufende Anwendung).
 
+### Achievements T13.3 (2026-10-16)
+
+Gemessen mit `pnpm bench --runs 10` auf dem synthetischen Datensatz (8.500 Nutzer, 574.231 Sessions, 2,18 Mio. Segmente), in einem Cloud-Container (Intel Xeon 2,8 GHz). Der Rechner ist deutlich langsamer als der der früheren Messungen: Dieselben bestehenden Abfragen über den gesamten Zeitraum („Leaderboard frei“, „Online-Verlauf gesamt“) lagen hier je nach Lauf zwischen 80 und 135 ms und damit zeitweise über dem Budget, obwohl sie sich nicht geändert haben.
+
+| Fall                                                             | Median (ms) | p95 (ms) | Budget |
+| ---------------------------------------------------------------- | ----------: | -------: | :----: |
+| Voll-Lauf mit Nachberechnung (Job, 8.500 Spieler, 10.781 Stufen) |       4.182 |    4.182 |  60 s  |
+| Normaler Lauf (Job, alle Spieler der letzten Stunde)             |         869 |    1.001 |  5 s   |
+| Übersicht (Inhaber, Seltenheit, zuletzt erreicht)                |        25,8 |     28,9 | 100 ms |
+| Inhaber eines Achievements (Seite 1)                             |        14,4 |     15,9 | 100 ms |
+| Spielerseite (aktivster Nutzer, Abzeichen und Fortschritt)       |        19,0 |     30,8 | 100 ms |
+
+Verworfene erste Ansätze:
+
+- Die Übersicht hat die Stufen pro Person in SQL über einen Join auf `persons` gruppiert, dreimal (Inhaber, Neueste, Zuletzt erreicht): 80 ms, p95 114 ms. Jetzt werden alle Zeilen einmal gelesen und im Speicher gruppiert.
+- Die Spielerseite hat für den Fortschritt die Rekordstunden (Scan über alle 52.584 Stundenzeilen, 37 ms) und die Pioniere bei jedem Aufruf neu bestimmt: 93 ms, p95 119 ms. Beides ist für alle Spieler gleich und wird jetzt vom Job im Zustand gespeichert.
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

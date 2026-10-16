@@ -47,6 +47,10 @@ Was der Bot von selbst erledigt, steht unter „Automatik“ – jedes Modul mit
   mit Ausnahmen, Bonuszeit, eingefrorenen Rängen und Aufstiegsnachricht. Startet im Probelauf.
 - **Admin-Werkzeuge**: Hinweise auf Zweitaccounts und Ban-Umgehung, Notizen, Tags, Banlisten-Spiegel,
   Moderation (kicken, bannen, anstupsen, verschieben, Nachricht), Audit-Log, Discord-Benachrichtigungen.
+- **Achievements**: 25 Abzeichen für Spielzeit, Treue, Serien, Uhrzeiten, gemeinsame Zeit und
+  besondere Momente, teils in Stufen von Bronze bis Diamant, dazu einige geheime. Die vorhandene
+  Historie wird beim ersten Lauf nachträglich ausgewertet. Details in
+  [docs/achievements.md](docs/achievements.md).
 - **Spieler-Netzwerk**: Kraft-gerichteter Graph, wer häufig mit wem im selben Channel ist –
   AFK-Zeiten und ausgewählte Channels bleiben außen vor. Wird einmal täglich berechnet.
 - **Automatik** (ersetzt typische SinusBot-Skripte): Nickname-Checker, Support-Channel mit
@@ -199,7 +203,7 @@ Erfassung danach – nie beides.
   Wiederherstellung: [docs/backup.md](docs/backup.md).
 - **Logs** liegen in `data/logs`, eine Datei pro Tag. Passwörter, Tokens und IP-Adressen werden
   geschwärzt. Die letzten Warnungen stehen auch auf der Seite „Bot-Status“.
-- **Automatische Jobs**: Hinweis-Erkennung (15 min), abgelaufene Logins (stündlich), Sicherung,
+- **Automatische Jobs**: Hinweis-Erkennung und Achievements (15 min), abgelaufene Logins (stündlich), Sicherung,
   Aufbewahrung und Spieler-Netzwerk (täglich), Datenbank-Wartung (wöchentlich).
 - Alles Weitere: [docs/betrieb.md](docs/betrieb.md).
 

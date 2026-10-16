@@ -40,6 +40,9 @@ export const achievementStateSchema = z.object({
   checked: z.number().int(),
   awarded: z.number().int(),
   seconds: z.number(),
+  /** Same for everybody; kept so the player page does not have to scan for them. */
+  recordHours: z.array(z.number().int()).default([]),
+  pioneers: z.array(z.number().int()).default([]),
 });
 
 export type AchievementState = z.infer<typeof achievementStateSchema>;
@@ -48,6 +51,10 @@ export function loadAchievementState(db: DbExecutor): AchievementState | undefin
   return getSetting(db, ACHIEVEMENT_STATE_KEY, achievementStateSchema);
 }
 
-export function saveAchievementState(db: DbExecutor, state: AchievementState, now: number): void {
+export function saveAchievementState(
+  db: DbExecutor,
+  state: z.input<typeof achievementStateSchema>,
+  now: number,
+): void {
   setSetting(db, ACHIEVEMENT_STATE_KEY, achievementStateSchema.parse(state), now);
 }

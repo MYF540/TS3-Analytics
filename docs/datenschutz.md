@@ -4,7 +4,7 @@ Beides erledigt ein Admin auf der Spielerseite in der Karte „Datenschutz“. J
 
 ## Auskunft (Export)
 
-„Alle Daten als JSON exportieren“ lädt eine Datei `spieler-<ID>.json` mit allem, was zu dieser UID gespeichert ist: Stammdaten, Nickname-Verlauf, Sessions, Tageswerte, Notizen samt Verlauf, Tags, verknüpfte Accounts, Hinweise, Bans, Servergruppen-Änderungen, Rang-Daten und Moderationsaktionen.
+„Alle Daten als JSON exportieren“ lädt eine Datei `spieler-<ID>.json` mit allem, was zu dieser UID gespeichert ist: Stammdaten, Nickname-Verlauf, Sessions, Tageswerte, Notizen samt Verlauf, Tags, verknüpfte Accounts, Hinweise, Bans, Servergruppen-Änderungen, Rang-Daten, Achievements und Moderationsaktionen.
 
 IP-Adressen werden nie gespeichert, nur nicht umkehrbare Prüfsummen. Der Export enthält deshalb keine Prüfsummen, sondern nur die Anzahl unterschiedlicher Adressen sowie Länder und Zeiträume – daraus lässt sich nichts zurückrechnen.
 
@@ -12,7 +12,7 @@ IP-Adressen werden nie gespeichert, nur nicht umkehrbare Prüfsummen. Der Export
 
 Zur Bestätigung muss die UID des Spielers eingetippt werden.
 
-**Entfernt werden:** UID (ersetzt durch eine zufällige Kennung), Client-Datenbank-ID, Nicknames, Plattform/Version/Land, IP-Prüfsummen, Notizen samt Verlauf, Tags, Hinweise, Account-Verknüpfungen, alle Rang-Daten, die Einträge des Automatik-Protokolls, die Entscheidung zu den Serverregeln und das Ergebnis der Proxy-Prüfung. In der gespiegelten Banliste und im Servergruppen-Verlauf wird der Personenbezug entfernt.
+**Entfernt werden:** UID (ersetzt durch eine zufällige Kennung), Client-Datenbank-ID, Nicknames, Plattform/Version/Land, IP-Prüfsummen, Notizen samt Verlauf, Tags, Hinweise, Account-Verknüpfungen, alle Rang-Daten, die Achievements, die Einträge des Automatik-Protokolls, die Entscheidung zu den Serverregeln und das Ergebnis der Proxy-Prüfung. In der gespiegelten Banliste und im Servergruppen-Verlauf wird der Personenbezug entfernt.
 
 **Erhalten bleiben:** Sessions, Aktivitätssegmente und die Tages- und Gesamtwerte – als anonymer Eintrag. Damit stimmen Serverstatistiken wie „wie viele waren gleichzeitig online“ weiterhin.
 

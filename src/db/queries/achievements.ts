@@ -57,11 +57,84 @@ export interface AchievementSummary {
   latest: { userId: number; nickname: string | null; tier: number; earnedAt: number } | null;
 }
 
-/** Holders and the latest arrival of every achievement, plus the number of persons at all. */
-export function achievementSummary(sqlite: Database.Database): {
-  persons: number;
-  achievements: AchievementSummary[];
-} {
+export interface RecentAchievement {
+  userId: number;
+  nickname: string | null;
+  achievementId: string;
+  tier: number;
+  earnedAt: number;
+}
+
+interface PersonTier {
+  subject: number;
+  achievementId: string;
+  tier: number;
+  earnedAt: number;
+  backfilled: boolean;
+}
+
+/**
+ * Every reached tier once per person. Read in one pass and grouped in memory: the table is small
+ * (a few rows per player), and grouping in SQL over a join to `persons` cost several times more.
+ */
+function tiersPerPerson(sqlite: Database.Database): PersonTier[] {
+  const primaries = new Map(
+    sqlite
+      .prepare(
+        `SELECT m.user_id, p.primary_user_id FROM person_members m
+         JOIN persons p ON p.id = m.person_id`,
+      )
+      .raw()
+      .all() as [number, number][],
+  );
+  const rows = sqlite
+    .prepare(
+      `SELECT user_id, achievement_id, tier, earned_at, backfilled FROM achievements_earned
+       WHERE user_id NOT IN (${HIDDEN_USERS})`,
+    )
+    .raw()
+    .iterate() as IterableIterator<[number, string, number, number, number]>;
+  const byKey = new Map<string, PersonTier>();
+  for (const [userId, achievementId, tier, earnedAt, backfilled] of rows) {
+    const subject = primaries.get(userId) ?? userId;
+    const key = `${String(subject)}:${achievementId}:${String(tier)}`;
+    const known = byKey.get(key);
+    if (!known) {
+      byKey.set(key, { subject, achievementId, tier, earnedAt, backfilled: backfilled === 1 });
+    } else {
+      known.earnedAt = Math.min(known.earnedAt, earnedAt);
+      known.backfilled &&= backfilled === 1;
+    }
+  }
+  return [...byKey.values()];
+}
+
+function nicknames(
+  sqlite: Database.Database,
+  userIds: Iterable<number>,
+): Map<number, string | null> {
+  const statement = sqlite
+    .prepare(
+      `SELECT nick FROM nicknames WHERE user_id = ? ORDER BY last_seen DESC, id DESC LIMIT 1`,
+    )
+    .pluck();
+  const result = new Map<number, string | null>();
+  for (const id of userIds) {
+    if (!result.has(id)) result.set(id, (statement.get(id) as string | undefined) ?? null);
+  }
+  return result;
+}
+
+/**
+ * Holders and the latest arrival of every achievement, the number of persons at all, and the
+ * latest tiers reached during normal runs. Backfilled tiers are left out of `recent`: after the
+ * first run they would all carry old dates and push the really new ones off the list.
+ */
+export function achievementOverview(
+  sqlite: Database.Database,
+  achievementIds: readonly string[],
+  recentLimit: number,
+): { persons: number; achievements: AchievementSummary[]; recent: RecentAchievement[] } {
   const persons = sqlite
     .prepare(
       `SELECT count(DISTINCT COALESCE(p.primary_user_id, t.user_id)) FROM user_totals t
@@ -72,74 +145,53 @@ export function achievementSummary(sqlite: Database.Database): {
     .pluck()
     .get() as number;
 
-  const counts = sqlite
-    .prepare(
-      `SELECT achievement_id AS id, tier, count(*) AS n FROM (${EARNED_PER_PERSON})
-       GROUP BY achievement_id, tier`,
-    )
-    .all() as { id: string; tier: number; n: number }[];
+  const wanted = new Set(achievementIds);
+  const tiers = tiersPerPerson(sqlite).filter((t) => wanted.has(t.achievementId));
+  const newest = (a: PersonTier, b: PersonTier) =>
+    b.earnedAt - a.earnedAt || b.tier - a.tier || a.subject - b.subject;
 
-  const latest = sqlite
-    .prepare(
-      `SELECT achievement_id AS id, subject AS userId, ${NICKNAME('subject')} AS nickname, tier,
-              earned_at AS earnedAt
-       FROM (SELECT *, row_number() OVER (
-               PARTITION BY achievement_id ORDER BY earned_at DESC, tier DESC, subject) AS pos
-             FROM (${EARNED_PER_PERSON}))
-       WHERE pos = 1`,
-    )
-    .all() as {
-    id: string;
-    userId: number;
-    nickname: string | null;
-    tier: number;
-    earnedAt: number;
-  }[];
-
-  const byId = new Map<string, AchievementSummary>();
-  const entry = (id: string) => {
-    let item = byId.get(id);
+  const byId = new Map<string, { holders: number[]; latest: PersonTier | undefined }>();
+  for (const t of tiers) {
+    let item = byId.get(t.achievementId);
     if (!item) {
-      item = { achievementId: id, holders: [], latest: null };
-      byId.set(id, item);
+      item = { holders: [], latest: undefined };
+      byId.set(t.achievementId, item);
     }
-    return item;
-  };
-  for (const c of counts) {
-    const item = entry(c.id);
-    while (item.holders.length < c.tier) item.holders.push(0);
-    item.holders[c.tier - 1] = c.n;
+    while (item.holders.length < t.tier) item.holders.push(0);
+    item.holders[t.tier - 1] = (item.holders[t.tier - 1] ?? 0) + 1;
+    if (!item.latest || newest(t, item.latest) < 0) item.latest = t;
   }
-  for (const { id, ...rest } of latest) entry(id).latest = rest;
-  return { persons, achievements: [...byId.values()] };
-}
+  const recent = tiers
+    .filter((t) => !t.backfilled)
+    .sort((a, b) => newest(a, b) || a.achievementId.localeCompare(b.achievementId))
+    .slice(0, recentLimit);
 
-export interface RecentAchievement {
-  userId: number;
-  nickname: string | null;
-  achievementId: string;
-  tier: number;
-  earnedAt: number;
-}
-
-/**
- * The latest tiers reached during normal runs. Backfilled ones are left out: after the first run
- * they would all carry old dates and push the really new ones off the list.
- */
-export function recentAchievements(
-  sqlite: Database.Database,
-  achievementIds: readonly string[],
-  limit: number,
-): RecentAchievement[] {
-  return sqlite
-    .prepare(
-      `SELECT subject AS userId, ${NICKNAME('subject')} AS nickname,
-              achievement_id AS achievementId, tier, earned_at AS earnedAt
-       FROM (${EARNED_PER_PERSON})
-       WHERE backfilled = 0 AND achievement_id IN (SELECT value FROM json_each(?))
-       ORDER BY earned_at DESC, subject, achievement_id, tier DESC LIMIT ?`,
-    )
-    .all(JSON.stringify(achievementIds), limit) as RecentAchievement[];
+  const names = nicknames(sqlite, [
+    ...[...byId.values()].flatMap((i) => (i.latest ? [i.latest.subject] : [])),
+    ...recent.map((r) => r.subject),
+  ]);
+  return {
+    persons,
+    achievements: [...byId.entries()].map(([achievementId, item]) => ({
+      achievementId,
+      holders: item.holders,
+      latest: item.latest
+        ? {
+            userId: item.latest.subject,
+            nickname: names.get(item.latest.subject) ?? null,
+            tier: item.latest.tier,
+            earnedAt: item.latest.earnedAt,
+          }
+        : null,
+    })),
+    recent: recent.map((r) => ({
+      userId: r.subject,
+      nickname: names.get(r.subject) ?? null,
+      achievementId: r.achievementId,
+      tier: r.tier,
+      earnedAt: r.earnedAt,
+    })),
+  };
 }
 
 export interface AchievementHolder {
