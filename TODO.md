@@ -531,15 +531,16 @@ Entscheidung (13.10.2026): Hinweis im Webinterface **und** Knopf für Admins; in
 
 Aufgenommen am 16.10.2026 auf Wunsch des Betreibers. Details, die er nicht festgelegt hat, sind als Vorschlag markiert und vor Beginn kurz mit ihm abzustimmen.
 
-- [ ] **T12.1 Englische Texte für alle Bot-Module** · `Backend` `Frontend` · braucht: T10.11
+- [x] **T12.1 Englische Texte für alle Bot-Module** · `Backend` `Frontend` · braucht: T10.11
   - Anlass: Offener Punkt aus „Regelbestätigung: englische Fassung nach Land“. Bisher sprechen nur die Regeln Englisch; Support-Channel, Privat-Channel, Spam-Control, Nickname-Checker und Anti-Proxy (inkl. Einladungssystem) schreiben Spielern nur auf Deutsch
   - Sprachwahl wie bei den Regeln über `ruleLanguage` (`DE`, `AT`, `CH`, `LI` → Deutsch, sonst Englisch, unbekanntes Land → Deutsch); die Funktion dafür aus `rules.ts` in eine gemeinsame Stelle unter `/domain` ziehen
   - Je Modul ein Abschnitt `english` mit allen Texten, die **Spieler** sehen (Nachrichten, Pokes, Kick-Gründe), abschaltbar, ab Werk aus; bestehende Einstellungen ändern ihr Verhalten nicht. Texte an das Team (z. B. die Benachrichtigung der Supporter) bleiben einsprachig
   - Wörter zum Antworten (Anti-Proxy-Einladung ja/nein) werden in beiden Sprachen verstanden, unabhängig von der Sprache der Frage; ein Wort darf nicht in einer Sprache zustimmen und in der anderen ablehnen (API und Seite prüfen das, wie bei den Regeln)
   - Einstellungsseiten: englische Felder je Modul in einem eigenen, einklappbaren Bereich; gemeinsame Bausteine statt sechsmal derselben Karte
   - Fertig wenn: Tests je Modul für Deutsch, Englisch, unbekanntes Land und ausgeschalteten Abschnitt; Migration bestehender Einstellungen ohne Verhaltensänderung; `docs/automatik.md` ergänzt
+  - Notiz: Sprachwahl jetzt in `src/domain/language.ts` (`playerLanguage`, dazu `wordsCollide` für Antwortwörter); `ruleLanguage` bleibt als Alias. `src/automation/language.ts` liefert `englishSection` (Schalter ab Werk aus plus Textfelder) und `clientLanguage` (liest `users.country`). Neuer Abschnitt `english` in Nickname-Checker (`message`, je Muster optional `messageEnglish`), Support (`userMessage`, `nobodyMessage`), Privat-Channel (alle vier Texte), Spam-Control (je Art `warnMessage` und `reason`) und Anti-Proxy (`message` und `invite` mit allen Texten und Wörtern). Keine Migration nötig: Gespeicherte Einstellungen ohne `english` bekommen die Vorgaben mit ausgeschaltetem Schalter. Beim Einladungssystem wird jeder in seiner Sprache angeschrieben (Gast und Bürge getrennt), ja/nein werden in beiden Sprachen verstanden; API (`RULES_SAME_COMMAND`) und Seite lehnen ein Wort ab, das in einer Sprache zustimmt und in der anderen ablehnt. Im Webinterface ein gemeinsamer Baustein `EnglishTexts`. Channel-Namen (Privat-Channel, Support offen/geschlossen) bleiben einsprachig, weil sie alle sehen.
 
-- [ ] **T12.2 Netzwerk-Seite ausbauen: Filter und Farben** · `Backend` `Frontend` · braucht: T9.2
+- [x] **T12.2 Netzwerk-Seite ausbauen: Filter und Farben** · `Backend` `Frontend` · braucht: T9.2
   - Ziel: Im Graphen schneller sehen, wer zu welcher Gruppe gehört, und gezielt einzelne Spieler oder Kreise betrachten
   - Vorschlag Filter (Zustand in der URL, wie der Zeitraum):
     - Spielersuche: Spieler hervorheben und auf ihn zoomen; Umschalter „nur sein Umfeld“ (direkte Nachbarn, optional zweiter Grad)
@@ -556,6 +557,7 @@ Aufgenommen am 16.10.2026 auf Wunsch des Betreibers. Details, die er nicht festg
   - API: `GET /api/network` liefert je Knoten zusätzlich Cluster, Rang, Servergruppen, Land und zuletzt gesehen; Filter, die die Datenmenge verkleinern (Mindestzeit, Spieler-Umfeld), serverseitig; reine Darstellungsfilter im Frontend. Weiterhin nur Admin, weiterhin unter 100 ms (gegen `data/synthetic.sqlite` messen)
   - Tabelle der stärksten Paare folgt denselben Filtern
   - Fertig wenn: Tests für Cluster-Funktion (getrennte Gruppen, eine Gruppe, leerer Graph, deterministisch), Route (neue Felder, Filter, Rechte) und Seite (Filter lösen Anfragen aus bzw. blenden aus, Legende, Farbmodus); Screenshot hell und dunkel; README und `docs/performance.md` ergänzt
+  - Notiz: Louvain als reine Funktion, Kreis 0 ist der größte, Gleichstand nach kleinster ID; Spalte `network_nodes.community` (Migration 0019), alte Läufe haben `null` bis zum nächsten Job. Nur 3 Farben plus grau „Sonstige“, weil im Graphen alle Paare unterscheidbar sein müssen (Palette mit `validate_palette` geprüft); Kreise werden nach Anzahl im Bild gefärbt. Rang zeigt die Rangleiter in 3 Stufen, Servergruppe ist ein Filter statt einer Farbe. Umfeld per Breitensuche im Speicher statt rekursiver CTE (250 → ~25 ms). Statt zu zoomen lädt die Suche nur das Umfeld des Spielers; er bekommt einen Ring und immer eine Beschriftung.
 
 
 ---

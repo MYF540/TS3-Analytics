@@ -23,6 +23,11 @@ const stored: SupportSettings = {
       openMaxClients: -1,
       closedMaxClients: 0,
     },
+    english: {
+      enabled: false,
+      userMessage: 'Hello {name}, the team has been told.',
+      nobodyMessage: 'Hello {name}, nobody is here.',
+    },
   },
   groups: [
     { id: 6, name: 'Server Admin' },
@@ -117,5 +122,25 @@ describe('SupportChannelPage', () => {
     expect(save()).toBeEnabled();
     await userEvent.clear(screen.getByLabelText('Text an das Team'));
     expect(save()).toBeDisabled();
+  });
+
+  it('saves the English texts and keeps them off until switched on', async () => {
+    const { saved } = setup();
+    const english = within(await screen.findByRole('group', { name: 'Englische Texte' }));
+    expect(english.queryByLabelText('Text an den Spieler')).not.toBeInTheDocument();
+    await userEvent.click(english.getByLabelText(/englischen Texte schicken/));
+    await userEvent.clear(english.getByLabelText('Text an den Spieler'));
+    expect(save()).toBeDisabled();
+    await userEvent.type(english.getByLabelText('Text an den Spieler'), 'Hi {{name}');
+    await userEvent.click(save());
+    await screen.findByText('Gespeichert.');
+    expect(saved()).toMatchObject({
+      userMessage: stored.settings.userMessage,
+      english: {
+        enabled: true,
+        userMessage: 'Hi {name}',
+        nobodyMessage: 'Hello {name}, nobody is here.',
+      },
+    });
   });
 });

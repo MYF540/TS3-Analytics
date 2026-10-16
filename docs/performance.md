@@ -155,6 +155,23 @@ Bei einem Jahr sind fast alle möglichen Paare der 200 Kandidaten vorhanden (19.
 
 Die Seite selbst liest nur noch: `GET /api/network` braucht mit 200 gezeigten Verbindungen 28 ms und mit 1.500 rund 33 ms (jeweils einschließlich HTTP, gemessen über die laufende Anwendung).
 
+### Netzwerk-Filter und Farben T12.2 (2026-10-16)
+
+Der Tagesjob bestimmt zusätzlich Freundeskreise (Louvain, `src/domain/communities.ts`) und speichert sie am Knoten. Das kostet rund 30 ms je Fenster; der ganze Job braucht auf dieser Maschine jetzt 6,2 s. Im synthetischen Datensatz entstehen 9–13 Kreise mit je etwa 20 Spielern.
+
+`pnpm bench` (Median / p95 / Maximum in ms):
+
+| Fall                                       | Median |  p95 |  Max |
+| ------------------------------------------ | -----: | ---: | ---: |
+| Netzwerk 30 Tage (Job)                     |     95 |  122 |  143 |
+| Netzwerk 90 Tage (Job)                     |    264 |  315 |  336 |
+| Netzwerk lesen 1 Jahr, 1.500 Verbindungen  |    7,3 | 12,8 | 13,1 |
+| Netzwerk Umfeld eines Spielers, 2 Schritte |     23 |   47 |   76 |
+
+Mindestzeit und Spieler-Umfeld filtert der Server, alles andere (Servergruppe, Legende, Farbe, Linienstärke) die Seite. Das Umfeld wurde zuerst als rekursive CTE gebaut und brauchte rund 250 ms; jetzt lädt die Abfrage die Kanten des Fensters einmal und sucht die Nachbarn im Speicher (Breitensuche bis zur gewählten Tiefe).
+
+Farben: In einem Graphen kann jeder Punkt neben jedem anderen liegen, die Farben müssen also paarweise unterscheidbar sein, auch für Farbenblinde und im dunklen Modus. Das schaffen nur drei Farbtöne. Die drei größten Gruppen im Bild bekommen eine Farbe, der Rest wird grau als „Sonstige“ zusammengefasst. Rang und Aktivität sind geordnet und nutzen drei Helligkeitsstufen eines Blautons.
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

@@ -2,10 +2,12 @@ import { useState, type SubmitEvent } from 'react';
 import { Link } from 'react-router';
 import { api, describeError } from '../api/client';
 import type { NicknameSettings } from '../api/types';
+import { EnglishTexts } from '../components/EnglishTexts';
 import { ModuleBaseFields } from '../components/ModuleBaseFields';
 import { useApi } from '../hooks/useApi';
 import { t } from '../i18n';
 import { PageHeader } from './pages';
+import { englishIncomplete } from '../util/english';
 
 type Settings = NicknameSettings['settings'];
 
@@ -15,6 +17,7 @@ interface PatternDraft {
   pattern: string;
   regex: boolean;
   message: string;
+  messageEnglish: string;
 }
 
 interface Draft extends Omit<Settings, 'patterns'> {
@@ -35,6 +38,7 @@ function toDraft(settings: Settings): Draft {
       pattern: entry.pattern,
       regex: entry.regex,
       message: entry.message ?? '',
+      messageEnglish: entry.messageEnglish ?? '',
     })),
   };
 }
@@ -43,10 +47,12 @@ function toSettings(draft: Draft): Settings {
   return {
     ...draft,
     message: draft.message.trim(),
-    patterns: draft.patterns.map(({ pattern, regex, message }) => ({
+    english: { ...draft.english, message: draft.english.message.trim() },
+    patterns: draft.patterns.map(({ pattern, regex, message, messageEnglish }) => ({
       pattern,
       regex,
       ...(message.trim() === '' ? {} : { message: message.trim() }),
+      ...(messageEnglish.trim() === '' ? {} : { messageEnglish: messageEnglish.trim() }),
     })),
   };
 }
@@ -75,6 +81,7 @@ function Form({ data }: { data: NicknameSettings }) {
   const dirty = JSON.stringify(settings) !== saved;
   const valid =
     settings.message !== '' &&
+    !englishIncomplete(draft.english.enabled, [draft.english.message]) &&
     draft.patterns.every((entry) => entry.pattern.trim() !== '' && !isBrokenRegex(entry));
 
   const change = (changes: Partial<Draft>) => {
@@ -166,6 +173,20 @@ function Form({ data }: { data: NicknameSettings }) {
                   }}
                 />
               </label>
+              {draft.english.enabled && (
+                <label className="field">
+                  <span>{t('nickname.ownMessageEnglish')}</span>
+                  <input
+                    type="text"
+                    lang="en"
+                    value={entry.messageEnglish}
+                    maxLength={MESSAGE_MAX}
+                    onChange={(event) => {
+                      changePattern(entry.key, { messageEnglish: event.target.value });
+                    }}
+                  />
+                </label>
+              )}
               <label className="checkbox">
                 <input
                   type="checkbox"
@@ -201,7 +222,7 @@ function Form({ data }: { data: NicknameSettings }) {
               change({
                 patterns: [
                   ...draft.patterns,
-                  { key: nextKey++, pattern: '', regex: false, message: '' },
+                  { key: nextKey++, pattern: '', regex: false, message: '', messageEnglish: '' },
                 ],
               });
             }}
@@ -252,6 +273,24 @@ function Form({ data }: { data: NicknameSettings }) {
           {t('nickname.kickCut', { text: settings.message.slice(0, KICK_REASON_MAX) })}
         </p>
       )}
+
+      <EnglishTexts
+        enabled={draft.english.enabled}
+        onToggle={(enabled) => {
+          change({ english: { ...draft.english, enabled } });
+        }}
+        fields={[
+          {
+            id: 'message',
+            label: t('nickname.message'),
+            value: draft.english.message,
+            max: MESSAGE_MAX,
+            onChange: (value) => {
+              change({ english: { ...draft.english, message: value } });
+            },
+          },
+        ]}
+      />
 
       <fieldset className="settings-form__channels">
         <legend>{t('nickname.test')}</legend>

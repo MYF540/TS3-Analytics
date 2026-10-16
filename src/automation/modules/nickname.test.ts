@@ -167,3 +167,48 @@ describe('NicknameModule', () => {
     expect(fresh.clients.has(clid)).toBe(false);
   });
 });
+
+describe('English texts (T12.1)', () => {
+  const english = { enabled: true, message: 'Please pick another name.' };
+  const texts = () => server.moderation.map((entry) => entry.text);
+
+  it('messages players by their country', async () => {
+    configure({ action: 'message', english });
+    server.join({ uid: 'uid-a', nickname: 'Admin-US', country: 'US' });
+    await host.idle();
+    server.join({ uid: 'uid-b', nickname: 'Admin-CH', country: 'CH' });
+    await host.idle();
+    server.join({ uid: 'uid-c', nickname: 'Admin-xx', country: undefined });
+    await host.idle();
+    expect(texts()).toEqual([
+      'Please pick another name.',
+      'Dieser Nickname ist hier nicht erlaubt.',
+      'Dieser Nickname ist hier nicht erlaubt.',
+    ]);
+  });
+
+  it('prefers the English text of the pattern and falls back to the general one', async () => {
+    configure({
+      action: 'message',
+      english,
+      patterns: [
+        { pattern: 'admin', message: 'Kein Admin.', messageEnglish: 'No admin.' },
+        { pattern: 'mod', message: 'Kein Mod.' },
+      ],
+    });
+    server.join({ uid: 'uid-a', nickname: 'Admin', country: 'US' });
+    await host.idle();
+    server.join({ uid: 'uid-b', nickname: 'Mod', country: 'US' });
+    await host.idle();
+    server.join({ uid: 'uid-c', nickname: 'Mod2', country: 'DE' });
+    await host.idle();
+    expect(texts()).toEqual(['No admin.', 'Please pick another name.', 'Kein Mod.']);
+  });
+
+  it('stays German while English is off', async () => {
+    configure({ action: 'message', english: { ...english, enabled: false } });
+    server.join({ uid: 'uid-a', nickname: 'Admin', country: 'US' });
+    await host.idle();
+    expect(texts()).toEqual(['Dieser Nickname ist hier nicht erlaubt.']);
+  });
+});

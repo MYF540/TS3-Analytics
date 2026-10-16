@@ -1,11 +1,13 @@
 import { useState, type SubmitEvent } from 'react';
 import { Link } from 'react-router';
 import { api, describeError } from '../api/client';
-import type { SpamCategory, SpamSettings } from '../api/types';
+import type { SpamCategory, SpamSettings, SpamTexts } from '../api/types';
+import { EnglishTexts } from '../components/EnglishTexts';
 import { ModuleBaseFields } from '../components/ModuleBaseFields';
 import { useApi } from '../hooks/useApi';
 import { t, type MessageKey } from '../i18n';
 import { PageHeader } from './pages';
+import { englishIncomplete } from '../util/english';
 
 type Settings = SpamSettings['settings'];
 type Rules = Settings[SpamCategory];
@@ -28,13 +30,18 @@ const NUMBERS: readonly { key: NumberKey; label: MessageKey; min: number; max: n
 
 const BAN_MAX_MINUTES = 30 * 1440;
 
+const ENGLISH_TEXTS: readonly { key: keyof SpamTexts; label: MessageKey; max: number }[] = [
+  { key: 'warnMessage', label: 'spam.warnMessage', max: 100 },
+  { key: 'reason', label: 'spam.reason', max: 80 },
+];
+
 /** Numbers are edited as text so a field can be empty while typing. */
 interface RulesDraft extends Omit<Rules, NumberKey | 'banDurationS'> {
   numbers: Record<NumberKey, string>;
   banMinutes: string;
 }
 
-type Draft = Pick<Settings, 'enabled' | 'dryRun' | 'exemptGroupIds'> &
+type Draft = Pick<Settings, 'enabled' | 'dryRun' | 'exemptGroupIds' | 'english'> &
   Record<SpamCategory, RulesDraft>;
 
 function rulesDraft(rules: Rules): RulesDraft {
@@ -63,6 +70,7 @@ function toDraft(settings: Settings): Draft {
     nickname: rulesDraft(settings.nickname),
     reconnect: rulesDraft(settings.reconnect),
     lobby: rulesDraft(settings.lobby),
+    english: settings.english,
   };
 }
 
@@ -111,6 +119,19 @@ function toSettings(draft: Draft): Settings | undefined {
     if (rules === undefined || stepProblem(rules) !== undefined) return undefined;
     parsed[kind] = rules;
   }
+  const { english } = draft;
+  if (
+    englishIncomplete(
+      english.enabled,
+      KINDS.flatMap((kind) => [english[kind].warnMessage, english[kind].reason]),
+    )
+  ) {
+    return undefined;
+  }
+  const trimmed = (kind: SpamCategory) => ({
+    warnMessage: english[kind].warnMessage.trim(),
+    reason: english[kind].reason.trim(),
+  });
   return {
     enabled: draft.enabled,
     dryRun: draft.dryRun,
@@ -120,6 +141,14 @@ function toSettings(draft: Draft): Settings | undefined {
     nickname: parsed.nickname,
     reconnect: parsed.reconnect,
     lobby: parsed.lobby,
+    english: {
+      enabled: english.enabled,
+      channelSwitch: trimmed('channelSwitch'),
+      channelCreate: trimmed('channelCreate'),
+      nickname: trimmed('nickname'),
+      reconnect: trimmed('reconnect'),
+      lobby: trimmed('lobby'),
+    },
   };
 }
 
@@ -257,6 +286,26 @@ function Form({ data }: { data: SpamSettings }) {
           </fieldset>
         );
       })}
+
+      <EnglishTexts
+        enabled={draft.english.enabled}
+        onToggle={(enabled) => {
+          change({ english: { ...draft.english, enabled } });
+        }}
+        fields={KINDS.flatMap((kind) =>
+          ENGLISH_TEXTS.map(({ key, label, max }) => ({
+            id: `${kind}.${key}`,
+            label: `${t(`spam.kind.${kind}`)}: ${t(label)}`,
+            value: draft.english[kind][key],
+            max,
+            onChange: (value: string) => {
+              change({
+                english: { ...draft.english, [kind]: { ...draft.english[kind], [key]: value } },
+              });
+            },
+          })),
+        )}
+      />
 
       {error && (
         <p className="alert" role="alert">

@@ -1,11 +1,13 @@
 import { useState, type SubmitEvent } from 'react';
 import { Link } from 'react-router';
 import { api, describeError } from '../api/client';
-import type { ProxySettings } from '../api/types';
+import type { InviteTexts, ProxySettings } from '../api/types';
+import { EnglishTexts } from '../components/EnglishTexts';
 import { ModuleBaseFields } from '../components/ModuleBaseFields';
 import { useApi } from '../hooks/useApi';
 import { formatDateTime, formatNumber, t, type MessageKey } from '../i18n';
 import { PageHeader } from './pages';
+import { englishIncomplete } from '../util/english';
 
 type Settings = ProxySettings['settings'];
 
@@ -17,18 +19,7 @@ interface Draft extends Omit<Settings, 'banDurationS' | 'exemptUserIds'> {
 
 const BAN_MAX_MINUTES = 30 * 1440;
 
-type InviteTextKey =
-  | 'intro'
-  | 'nobodyMessage'
-  | 'askedMessage'
-  | 'sponsorQuestion'
-  | 'yesWord'
-  | 'noWord'
-  | 'acceptedMessage'
-  | 'declinedMessage'
-  | 'timeoutMessage'
-  | 'exhaustedMessage'
-  | 'sponsorThanks';
+type InviteTextKey = keyof InviteTexts;
 
 const INVITE_TEXTS: readonly { key: InviteTextKey; label: MessageKey; max: number }[] = [
   { key: 'intro', label: 'proxy.invite.intro', max: 1024 },
@@ -83,8 +74,17 @@ function toSettings(draft: Draft): Settings | undefined {
     !inRange(invite.timeoutS, 30, 3600) ||
     !inRange(invite.maxAttempts, 1, 10) ||
     INVITE_TEXTS.some(({ key }) => invite[key].trim() === '') ||
-    invite.yesWord.trim().toLowerCase() === invite.noWord.trim().toLowerCase() ||
+    wordsCollide(yesWords(draft), noWords(draft)) ||
     (invite.whitelistGroupId !== null && invite.whitelistGroupId === draft.groupId)
+  ) {
+    return undefined;
+  }
+  const { english } = draft;
+  if (
+    englishIncomplete(english.enabled, [
+      english.message,
+      ...INVITE_TEXTS.map(({ key }) => english.invite[key]),
+    ])
   ) {
     return undefined;
   }
@@ -116,7 +116,35 @@ function toSettings(draft: Draft): Settings | undefined {
       exhaustedMessage: invite.exhaustedMessage.trim(),
       sponsorThanks: invite.sponsorThanks.trim(),
     },
+    english: {
+      enabled: english.enabled,
+      message: english.message.trim(),
+      invite: trimTexts(english.invite),
+    },
   };
+}
+
+/** The invite texts of one language, trimmed, in a fixed key order. */
+function trimTexts(texts: InviteTexts): InviteTexts {
+  const result = {} as InviteTexts;
+  for (const { key } of INVITE_TEXTS) result[key] = texts[key].trim();
+  return result;
+}
+
+/** Answer words are understood in both languages, so they are checked together. */
+const yesWords = (draft: Draft) => [
+  draft.invite.yesWord,
+  ...(draft.english.enabled ? [draft.english.invite.yesWord] : []),
+];
+const noWords = (draft: Draft) => [
+  draft.invite.noWord,
+  ...(draft.english.enabled ? [draft.english.invite.noWord] : []),
+];
+
+/** Same rule as the server: no word may say yes in one language and no in the other. */
+function wordsCollide(yes: readonly string[], no: readonly string[]): boolean {
+  const lower = new Set(no.map((word) => word.trim().toLowerCase()));
+  return yes.some((word) => lower.has(word.trim().toLowerCase()));
 }
 
 /** Fixed key order, so the form's copy and the server's compare equal. */
@@ -345,6 +373,44 @@ function Form({ data, reload }: { data: ProxySettings; reload: () => void }) {
           ))}
           <p className="muted small">{t('proxy.invite.placeholders')}</p>
         </fieldset>
+      )}
+
+      <EnglishTexts
+        enabled={draft.english.enabled}
+        onToggle={(enabled) => {
+          change({ english: { ...draft.english, enabled } });
+        }}
+        note={draft.action === 'invite' ? t('proxy.english.words') : undefined}
+        fields={[
+          {
+            id: 'message',
+            label: t('proxy.message'),
+            value: draft.english.message,
+            max: 1024,
+            onChange: (value) => {
+              change({ english: { ...draft.english, message: value } });
+            },
+          },
+          ...(draft.action === 'invite'
+            ? INVITE_TEXTS.map(({ key, label, max }) => ({
+                id: `invite.${key}`,
+                label: t(label),
+                value: draft.english.invite[key],
+                max,
+                onChange: (value: string) => {
+                  change({
+                    english: {
+                      ...draft.english,
+                      invite: { ...draft.english.invite, [key]: value },
+                    },
+                  });
+                },
+              }))
+            : []),
+        ]}
+      />
+      {draft.english.enabled && wordsCollide(yesWords(draft), noWords(draft)) && (
+        <p className="alert">{t('error.RULES_SAME_COMMAND')}</p>
       )}
 
       <fieldset className="settings-form__channels">

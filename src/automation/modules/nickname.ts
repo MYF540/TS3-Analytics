@@ -3,6 +3,7 @@ import type { DbExecutor } from '../../db/repositories/index.js';
 import { findForbidden, PATTERN_MAX_LENGTH } from '../../domain/nickname-check.js';
 import { ModuleActions, POKE_MAX, type AutomationDeps } from '../actions.js';
 import type { BotClient, BotModule } from '../host.js';
+import { clientLanguage, englishSection } from '../language.js';
 import { isExempt, loadModuleSettings, moduleBase } from '../settings.js';
 
 export const NICKNAME_ACTIONS = ['message', 'poke', 'kick'] as const;
@@ -13,6 +14,8 @@ export const nicknamePattern = z.object({
   regex: z.boolean().default(false),
   /** Own text for this pattern; the general one is used when missing. */
   message: z.string().trim().max(POKE_MAX).optional(),
+  /** Its English counterpart, for players outside the German-speaking countries (T12.1). */
+  messageEnglish: z.string().trim().max(POKE_MAX).optional(),
 });
 
 export const nicknameSettingsSchema = moduleBase.extend({
@@ -27,6 +30,10 @@ export const nicknameSettingsSchema = moduleBase.extend({
     .min(1)
     .max(POKE_MAX)
     .default('Dieser Nickname ist hier nicht erlaubt.'),
+  /** English text for players outside the German-speaking countries (T12.1). */
+  english: englishSection({
+    message: z.string().trim().min(1).max(POKE_MAX).default('This nickname is not allowed here.'),
+  }),
 });
 
 export type NicknameSettings = z.infer<typeof nicknameSettingsSchema>;
@@ -60,7 +67,11 @@ export class NicknameModule implements BotModule {
     if (!hit) return;
 
     const actions = new ModuleActions(this.deps, { module: this.id, dryRun: settings.dryRun });
-    const text = hit.message || settings.message;
+    const english =
+      clientLanguage(this.deps.database, client.userId, settings.english.enabled) === 'en';
+    const text = english
+      ? hit.messageEnglish || settings.english.message
+      : hit.message || settings.message;
     const detail = `Nickname „${client.nickname}“, Muster „${hit.pattern}“`;
     if (settings.action === 'kick') await actions.kick(client, text, detail);
     else if (settings.action === 'poke') await actions.poke(client, text, detail);

@@ -303,7 +303,16 @@ export function playtimeChartOption(
 
 export interface NetworkChartInput {
   nodes: { userId: number; nickname: string | null; seconds: number }[];
-  edges: { a: number; b: number; seconds: number }[];
+  edges: { a: number; b: number; seconds: number; shareA?: number; shareB?: number }[];
+}
+
+export interface NetworkChartStyle {
+  /** Colour and category name per player (T12.2); the default blue when missing. */
+  categoryOf?: (userId: number) => { color: string; label: string } | undefined;
+  /** What the line width shows: shared hours or the larger share of one's own time. */
+  weight?: 'seconds' | 'share';
+  /** The searched player: always labelled and ringed. */
+  focus?: number | undefined;
 }
 
 /**
@@ -314,10 +323,13 @@ export interface NetworkChartInput {
 export function networkChartOption(
   data: NetworkChartInput,
   palette: ChartPalette,
+  style: NetworkChartStyle = {},
   labelled = 15,
 ): ChartOption {
   const maxSeconds = Math.max(1, ...data.nodes.map((node) => node.seconds));
-  const maxEdge = Math.max(1, ...data.edges.map((edge) => edge.seconds));
+  const strength = (edge: NetworkChartInput['edges'][number]) =>
+    style.weight === 'share' ? Math.max(edge.shareA ?? 0, edge.shareB ?? 0) : edge.seconds;
+  const maxEdge = Math.max(Number.EPSILON, ...data.edges.map(strength));
   const names = new Map(
     data.nodes.map((node) => [node.userId, node.nickname ?? `#${String(node.userId)}`]),
   );
@@ -327,6 +339,20 @@ export function networkChartOption(
       .slice(0, labelled)
       .map((node) => node.userId),
   );
+  if (style.focus !== undefined) withLabel.add(style.focus);
+
+  const nodeStyle = (userId: number) => {
+    const color = style.categoryOf?.(userId)?.color;
+    const focused = userId === style.focus;
+    if (color === undefined && !focused) return {};
+    return {
+      itemStyle: {
+        ...(color === undefined ? {} : { color }),
+        // The searched player gets a ring in ink colour, so it stands out in any category.
+        ...(focused ? { borderColor: palette.text, borderWidth: 3 } : {}),
+      },
+    };
+  };
 
   return {
     animation: false,
@@ -335,11 +361,27 @@ export function networkChartOption(
       ...tooltipStyle(palette),
       formatter: (params: { dataType: string; data: Record<string, unknown> }) => {
         if (params.dataType === 'edge') {
-          const edge = params.data as { source: string; target: string; seconds: number };
-          return `${names.get(Number(edge.source)) ?? ''} ↔ ${names.get(Number(edge.target)) ?? ''}<br/>${t('network.tooltip.together')}: <b>${formatDuration(edge.seconds)}</b>`;
+          const edge = params.data as {
+            source: string;
+            target: string;
+            seconds: number;
+            shareA?: number;
+            shareB?: number;
+          };
+          const share =
+            edge.shareA === undefined || edge.shareB === undefined
+              ? ''
+              : `<br/>${t('network.col.share')}: <b>${t('network.shareValue', {
+                  a: formatNumber(Math.round(edge.shareA * 100)),
+                  b: formatNumber(Math.round(edge.shareB * 100)),
+                })}</b>`;
+          return `${names.get(Number(edge.source)) ?? ''} ↔ ${names.get(Number(edge.target)) ?? ''}<br/>${t('network.tooltip.together')}: <b>${formatDuration(edge.seconds)}</b>${share}`;
         }
         const node = params.data as { id: string; seconds: number; degree: number };
-        return `${names.get(Number(node.id)) ?? ''}<br/>${t('network.tooltip.time')}: <b>${formatDuration(node.seconds)}</b><br/>${t('network.tooltip.partners')}: <b>${formatNumber(node.degree)}</b>`;
+        const category = style.categoryOf?.(Number(node.id));
+        // The category is named, not only coloured: identity never rests on colour alone.
+        const group = category ? `<br/>${category.label}` : '';
+        return `${names.get(Number(node.id)) ?? ''}${group}<br/>${t('network.tooltip.time')}: <b>${formatDuration(node.seconds)}</b><br/>${t('network.tooltip.partners')}: <b>${formatNumber(node.degree)}</b>`;
       },
     },
     series: [
@@ -375,12 +417,15 @@ export function networkChartOption(
             .length,
           // Area, not radius, carries the value: 8 px for the smallest, 46 px for the largest.
           symbolSize: 8 + 38 * Math.sqrt(node.seconds / maxSeconds),
+          ...nodeStyle(node.userId),
         })),
         links: data.edges.map((edge) => ({
           source: String(edge.a),
           target: String(edge.b),
           seconds: edge.seconds,
-          lineStyle: { width: 0.6 + 4.4 * (edge.seconds / maxEdge) },
+          ...(edge.shareA === undefined ? {} : { shareA: edge.shareA }),
+          ...(edge.shareB === undefined ? {} : { shareB: edge.shareB }),
+          lineStyle: { width: 0.6 + 4.4 * (strength(edge) / maxEdge) },
         })),
       },
     ],

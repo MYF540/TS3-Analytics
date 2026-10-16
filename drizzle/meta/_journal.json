@@ -134,6 +134,13 @@
       "when": 1791888136681,
       "tag": "0018_proxy_vouches",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1792116196898,
+      "tag": "0019_network_communities",
+      "breakpoints": true
     }
   ]
 }

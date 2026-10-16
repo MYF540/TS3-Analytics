@@ -2,10 +2,12 @@ import { useState, type SubmitEvent } from 'react';
 import { Link } from 'react-router';
 import { api, describeError } from '../api/client';
 import type { SupportSettings } from '../api/types';
+import { EnglishTexts } from '../components/EnglishTexts';
 import { ModuleBaseFields } from '../components/ModuleBaseFields';
 import { useApi } from '../hooks/useApi';
 import { t } from '../i18n';
 import { PageHeader } from './pages';
+import { englishIncomplete } from '../util/english';
 
 type Settings = SupportSettings['settings'];
 
@@ -47,6 +49,10 @@ function toSettings(draft: Draft): Settings | undefined {
     openMaxClients === undefined ||
     closedMaxClients === undefined ||
     texts.some((text) => text.trim() === '') ||
+    englishIncomplete(draft.english.enabled, [
+      draft.english.userMessage,
+      draft.english.nobodyMessage,
+    ]) ||
     names.some((name) => name === '') ||
     names[0] === names[1] ||
     (draft.enabled && (draft.channelId === null || draft.supporterGroupIds.length === 0))
@@ -58,6 +64,11 @@ function toSettings(draft: Draft): Settings | undefined {
     supporterMessage: draft.supporterMessage.trim(),
     userMessage: draft.userMessage.trim(),
     nobodyMessage: draft.nobodyMessage.trim(),
+    english: {
+      enabled: draft.english.enabled,
+      userMessage: draft.english.userMessage.trim(),
+      nobodyMessage: draft.english.nobodyMessage.trim(),
+    },
     cooldownS,
     autoOpen: {
       enabled: draft.autoOpen.enabled,
@@ -203,6 +214,21 @@ function Form({ data }: { data: SupportSettings }) {
       {text('userMessage', t('support.userMessage'), 1024)}
       {text('nobodyMessage', t('support.nobodyMessage'), 1024)}
       <p className="muted small">{t('support.placeholder')}</p>
+      <EnglishTexts
+        enabled={draft.english.enabled}
+        onToggle={(enabled) => {
+          change({ english: { ...draft.english, enabled } });
+        }}
+        fields={(['userMessage', 'nobodyMessage'] as const).map((key) => ({
+          id: key,
+          label: t(`support.${key}`),
+          value: draft.english[key],
+          max: 1024,
+          onChange: (value: string) => {
+            change({ english: { ...draft.english, [key]: value } });
+          },
+        }))}
+      />
 
       <label className="field field--narrow">
         <span>{t('support.cooldown')}</span>

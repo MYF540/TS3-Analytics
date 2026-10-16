@@ -6,6 +6,7 @@ import { availableSupporters, Cooldown, fillTemplate } from '../../domain/suppor
 import { loadActivitySettings } from '../../watcher/settings.js';
 import { MESSAGE_MAX, ModuleActions, POKE_MAX, type AutomationDeps } from '../actions.js';
 import type { BotClient, BotModule } from '../host.js';
+import { clientLanguage, englishSection } from '../language.js';
 import { isExempt, loadModuleSettings, moduleBase } from '../settings.js';
 
 /** TS3 limit for channel names. */
@@ -54,6 +55,24 @@ export const supportSettingsSchema = moduleBase.extend({
       openMaxClients: -1,
       closedMaxClients: 0,
     }),
+  /**
+   * English texts for players outside the German-speaking countries (T12.1). The message to
+   * the team stays in one language.
+   */
+  english: englishSection({
+    userMessage: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MESSAGE_MAX)
+      .default('Hello {name}, the team has been told and will be with you shortly.'),
+    nobodyMessage: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MESSAGE_MAX)
+      .default('Hello {name}, unfortunately nobody from the team is available right now.'),
+  }),
 });
 
 export type SupportSettings = z.infer<typeof supportSettingsSchema>;
@@ -120,12 +139,15 @@ export class SupportModule implements BotModule {
 
     const actions = this.actions(settings);
     const values = { name: client.nickname };
+    const english =
+      clientLanguage(this.deps.database, client.userId, settings.english.enabled) === 'en';
+    const texts = english ? settings.english : settings;
     const team = this.supporters(settings);
     if (team.length === 0) {
-      await actions.message(client, fillTemplate(settings.nobodyMessage, values), 'niemand da');
+      await actions.message(client, fillTemplate(texts.nobodyMessage, values), 'niemand da');
       return;
     }
-    await actions.message(client, fillTemplate(settings.userMessage, values));
+    await actions.message(client, fillTemplate(texts.userMessage, values));
     const text = fillTemplate(settings.supporterMessage, values);
     const detail = `Anfrage von „${client.nickname}“`;
     for (const supporter of team) {

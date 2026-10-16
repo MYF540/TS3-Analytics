@@ -11,6 +11,7 @@ import {
   type AutomationDeps,
 } from '../actions.js';
 import type { BotClient, BotModule, JoinInfo } from '../host.js';
+import { clientLanguage, englishSection } from '../language.js';
 import { isExempt, loadModuleSettings, moduleBase } from '../settings.js';
 import { loadPrivateSettings } from './private.js';
 
@@ -59,6 +60,15 @@ function category(defaults: {
   return z.object(shape).default(z.object(shape).parse({}));
 }
 
+/** English warning and reason of one kind of action, for players outside the DACH countries. */
+function englishCategory(text: string) {
+  const shape = {
+    warnMessage: z.string().trim().min(1).max(POKE_MAX).default(`Please slow down: ${text}.`),
+    reason: z.string().trim().min(1).max(BAN_REASON_MAX).default(`Spam: ${text}`),
+  };
+  return z.object(shape).default(z.object(shape).parse({}));
+}
+
 export const spamSettingsSchema = moduleBase.extend({
   /** Switching channels by oneself; being moved does not count. */
   channelSwitch: category({
@@ -86,6 +96,14 @@ export const spamSettingsSchema = moduleBase.extend({
     kickAt: 6,
     banAt: 0,
     text: 'Privat-Channel anfordern',
+  }),
+  /** English texts (T12.1); windows, thresholds and ban durations are shared. */
+  english: englishSection({
+    channelSwitch: englishCategory('switching channels'),
+    channelCreate: englishCategory('creating channels'),
+    nickname: englishCategory('changing your nickname'),
+    reconnect: englishCategory('reconnecting'),
+    lobby: englishCategory('requesting private channels'),
   }),
 });
 
@@ -153,16 +171,19 @@ export class SpamModule implements BotModule {
 
     const actions = new ModuleActions(this.deps, { module: this.id, dryRun: settings.dryRun });
     const detail = `${LABELS[kind]}: ${String(count)} in ${String(rules.windowS)} s`;
+    const english =
+      clientLanguage(this.deps.database, client.userId, settings.english.enabled) === 'en';
+    const { warnMessage, reason } = english ? settings.english[kind] : rules;
     if (step === 'warn') {
-      if (rules.warnBy === 'poke') await actions.poke(client, rules.warnMessage, detail);
-      else await actions.message(client, rules.warnMessage, detail);
+      if (rules.warnBy === 'poke') await actions.poke(client, warnMessage, detail);
+      else await actions.message(client, warnMessage, detail);
       return;
     }
     if (step === 'kick') {
-      await actions.kick(client, rules.reason.slice(0, KICK_REASON_MAX), detail);
+      await actions.kick(client, reason.slice(0, KICK_REASON_MAX), detail);
       return;
     }
-    await actions.ban(client, rules.banDurationS, rules.reason, detail);
+    await actions.ban(client, rules.banDurationS, reason, detail);
     // A fresh start after the ban; in test mode this also keeps the log from filling up.
     this.counter.reset(key);
   }

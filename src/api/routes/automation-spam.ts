@@ -23,6 +23,8 @@ const categoryOutput = z.object({
   reason: z.string(),
 });
 
+const englishCategoryOutput = z.object({ warnMessage: z.string(), reason: z.string() });
+
 export const spamSettingsResponse = z.object({
   settings: z.object({
     enabled: z.boolean(),
@@ -33,6 +35,14 @@ export const spamSettingsResponse = z.object({
     nickname: categoryOutput,
     reconnect: categoryOutput,
     lobby: categoryOutput,
+    english: z.object({
+      enabled: z.boolean(),
+      channelSwitch: englishCategoryOutput,
+      channelCreate: englishCategoryOutput,
+      nickname: englishCategoryOutput,
+      reconnect: englishCategoryOutput,
+      lobby: englishCategoryOutput,
+    }),
   }),
   groups: z.array(z.object({ id: z.number().int(), name: z.string() })),
 });

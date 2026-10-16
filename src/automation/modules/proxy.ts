@@ -16,8 +16,11 @@ import {
 import type { BotClient, BotModule } from '../host.js';
 import type { ProxyLookup } from '../proxycheck.js';
 import { isExempt, loadModuleSettings, moduleBase } from '../settings.js';
+import { clientLanguage, englishSection } from '../language.js';
 import {
+  englishInviteSchema,
   getVouch,
+  inviteTexts,
   ProxyInvites,
   proxyInviteSchema,
   removeVouch,
@@ -55,6 +58,19 @@ export const proxySettingsSchema = moduleBase.extend({
   exemptUserIds: z.array(z.number().int().positive()).max(500).default([]),
   /** The invite flow of the action `invite`. */
   invite: proxyInviteSchema,
+  /**
+   * English texts for players outside the German-speaking countries (T12.1). The message to
+   * the team stays in one language.
+   */
+  english: englishSection({
+    message: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MESSAGE_MAX)
+      .default('VPN or proxy detected. Please contact an admin.'),
+    invite: englishInviteSchema,
+  }),
 });
 
 export type ProxySettings = z.infer<typeof proxySettingsSchema>;
@@ -158,8 +174,11 @@ export class ProxyModule implements BotModule {
 
   private inviteContext(settings: ProxySettings): InviteContext | undefined {
     if (!settings.enabled || settings.action !== 'invite') return undefined;
+    const { english } = settings;
     return {
       settings: settings.invite,
+      english: english.enabled ? english.invite : undefined,
+      language: (client) => clientLanguage(this.deps.database, client.userId, english.enabled),
       blockGroupId: settings.groupId,
       actions: this.actions(settings),
     };
@@ -178,7 +197,7 @@ export class ProxyModule implements BotModule {
     if (!waiting || !context) return;
     await context.actions.message(
       waiting,
-      fillTemplate(settings.invite.timeoutMessage, { name: client.nickname }),
+      fillTemplate(inviteTexts(context, waiting).timeoutMessage, { name: client.nickname }),
       'Einladung: Bürge hat den Server verlassen',
     );
   }
@@ -280,7 +299,9 @@ export class ProxyModule implements BotModule {
     const detail = `${kind ?? 'Proxy'} (${source})`;
     actions.note('proxy.detected', client, detail);
 
-    const text = settings.message;
+    const english =
+      clientLanguage(this.deps.database, client.userId, settings.english.enabled) === 'en';
+    const text = english ? settings.english.message : settings.message;
     switch (settings.action) {
       case 'message':
         await actions.message(client, text, detail);

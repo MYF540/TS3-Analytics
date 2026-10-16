@@ -24,6 +24,15 @@ Die Module übernehmen, was vorher einzelne SinusBot-Skripte erledigt haben. Ein
 | Spam-Control     | Zählt Channel-Wechsel, angelegte Channels, Umbenennungen, Neuverbindungen und Privat-Channel-Anfragen – je Art eigene Schwellen: Warnung, Kick, Ban | Verschoben werden zählt nicht. Chat-Spam ist für einen Query-Client nicht sichtbar                                       |
 | Anti-Proxy       | Prüft neue Spieler bei proxycheck.io auf VPN/Proxy                                                                                                  | Gibt IP-Adressen an einen Dritten weiter – siehe [datenschutz.md](datenschutz.md). Schlüssel: `PROXYCHECK_API_KEY`       |
 
+## Englische Texte
+
+Jedes Modul, das Spieler anschreibt, hat einen Abschnitt **Englische Texte**: Nickname-Checker, Support-Channel, Privat-Channel, Regelbestätigung, Spam-Control und Anti-Proxy samt Einladungssystem. Ab Werk ist er aus; bis er eingeschaltet wird, bekommen alle die deutschen Texte wie bisher.
+
+- Die Sprache richtet sich nach dem Land des Spielers: Deutschland, Österreich, Schweiz und Liechtenstein bekommen Deutsch, alle anderen Englisch. Ist das Land unbekannt, gibt es Deutsch.
+- Englisch sind nur die Texte an **Spieler** (Nachrichten, Anstupser, Kick- und Ban-Gründe). Texte an das Team, Channel-Namen und Discord-Meldungen bleiben deutsch.
+- Beim Einladungssystem bekommt jeder seine eigene Sprache: der Gast die Liste und die Antworten, der Bürge die Frage und den Dank. Die Wörter für „ja“ und „nein“ werden in beiden Sprachen verstanden; ein Wort darf deshalb nicht in einer Sprache zustimmen und in der anderen ablehnen.
+- Beim Nickname-Checker kann jedes Muster zusätzlich einen eigenen englischen Hinweistext haben; ohne ihn gilt der allgemeine englische Text.
+
 ## Anti-Proxy als Einladungssystem
 
 Mit der Aktion „Einschränken, bis ein Spieler für ihn bürgt“ wird aus der Proxy-Erkennung ein Einladungssystem:
@@ -78,6 +87,6 @@ Die Einstellungen der alten Skripte werden nicht importiert, sondern neu eingetr
 - **Fristen** der Regelbestätigung werden ebenfalls mit der Abfrage geprüft, ein Kick kommt also bis zu eine Minute später.
 - **Chat-Spam und Anstupsen unter Spielern** sieht ein Query-Client nicht.
 - **Temporäre Privat-Channels** ziehen den Bot beim Anlegen kurz hinein; er geht danach in seinen Channel zurück.
-- Die **englische Fassung** der Regelbestätigung richtet sich nach dem Land, aus dem ein Spieler verbunden ist: Deutschland, Österreich, Schweiz und Liechtenstein bekommen Deutsch, alle anderen Englisch. Ist das Land unbekannt, gibt es Deutsch. Das Land meldet der TeamSpeak-Server beim Verbinden; mit GeoLite2-Datenbank wird es zusätzlich aus der IP bestimmt. Ein VPN verfälscht es entsprechend.
+- Die **englischen Texte** aller Module richten sich nach dem Land, aus dem ein Spieler verbunden ist: Deutschland, Österreich, Schweiz und Liechtenstein bekommen Deutsch, alle anderen Englisch. Ist das Land unbekannt, gibt es Deutsch. Das Land meldet der TeamSpeak-Server beim Verbinden; mit GeoLite2-Datenbank wird es zusätzlich aus der IP bestimmt. Ein VPN verfälscht es entsprechend.
 - Die Staffliste führt **verknüpfte Accounts** (Spielerseite → „Accounts“) als eine Person: einmal, unter dem Haupt-Account, und online, sobald einer der Accounts verbunden ist. Zweitaccounts, die nicht verknüpft sind, erscheinen weiterhin einzeln.
 - Die Staffliste zeigt geänderte Einstellungen nach der nächsten Abfrage, neue Gruppenmitglieder, die offline sind, nach spätestens fünf Minuten.

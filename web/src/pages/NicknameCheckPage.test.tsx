@@ -13,6 +13,7 @@ const stored: NicknameSettings = {
     lookalikes: true,
     action: 'kick',
     message: 'Dieser Nickname ist hier nicht erlaubt.',
+    english: { enabled: false, message: 'This nickname is not allowed here.' },
   },
   groups: [
     { id: 6, name: 'Server Admin' },
