@@ -26,6 +26,7 @@ import { runMaintenance, runRetention } from './jobs/retention.js';
 import { runBackup } from './jobs/backup.js';
 import { runFlagDetection } from './jobs/flag-detection.js';
 import { runNetworkJob } from './network/job.js';
+import { runAchievementJob } from './achievements/job.js';
 import { JobRunner } from './jobs/runner.js';
 import { createLogger } from './logging/logger.js';
 import { Ts3Connection } from './ts3/connection.js';
@@ -223,6 +224,15 @@ async function main(): Promise<void> {
         intervalS: 86_400,
         run: (now) => {
           runNetworkJob(database, now);
+        },
+      },
+      {
+        // Achievements (T13.3): players who were online since the last run.
+        name: 'achievements',
+        intervalS: 15 * 60,
+        run: (now) => {
+          const result = runAchievementJob(database, now);
+          return { full: result.full, checked: result.checked, awarded: result.awarded.length };
         },
       },
       {

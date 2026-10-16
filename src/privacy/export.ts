@@ -121,6 +121,11 @@ export function exportUser(database: AppDatabase, userId: number, now: number) {
        WHERE target_type = 'user' AND target_id = ? AND action LIKE 'moderation.%' ORDER BY at`,
       String(userId),
     ),
+    achievements: all(
+      `SELECT achievement_id AS achievement, tier, earned_at AS earnedAt, backfilled
+       FROM achievements_earned WHERE user_id = ? ORDER BY earned_at`,
+      userId,
+    ),
     rules:
       one('SELECT version, decision, at FROM rule_acceptances WHERE user_id = ?', userId) ?? null,
     proxyCheck:

@@ -60,6 +60,12 @@ beforeEach(async () => {
   }
   database.sqlite
     .prepare(
+      `INSERT INTO achievements_earned (user_id, achievement_id, tier, earned_at, backfilled)
+       VALUES (?, 'regular', 1, 1700000200, 0)`,
+    )
+    .run(userId);
+  database.sqlite
+    .prepare(
       `INSERT INTO bans (id, uid, user_id, ip_hash, subnet_hash, created_at, duration_s,
          first_synced, last_synced, last_nickname) VALUES (1, ?, ?, x'01', x'02', 1, 0, 1, 1, 'Troll')`,
     )
@@ -100,6 +106,7 @@ describe('GDPR export', () => {
       notes: [{ body: 'Interne Notiz', author: 'mod' }],
       connections: { addresses: 1, byCountry: [{ country: 'DE', connections: 1 }] },
       bans: [{ id: 1, ipRule: 1 }],
+      achievements: [{ achievement: 'regular', tier: 1, earnedAt: 1_700_000_200, backfilled: 0 }],
     });
     // Hashes are never handed out.
     expect(res.body).not.toContain('ipHash');
@@ -147,6 +154,7 @@ describe('GDPR anonymization', () => {
     expect(counts('SELECT count(*) FROM ip_seen WHERE user_id = ?')).toBe(0);
     expect(counts('SELECT count(*) FROM player_notes WHERE user_id = ?')).toBe(0);
     expect(counts('SELECT count(*) FROM rank_overrides WHERE user_id = ?')).toBe(0);
+    expect(counts('SELECT count(*) FROM achievements_earned WHERE user_id = ?')).toBe(0);
     expect(counts('SELECT count(*) FROM person_members WHERE user_id = ?')).toBe(0);
     expect(
       database.sqlite.prepare('SELECT uid, user_id AS userId, ip_hash AS ipHash FROM bans').get(),

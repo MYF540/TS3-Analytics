@@ -794,3 +794,33 @@ export const proxyVouches = sqliteTable(
   },
   (t) => [index('proxy_vouches_sponsor_idx').on(t.sponsorUserId)],
 );
+
+/**
+ * Achievement tiers a person has reached (T13.2). Rows belong to the account that was the
+ * person's primary account when the tier was reached; reading always combines every account of
+ * the person, so linking and unlinking never loses an achievement. Achievements are never taken
+ * away again – only the GDPR deletion removes them.
+ */
+export const achievementsEarned = sqliteTable(
+  'achievements_earned',
+  {
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** Id from the catalog in `src/domain/achievements.ts`. */
+    achievementId: text('achievement_id').notNull(),
+    /** 1-based tier. */
+    tier: integer('tier').notNull(),
+    /** When the tier was reached, as exactly as the data tells. */
+    earnedAt: integer('earned_at').notNull(),
+    /** Found when history was evaluated afterwards (first run, newly enabled); never announced. */
+    backfilled: integer('backfilled', { mode: 'boolean' }).notNull().default(false),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.achievementId, t.tier] }),
+    index('achievements_earned_achievement_idx').on(t.achievementId, t.tier),
+    index('achievements_earned_at_idx').on(t.earnedAt),
+    check('achievements_earned_tier_check', sql`${t.tier} >= 1`),
+    check('achievements_earned_backfilled_check', sql`${t.backfilled} IN (0, 1)`),
+  ],
+);
