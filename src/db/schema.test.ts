@@ -26,6 +26,7 @@ const WITHOUT_ROWID = new Set([
   'network_nodes',
   'proxy_ips',
   'network_edges',
+  'achievements_earned',
 ]);
 
 interface ColumnInfo {
@@ -59,7 +60,7 @@ describe('migrations', () => {
       .all() as { name: string; strict: number; wr: number }[];
     const byName = new Map(list.map((t) => [t.name, t]));
 
-    expect(tables.length).toBe(36);
+    expect(tables.length).toBe(40);
     for (const table of tables) {
       const { name } = getTableConfig(table);
       expect(byName.get(name), name).toMatchObject({

@@ -29,6 +29,12 @@ export function automationActionLabel(action: string): string {
   return key in de ? de[key as MessageKey] : action;
 }
 
+/** Name or description of an achievement; unknown ids are shown as they are. */
+export function achievementText(kind: 'name' | 'desc', id: string): string {
+  const key = `achievement.${kind}.${id}`;
+  return key in de ? de[key as MessageKey] : kind === 'name' ? id : '';
+}
+
 const numberFormat = new Intl.NumberFormat('de-DE');
 const dateTimeFormat = new Intl.DateTimeFormat('de-DE', {
   timeZone: TIME_ZONE,

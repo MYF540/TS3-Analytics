@@ -25,7 +25,18 @@ import {
 import { berlinDay, berlinDayStart } from '../domain/time.js';
 import { networkGraph } from '../db/queries/network.js';
 import { computeNetwork } from '../network/job.js';
+import { FactsReader } from '../achievements/facts.js';
+import { globalFacts, runAchievementJob } from '../achievements/job.js';
+import { ACHIEVEMENT_STATE_KEY, loadAchievementState } from '../achievements/settings.js';
+import {
+  achievementHolders,
+  achievementOverview,
+  personAchievements,
+} from '../db/queries/achievements.js';
+import { achievementProgress, ACHIEVEMENT_IDS } from '../domain/achievements.js';
 import { DEFAULT_NETWORK_SETTINGS } from '../network/settings.js';
+import { loyaltyCohorts, loyaltyMonths, missingRegulars } from '../db/queries/loyalty.js';
+import { runLoyaltyJob } from '../loyalty/job.js';
 
 export const BUDGET_MS = 100;
 
@@ -41,8 +52,14 @@ interface Result {
 /** A nightly job may take seconds – nobody waits for it. */
 export const JOB_BUDGET_MS = 5000;
 
-function measure(name: string, runs: number, fn: () => unknown, budgetMs = BUDGET_MS): Result {
-  for (let i = 0; i < 3; i++) fn(); // warm-up (statement cache, page cache)
+function measure(
+  name: string,
+  runs: number,
+  fn: () => unknown,
+  budgetMs = BUDGET_MS,
+  warmups = 3,
+): Result {
+  for (let i = 0; i < warmups; i++) fn(); // warm-up (statement cache, page cache)
   const times: number[] = [];
   for (let i = 0; i < runs; i++) {
     const start = process.hrtime.bigint();
@@ -222,6 +239,89 @@ function main(): void {
         unusedChannels(sqlite, { since: since(90), now, presentSince: now - 86_400 }),
       ),
     ];
+
+    // Achievements (T13.3/T13.4): everything runs inside a savepoint that is rolled back, so the
+    // benchmark leaves the database as it was.
+    sqlite.exec('SAVEPOINT bench_achievements');
+    try {
+      const fullRun = () => {
+        sqlite.prepare('DELETE FROM settings WHERE key = ?').run(ACHIEVEMENT_STATE_KEY);
+        sqlite.exec('DELETE FROM achievements_earned');
+        runAchievementJob(database, now);
+      };
+      results.push(
+        measure('Achievements Voll-Lauf mit Nachberechnung (Job)', 1, fullRun, 60_000, 0),
+      );
+      fullRun();
+      results.push(
+        measure(
+          // Pessimistic: everybody of the last hour instead of the last 15 minutes.
+          'Achievements normaler Lauf (Job, Spieler der letzten Stunde)',
+          runs,
+          () => {
+            sqlite
+              .prepare(`UPDATE settings SET value = json_set(value, '$.lastRun', ?) WHERE key = ?`)
+              .run(now - 3600, ACHIEVEMENT_STATE_KEY);
+            return runAchievementJob(database, now);
+          },
+          JOB_BUDGET_MS,
+        ),
+        measure('Achievements Übersicht', runs, () => {
+          achievementOverview(sqlite, ACHIEVEMENT_IDS, 10);
+        }),
+        measure('Achievements Inhaber (Stammgast, Seite 1)', runs, () =>
+          achievementHolders(sqlite, 'regular', { limit: 50, offset: 0 }),
+        ),
+        measure('Achievements Spielerseite (aktivster Nutzer)', runs, () => {
+          personAchievements(sqlite, [heavyUser]);
+          const { globals } = globalFacts(
+            sqlite,
+            database.db,
+            now,
+            loadAchievementState(database.db),
+          );
+          const facts = new FactsReader(sqlite, globals).read(heavyUser, [heavyUser]);
+          if (facts) achievementProgress(facts);
+        }),
+      );
+    } finally {
+      sqlite.exec('ROLLBACK TO bench_achievements');
+      sqlite.exec('RELEASE bench_achievements');
+    }
+
+    // Retention (T13.1): the daily job fills the cache, the page only reads it. Rolled back too.
+    sqlite.exec('SAVEPOINT bench_loyalty');
+    try {
+      results.push(
+        measure('Bindung Neuberechnung (Job)', 1, () => runLoyaltyJob(database, now), 60_000, 0),
+      );
+      const fourWeeksAgo = berlinDay(now - 28 * 86_400);
+      results.push(
+        measure('Bindung Kohorten und Monatsbilanz', runs, () => {
+          loyaltyCohorts(sqlite);
+          loyaltyMonths(sqlite);
+        }),
+        measure('Bindung vermisste Stammspieler (20 h, 4 Wochen, Seite 1)', runs, () =>
+          missingRegulars(sqlite, {
+            minRecentS: 20 * 3600,
+            lastDayBefore: fourWeeksAgo,
+            limit: 50,
+            offset: 0,
+          }),
+        ),
+        measure('Bindung vermisste Stammspieler (CSV, alle)', runs, () =>
+          missingRegulars(sqlite, {
+            minRecentS: 20 * 3600,
+            lastDayBefore: fourWeeksAgo,
+            limit: 1_000_000,
+            offset: 0,
+          }),
+        ),
+      );
+    } finally {
+      sqlite.exec('ROLLBACK TO bench_loyalty');
+      sqlite.exec('RELEASE bench_loyalty');
+    }
 
     const fmt = (n: number) => n.toFixed(1);
     console.log(

@@ -55,6 +55,11 @@ function dayToUtcMidnight(day: number): number {
   return Date.UTC(year, month - 1, day % 100) / 1000;
 }
 
+/** Days since 1970-01-01 for a YYYYMMDD day (calendar arithmetic without time zones). */
+export function dayNumber(day: number): number {
+  return dayToUtcMidnight(day) / 86_400;
+}
+
 /** The day after `day` (YYYYMMDD). */
 export function nextDay(day: number): number {
   return dayFromUtcDate(new Date((dayToUtcMidnight(day) + 86_400) * 1000));

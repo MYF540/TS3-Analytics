@@ -141,6 +141,13 @@
       "when": 1792116196898,
       "tag": "0019_network_communities",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1792194177822,
+      "tag": "0020_achievements_loyalty",
+      "breakpoints": true
     }
   ]
 }

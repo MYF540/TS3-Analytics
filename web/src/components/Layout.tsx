@@ -10,6 +10,8 @@ const NAV: { to: string; label: string; end: boolean; role?: AdminRole }[] = [
   { to: '/spieler', label: t('nav.players'), end: false },
   { to: '/leaderboards', label: t('nav.leaderboards'), end: false },
   { to: '/channels', label: t('nav.channels'), end: false },
+  { to: '/bindung', label: t('nav.loyalty'), end: false },
+  { to: '/achievements', label: t('nav.achievements'), end: false },
   { to: '/hinweise', label: t('nav.flags'), end: false, role: 'moderator' },
   { to: '/raenge', label: t('nav.ranks'), end: false, role: 'admin' },
   { to: '/automatik', label: t('nav.automation'), end: false, role: 'admin' },

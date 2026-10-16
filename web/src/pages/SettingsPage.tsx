@@ -6,6 +6,7 @@ import { formatDateTime, t } from '../i18n';
 import { AlertSettingsCard } from '../components/AlertSettingsCard';
 import { GroupSettingsCard } from '../components/GroupSettingsCard';
 import { NetworkSettingsCard } from '../components/NetworkSettingsCard';
+import { AchievementSettingsCard } from '../components/AchievementSettingsCard';
 import { ModerationSettingsCard } from '../components/ModerationSettingsCard';
 import { PageHeader } from './pages';
 
@@ -261,6 +262,7 @@ export function SettingsPage() {
       {!data && !error && <p className="muted">{t('common.loading')}</p>}
       {data && <ActivityForm data={data} />}
       <NetworkSettingsCard />
+      <AchievementSettingsCard />
       <ModerationSettingsCard />
       <GroupSettingsCard />
       <AlertSettingsCard />

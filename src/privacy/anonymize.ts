@@ -19,7 +19,7 @@ export interface AnonymizeResult {
 /**
  * GDPR anonymization (T7.2, decision 20.09.2026): removes everything that identifies the player
  * – UID (replaced by a random id), nicknames, IP hashes, client data, notes, tags, hints, links,
- * rank data – and the personal parts of mirrored bans and group changes. Sessions, activity and
+ * rank data, achievements – and the personal parts of mirrored bans and group changes. Sessions, activity and
  * the aggregates stay as anonymous playtime; anonymized players are hidden from lists.
  *
  * If the same UID connects again, the tracker creates a new player. A ban on the server is not
@@ -53,6 +53,8 @@ export function anonymizeUser(
     run('DELETE FROM rank_overrides WHERE user_id = ?', userId);
     run('DELETE FROM rank_state WHERE user_id = ?', userId);
     run('DELETE FROM rank_history WHERE user_id = ?', userId);
+    run('DELETE FROM achievements_earned WHERE user_id = ?', userId);
+    run('DELETE FROM loyalty_players WHERE user_id = ?', userId);
     run('DELETE FROM automation_log WHERE user_id = ?', userId);
     run('DELETE FROM rule_acceptances WHERE user_id = ?', userId);
     run('DELETE FROM proxy_checks WHERE user_id = ?', userId);

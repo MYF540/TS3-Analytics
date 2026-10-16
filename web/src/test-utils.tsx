@@ -2,6 +2,11 @@ import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { vi } from 'vitest';
 import type {
+  AchievementList,
+  AchievementSettings,
+  PlayerAchievements,
+  LoyaltyOverview,
+  MissingRegulars,
   ChannelUsage,
   Health,
   Heatmap,
@@ -55,6 +60,151 @@ export const sampleNetworkSettings: NetworkSettings = {
   channels: [
     { id: 3, name: 'Gaming', lastSeen: 1_789_800_000, afk: false },
     { id: 9, name: 'AFK', lastSeen: 1_789_800_000, afk: true },
+  ],
+  state: null,
+};
+
+const H = 3600;
+
+export const sampleAchievements: AchievementList = {
+  persons: 200,
+  achievements: [
+    {
+      id: 'regular',
+      group: 'playtime',
+      unit: 'seconds',
+      tiers: [10 * H, 100 * H, 500 * H, 1000 * H, 2500 * H],
+      secret: false,
+      liveOnly: false,
+      revealed: true,
+      holders: [120, 50, 10, 2, 0],
+      latest: { userId: 1, nickname: 'Alice', tier: 2, earnedAt: 1_789_790_000 },
+    },
+    {
+      id: 'pioneer',
+      group: 'loyalty',
+      unit: 'count',
+      tiers: [1],
+      secret: false,
+      liveOnly: false,
+      revealed: true,
+      holders: [0],
+      latest: null,
+    },
+    {
+      id: 'jubilee',
+      group: 'secret',
+      unit: 'count',
+      tiers: [1000],
+      secret: true,
+      liveOnly: false,
+      revealed: false,
+      holders: [0],
+      latest: null,
+    },
+  ],
+  recent: [
+    {
+      userId: 1,
+      nickname: 'Alice',
+      achievementId: 'regular',
+      tier: 2,
+      earnedAt: 1_789_790_000,
+    },
+  ],
+  state: { lastRun: 1_789_799_000, full: false, checked: 3, awarded: 1, seconds: 0.2 },
+};
+
+export const samplePlayerAchievements: PlayerAchievements = {
+  achievements: [
+    {
+      id: 'regular',
+      group: 'playtime',
+      unit: 'seconds',
+      tiers: [10 * H, 100 * H, 500 * H, 1000 * H, 2500 * H],
+      secret: false,
+      liveOnly: false,
+      earned: [
+        { tier: 1, earnedAt: 1_700_000_000, backfilled: true },
+        { tier: 2, earnedAt: 1_789_790_000, backfilled: false },
+      ],
+      value: 250 * H,
+      nextThreshold: 500 * H,
+    },
+    {
+      id: 'streak',
+      group: 'streak',
+      unit: 'days',
+      tiers: [7, 30, 100],
+      secret: false,
+      liveOnly: false,
+      earned: [],
+      value: 3,
+      nextThreshold: 7,
+    },
+    {
+      id: 'jubilee',
+      group: 'secret',
+      unit: 'count',
+      tiers: [1000],
+      secret: true,
+      liveOnly: false,
+      earned: [],
+      value: 42,
+      nextThreshold: 1000,
+    },
+  ],
+};
+
+export const sampleLoyalty: LoyaltyOverview = {
+  computedAt: 1_789_790_000,
+  returnAfterDays: [7, 30, 90],
+  cohorts: [
+    { month: 202608, size: 40, eligible: [40, 40, 0], returned: [30, 10, 0] },
+    { month: 202609, size: 20, eligible: [20, 0, 0], returned: [5, 0, 0] },
+  ],
+  months: [
+    { month: 202608, active: 120, newcomers: 40, returners: 3, lost: 12 },
+    { month: 202609, active: 110, newcomers: 20, returners: 1, lost: 9 },
+  ],
+};
+
+export const sampleMissingRegulars: MissingRegulars = {
+  computedAt: 1_789_790_000,
+  total: 1,
+  page: 1,
+  pageSize: 50,
+  items: [
+    {
+      userId: 1,
+      nickname: 'Alice',
+      lastDay: 20260910,
+      recentS: 90_000,
+      totalS: 1_000_000,
+      rank: 'Stammgast',
+    },
+  ],
+};
+
+export const sampleAchievementSettings: AchievementSettings = {
+  disabled: ['jubilee'],
+  catalog: [
+    {
+      id: 'regular',
+      group: 'playtime',
+      unit: 'seconds',
+      tiers: [10 * H],
+      secret: false,
+      liveOnly: false,
+    },
+    {
+      id: 'jubilee',
+      group: 'secret',
+      unit: 'count',
+      tiers: [1000],
+      secret: true,
+      liveOnly: false,
+    },
   ],
   state: null,
 };
@@ -246,6 +396,11 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/channels/usage': sampleChannelUsage,
     '/api/channels/unused': sampleUnusedChannels,
     '/api/settings/network': sampleNetworkSettings,
+    '/api/achievements': sampleAchievements,
+    '/api/loyalty/missing': sampleMissingRegulars,
+    '/api/loyalty': sampleLoyalty,
+    '/api/settings/achievements': sampleAchievementSettings,
+    '/api/users/1/achievements': samplePlayerAchievements,
     '/api/users': sampleUsers,
     '/api/users/1': sampleUser,
     '/api/users/1/heatmap': { range: '1y', values: sampleHeatmap.values },

@@ -1,5 +1,11 @@
 import { errorMessage } from '../i18n';
 import type {
+  AchievementHolders,
+  AchievementList,
+  AchievementSettings,
+  PlayerAchievements,
+  LoyaltyOverview,
+  MissingRegulars,
   ActivitySettings,
   ActivitySettingsResponse,
   AlertEvent,
@@ -253,6 +259,25 @@ export const api = {
   saveNetworkSettings: (settings: NetworkSettings['settings']) =>
     apiSend<NetworkSettings>('PUT', '/settings/network', settings),
   runNetworkJob: () => apiPost<NetworkSettings>('/settings/network/run'),
+  achievements: (signal?: AbortSignal) => apiGet<AchievementList>('/achievements', {}, signal),
+  achievementHolders: (
+    id: string,
+    query: { page: number; pageSize: number },
+    signal?: AbortSignal,
+  ) => apiGet<AchievementHolders>(`/achievements/${encodeURIComponent(id)}`, query, signal),
+  playerAchievements: (userId: number, signal?: AbortSignal) =>
+    apiGet<PlayerAchievements>(`/users/${String(userId)}/achievements`, {}, signal),
+  achievementSettings: (signal?: AbortSignal) =>
+    apiGet<AchievementSettings>('/settings/achievements', {}, signal),
+  saveAchievementSettings: (disabled: string[]) =>
+    apiSend<AchievementSettings>('PUT', '/settings/achievements', { disabled }),
+  runAchievementJob: () => apiPost<AchievementSettings>('/settings/achievements/run'),
+  loyalty: (signal?: AbortSignal) => apiGet<LoyaltyOverview>('/loyalty', {}, signal),
+  missingRegulars: (
+    query: { minHours: number; weeks: number; page: number; pageSize: number },
+    signal?: AbortSignal,
+  ) => apiGet<MissingRegulars>('/loyalty/missing', query, signal),
+  runLoyaltyJob: () => apiPost<LoyaltyOverview>('/loyalty/run'),
   playerHeatmap: (userId: number, range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>(`/users/${String(userId)}/heatmap`, { range }, signal),
   importComparison: (
