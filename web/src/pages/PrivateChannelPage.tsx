@@ -2,10 +2,12 @@ import { useState, type SubmitEvent } from 'react';
 import { Link } from 'react-router';
 import { api, describeError } from '../api/client';
 import type { PrivateSettings } from '../api/types';
+import { EnglishTexts } from '../components/EnglishTexts';
 import { ModuleBaseFields } from '../components/ModuleBaseFields';
 import { useApi } from '../hooks/useApi';
 import { t, type MessageKey } from '../i18n';
 import { PageHeader } from './pages';
+import { englishIncomplete } from '../util/english';
 
 type Settings = PrivateSettings['settings'];
 type Lobby = Settings['lobbies'][number];
@@ -92,6 +94,10 @@ function toSettings(draft: Draft): Settings | undefined {
     !lobbies.every((lobby): lobby is Lobby => lobby !== undefined) ||
     new Set(entrances).size !== entrances.length ||
     TEXTS.some(({ key }) => draft[key].trim() === '') ||
+    englishIncomplete(
+      draft.english.enabled,
+      TEXTS.map(({ key }) => draft.english[key]),
+    ) ||
     (draft.enabled && lobbies.length === 0)
   ) {
     return undefined;
@@ -106,6 +112,13 @@ function toSettings(draft: Draft): Settings | undefined {
     movedMessage: draft.movedMessage.trim(),
     deniedMessage: draft.deniedMessage.trim(),
     passwordMessage: draft.passwordMessage.trim(),
+    english: {
+      enabled: draft.english.enabled,
+      createdMessage: draft.english.createdMessage.trim(),
+      movedMessage: draft.english.movedMessage.trim(),
+      deniedMessage: draft.english.deniedMessage.trim(),
+      passwordMessage: draft.english.passwordMessage.trim(),
+    },
   };
 }
 
@@ -436,6 +449,21 @@ function Form({ data }: { data: PrivateSettings }) {
         </label>
       ))}
       <p className="muted small">{t('private.placeholders')}</p>
+      <EnglishTexts
+        enabled={draft.english.enabled}
+        onToggle={(enabled) => {
+          change({ english: { ...draft.english, enabled } });
+        }}
+        fields={TEXTS.map(({ key, label }) => ({
+          id: key,
+          label: t(label),
+          value: draft.english[key],
+          max: 1024,
+          onChange: (value: string) => {
+            change({ english: { ...draft.english, [key]: value } });
+          },
+        }))}
+      />
 
       {error && (
         <p className="alert" role="alert">

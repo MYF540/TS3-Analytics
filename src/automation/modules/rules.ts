@@ -2,31 +2,20 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { DbExecutor } from '../../db/repositories/index.js';
 import { ruleAcceptances, type RuleDecision } from '../../db/schema.js';
+import { playerLanguage, type Language } from '../../domain/language.js';
 import { Cooldown } from '../../domain/support.js';
 import { KICK_REASON_MAX, MESSAGE_MAX, ModuleActions, type AutomationDeps } from '../actions.js';
 import type { BotClient, BotModule, JoinInfo } from '../host.js';
+import { clientLanguage } from '../language.js';
 import { isExempt, loadModuleSettings, moduleBase } from '../settings.js';
 
 const text = z.string().trim().min(1).max(MESSAGE_MAX);
 const command = z.string().trim().min(1).max(40);
 const channel = z.number().int().positive().nullable().default(null);
 
-/** Countries whose players get the German texts; everybody else gets the English ones. */
-export const GERMAN_SPEAKING = ['DE', 'AT', 'CH', 'LI'] as const;
-
-export type RuleLanguage = 'de' | 'en';
-
-/**
- * Language of the rule texts for a player. German is the server's own language, so it is also
- * what a player with an unknown country gets.
- */
-export function ruleLanguage(
-  country: string | null | undefined,
-  englishEnabled: boolean,
-): RuleLanguage {
-  if (!englishEnabled || !country) return 'de';
-  return (GERMAN_SPEAKING as readonly string[]).includes(country.toUpperCase()) ? 'de' : 'en';
-}
+/** Kept for the rule confirmation, which had languages first (see `playerLanguage`). */
+export const ruleLanguage = playerLanguage;
+export type RuleLanguage = Language;
 
 const englishDefaults = {
   enabled: false,
@@ -166,10 +155,8 @@ export class RulesModule implements BotModule {
 
   /** German or English, by the country the player connects from (or was last seen in). */
   private texts(settings: RulesSettings, client: BotClient): RuleTexts {
-    const row = this.deps.database.sqlite
-      .prepare('SELECT country FROM users WHERE id = ?')
-      .get(client.userId) as { country: string | null } | undefined;
-    return ruleTexts(settings, ruleLanguage(row?.country, settings.english.enabled));
+    const language = clientLanguage(this.deps.database, client.userId, settings.english.enabled);
+    return ruleTexts(settings, language);
   }
 
   private applies(settings: RulesSettings, client: BotClient): boolean {

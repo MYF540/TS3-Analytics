@@ -109,6 +109,28 @@ describe('proxy check routes', () => {
     expect(await code({ action: 'invite', groupId: 50, invite: { ...invite, noWord: 'JA' } })).toBe(
       'RULES_SAME_COMMAND',
     );
+    // Answers are understood in both languages, so a word may not say yes in one and no in the other.
+    const crossed = { enabled: true, invite: { yesWord: 'nein', noWord: 'no' } };
+    expect(await code({ action: 'invite', groupId: 50, invite, english: crossed })).toBe(
+      'RULES_SAME_COMMAND',
+    );
+    expect(
+      (
+        await put({
+          action: 'invite',
+          groupId: 50,
+          invite,
+          english: { ...crossed, enabled: false },
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (await put({ action: 'invite', groupId: 50, invite, english: { enabled: true } })).statusCode,
+    ).toBe(200);
+    expect(loadProxySettings(database.db).english.invite).toMatchObject({
+      yesWord: 'yes',
+      noWord: 'no',
+    });
     replaceRanks(database.sqlite, [{ name: 'Neuling', requiredS: 3600, serverGroupId: 51 }], NOW);
     expect(await code({ action: 'invite', groupId: 50, invite })).toBe('RULES_RANK_GROUP');
   });

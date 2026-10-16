@@ -319,3 +319,56 @@ describe('support rules', () => {
     expect(cooldown.allow(1, 160, 60)).toBe(true);
   });
 });
+
+describe('English texts (T12.1)', () => {
+  const english = { enabled: true, userMessage: 'Hi {name}, help is on the way.' };
+  const visitor = (nickname: string, country: string | undefined) =>
+    server.join({ uid: `uid-${nickname}`, nickname, country });
+
+  it('greets players from outside the German-speaking countries in English', async () => {
+    configure({ english });
+    const mod = supporter('Mod');
+    const john = visitor('John', 'US');
+    const anna = visitor('Anna', 'AT');
+    await idle();
+    server.move(john, SUPPORT);
+    await idle();
+    server.move(anna, SUPPORT);
+    await idle();
+    expect(sent()).toEqual([
+      ['message', john, 'Hi John, help is on the way.'],
+      // The team is always told in German.
+      ['poke', mod, 'John wartet im Support.'],
+      ['message', anna, 'Hallo Anna, das Team wurde informiert und kümmert sich gleich um dich.'],
+      ['poke', mod, 'Anna wartet im Support.'],
+    ]);
+  });
+
+  it('uses the English default when nobody is there', async () => {
+    configure({ english });
+    const john = visitor('John', 'GB');
+    await idle();
+    server.move(john, SUPPORT);
+    await idle();
+    expect(sent()).toEqual([
+      ['message', john, 'Hello John, unfortunately nobody from the team is available right now.'],
+    ]);
+  });
+
+  it('stays German for an unknown country and while English is off', async () => {
+    configure({ english });
+    const unknown = visitor('Unbekannt', undefined);
+    await idle();
+    server.move(unknown, SUPPORT);
+    await idle();
+    configure();
+    const john = visitor('John', 'US');
+    await idle();
+    server.move(john, SUPPORT);
+    await idle();
+    expect(sent().map(([, , text]) => text)).toEqual([
+      'Hallo Unbekannt, im Moment ist leider niemand vom Team erreichbar.',
+      'Hallo John, im Moment ist leider niemand vom Team erreichbar.',
+    ]);
+  });
+});

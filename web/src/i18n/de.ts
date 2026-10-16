@@ -855,6 +855,7 @@ export const de = {
   'nickname.noPatterns': 'Noch keine Muster – ohne Muster tut das Modul nichts.',
   'nickname.pattern': 'Muster {number}',
   'nickname.ownMessage': 'Eigener Hinweistext (optional)',
+  'nickname.ownMessageEnglish': 'Eigener Hinweistext auf Englisch (optional)',
   'nickname.regex': 'Regulärer Ausdruck',
   'nickname.removeShort': 'Entfernen',
   'nickname.remove': 'Muster {number} entfernen',
@@ -1009,6 +1010,10 @@ export const de = {
   'rules.newVersion': 'Neue Version: alle müssen erneut bestätigen',
   'rules.newVersionHint':
     'Nur nötig, wenn sich die Regeln inhaltlich geändert haben. Wirkt nach dem Speichern.',
+  'english.title': 'Englische Texte',
+  'english.enabled': 'Spielern außerhalb des deutschsprachigen Raums die englischen Texte schicken',
+  'english.hint':
+    'Deutsch bekommt, wer aus Deutschland, Österreich, der Schweiz oder Liechtenstein verbunden ist oder dessen Land unbekannt ist; alle anderen bekommen Englisch. Texte an das Team bleiben deutsch.',
   'rules.english': 'Englische Fassung',
   'rules.english.enabled':
     'Spielern außerhalb des deutschsprachigen Raums die englische Fassung schicken',
@@ -1112,6 +1117,8 @@ export const de = {
   'proxy.invite.timeout': 'Text an den Spieler, wenn keine Antwort kommt',
   'proxy.invite.exhausted': 'Text, wenn die Versuche aufgebraucht sind',
   'proxy.invite.thanks': 'Text an den Bürgen nach der Bestätigung',
+  'proxy.english.words':
+    'Die Wörter zum Bestätigen und Ablehnen werden in beiden Sprachen verstanden. Der Bürge wird in seiner eigenen Sprache gefragt.',
   'proxy.invite.placeholders':
     '{name} ist jeweils der andere Spieler; {yes} und {no} in der Frage an den Gewählten sind die beiden Wörter.',
   'player.proxy.vouchedBy': 'Gebürgt hat',

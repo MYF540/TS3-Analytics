@@ -33,6 +33,23 @@ const stored: ProxySettings = {
       exhaustedMessage: 'Zu viele Versuche.',
       sponsorThanks: 'Danke.',
     },
+    english: {
+      enabled: false,
+      message: 'VPN or proxy detected.',
+      invite: {
+        intro: 'Who do you belong to?',
+        nobodyMessage: 'Nobody here.',
+        askedMessage: '{name} has been asked.',
+        sponsorQuestion: 'Does {name} belong to you? {yes} or {no}.',
+        yesWord: 'yes',
+        noWord: 'no',
+        acceptedMessage: 'Unlocked.',
+        declinedMessage: 'Declined.',
+        timeoutMessage: 'No answer.',
+        exhaustedMessage: 'Too many attempts.',
+        sponsorThanks: 'Thank you.',
+      },
+    },
   },
   groups: [
     { id: 6, name: 'Server Admin' },
@@ -163,6 +180,29 @@ describe('ProxyCheckPage', () => {
         sponsorGroupIds: [6],
         timeoutS: 120,
       },
+    });
+  });
+
+  it('saves English invite texts and refuses a word that means yes and no', async () => {
+    const { saved } = setup({
+      ...stored,
+      settings: { ...stored.settings, action: 'invite', groupId: 50 },
+    });
+    const english = within(await screen.findByRole('group', { name: 'Englische Texte' }));
+    await userEvent.click(english.getByLabelText(/englischen Texte schicken/));
+    expect(english.getByText(/in beiden Sprachen verstanden/)).toBeInTheDocument();
+    const yes = english.getByLabelText('Wort zum Bestätigen');
+    await userEvent.clear(yes);
+    await userEvent.type(yes, 'nein');
+    expect(screen.getByText(/müssen sich unterscheiden/)).toBeInTheDocument();
+    expect(save()).toBeDisabled();
+    await userEvent.clear(yes);
+    await userEvent.type(yes, 'sure');
+    await userEvent.click(save());
+    await screen.findByText('Gespeichert.');
+    expect(saved()).toMatchObject({
+      invite: { yesWord: 'ja', noWord: 'nein' },
+      english: { enabled: true, invite: { ...stored.settings.english.invite, yesWord: 'sure' } },
     });
   });
 

@@ -25,6 +25,7 @@ const settingsOutput = z.object({
     openMaxClients: z.number().int(),
     closedMaxClients: z.number().int(),
   }),
+  english: z.object({ enabled: z.boolean(), userMessage: z.string(), nobodyMessage: z.string() }),
 });
 
 export const supportSettingsResponse = z.object({

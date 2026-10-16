@@ -531,13 +531,14 @@ Entscheidung (13.10.2026): Hinweis im Webinterface **und** Knopf für Admins; in
 
 Aufgenommen am 16.10.2026 auf Wunsch des Betreibers. Details, die er nicht festgelegt hat, sind als Vorschlag markiert und vor Beginn kurz mit ihm abzustimmen.
 
-- [ ] **T12.1 Englische Texte für alle Bot-Module** · `Backend` `Frontend` · braucht: T10.11
+- [x] **T12.1 Englische Texte für alle Bot-Module** · `Backend` `Frontend` · braucht: T10.11
   - Anlass: Offener Punkt aus „Regelbestätigung: englische Fassung nach Land“. Bisher sprechen nur die Regeln Englisch; Support-Channel, Privat-Channel, Spam-Control, Nickname-Checker und Anti-Proxy (inkl. Einladungssystem) schreiben Spielern nur auf Deutsch
   - Sprachwahl wie bei den Regeln über `ruleLanguage` (`DE`, `AT`, `CH`, `LI` → Deutsch, sonst Englisch, unbekanntes Land → Deutsch); die Funktion dafür aus `rules.ts` in eine gemeinsame Stelle unter `/domain` ziehen
   - Je Modul ein Abschnitt `english` mit allen Texten, die **Spieler** sehen (Nachrichten, Pokes, Kick-Gründe), abschaltbar, ab Werk aus; bestehende Einstellungen ändern ihr Verhalten nicht. Texte an das Team (z. B. die Benachrichtigung der Supporter) bleiben einsprachig
   - Wörter zum Antworten (Anti-Proxy-Einladung ja/nein) werden in beiden Sprachen verstanden, unabhängig von der Sprache der Frage; ein Wort darf nicht in einer Sprache zustimmen und in der anderen ablehnen (API und Seite prüfen das, wie bei den Regeln)
   - Einstellungsseiten: englische Felder je Modul in einem eigenen, einklappbaren Bereich; gemeinsame Bausteine statt sechsmal derselben Karte
   - Fertig wenn: Tests je Modul für Deutsch, Englisch, unbekanntes Land und ausgeschalteten Abschnitt; Migration bestehender Einstellungen ohne Verhaltensänderung; `docs/automatik.md` ergänzt
+  - Notiz: Sprachwahl jetzt in `src/domain/language.ts` (`playerLanguage`, dazu `wordsCollide` für Antwortwörter); `ruleLanguage` bleibt als Alias. `src/automation/language.ts` liefert `englishSection` (Schalter ab Werk aus plus Textfelder) und `clientLanguage` (liest `users.country`). Neuer Abschnitt `english` in Nickname-Checker (`message`, je Muster optional `messageEnglish`), Support (`userMessage`, `nobodyMessage`), Privat-Channel (alle vier Texte), Spam-Control (je Art `warnMessage` und `reason`) und Anti-Proxy (`message` und `invite` mit allen Texten und Wörtern). Keine Migration nötig: Gespeicherte Einstellungen ohne `english` bekommen die Vorgaben mit ausgeschaltetem Schalter. Beim Einladungssystem wird jeder in seiner Sprache angeschrieben (Gast und Bürge getrennt), ja/nein werden in beiden Sprachen verstanden; API (`RULES_SAME_COMMAND`) und Seite lehnen ein Wort ab, das in einer Sprache zustimmt und in der anderen ablehnt. Im Webinterface ein gemeinsamer Baustein `EnglishTexts`. Channel-Namen (Privat-Channel, Support offen/geschlossen) bleiben einsprachig, weil sie alle sehen.
 
 - [ ] **T12.2 Netzwerk-Seite ausbauen: Filter und Farben** · `Backend` `Frontend` · braucht: T9.2
   - Ziel: Im Graphen schneller sehen, wer zu welcher Gruppe gehört, und gezielt einzelne Spieler oder Kreise betrachten

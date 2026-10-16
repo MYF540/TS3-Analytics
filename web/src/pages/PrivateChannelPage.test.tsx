@@ -30,6 +30,13 @@ const stored: PrivateSettings = {
     movedMessage: 'Willkommen zurück.',
     deniedMessage: 'Kein Channel für dich.',
     passwordMessage: 'Passwort: {password}',
+    english: {
+      enabled: false,
+      createdMessage: 'Your private channel has been created.',
+      movedMessage: 'Welcome back.',
+      deniedMessage: 'No channel for you.',
+      passwordMessage: 'Password: {password}',
+    },
   },
   groups: [{ id: 20, name: 'Mitglied' }],
   channels: [
