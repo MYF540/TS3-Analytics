@@ -51,6 +51,8 @@ afterEach(async () => {
   database.close();
 });
 
+// The type parameter only names what the test expects back.
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 const get = async <T>(url: string, cookie = viewer) => {
   const res = await app.inject({ method: 'GET', url, headers: { cookie } });
   return { status: res.statusCode, body: res.json<T>() };

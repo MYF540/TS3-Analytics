@@ -13,6 +13,7 @@ import { PlayerFlagsNotice } from '../components/PlayerFlagsNotice';
 import { PlayerNotes } from '../components/PlayerNotes';
 import { PlayerProxyNotice } from '../components/PlayerProxyNotice';
 import { PlayerRankCard } from '../components/PlayerRankCard';
+import { PlayerAchievementsCard } from '../components/PlayerAchievementsCard';
 import { PlayerRulesNotice } from '../components/PlayerRulesNotice';
 import { PrivacyCard } from '../components/PrivacyCard';
 import { PlayerTags } from '../components/PlayerTags';
@@ -309,6 +310,10 @@ export function PlayerPage() {
       <section className="card">
         <h2>{t('prank.title')}</h2>
         <PlayerRankCard key={`${String(id)}-${String(version)}`} userId={id} />
+      </section>
+      <section className="card">
+        <h2>{t('pach.title')}</h2>
+        <PlayerAchievementsCard key={`${String(id)}-${String(version)}`} userId={id} />
       </section>
       <section className="card">
         <h2>{t('accounts.title')}</h2>

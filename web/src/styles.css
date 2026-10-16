@@ -1153,3 +1153,115 @@ td .badge {
 .footer a {
   color: inherit;
 }
+
+/* Achievements (T13.4): badge colors per tier, readable in both themes. */
+:root {
+  --tier-1: #a0522d;
+  --tier-2: #64748b;
+  --tier-3: #b8860b;
+  --tier-4: #0e7490;
+  --tier-5: #7e22ce;
+  --tier-single: var(--accent);
+}
+
+:root[data-theme='dark'] {
+  --tier-1: #d9895b;
+  --tier-2: #cbd5e1;
+  --tier-3: #facc15;
+  --tier-4: #67e8f9;
+  --tier-5: #d8b4fe;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.achievement {
+  --tier-color: var(--border);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--tier-color);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.achievement--single {
+  --tier-color: var(--tier-single);
+}
+
+.achievement--tier-1 {
+  --tier-color: var(--tier-1);
+}
+
+.achievement--tier-2 {
+  --tier-color: var(--tier-2);
+}
+
+.achievement--tier-3 {
+  --tier-color: var(--tier-3);
+}
+
+.achievement--tier-4 {
+  --tier-color: var(--tier-4);
+}
+
+.achievement--tier-5 {
+  --tier-color: var(--tier-5);
+}
+
+.achievement--open {
+  --tier-color: var(--border);
+  opacity: 0.8;
+}
+
+.achievement__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.achievement__tier {
+  color: var(--tier-color);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.achievement__progress {
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+}
+
+.achievement__progress > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+.achievement-group + .achievement-group {
+  margin-top: 1rem;
+}
+
+.achievement-group h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

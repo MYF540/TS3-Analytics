@@ -2,6 +2,9 @@ import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { vi } from 'vitest';
 import type {
+  AchievementList,
+  AchievementSettings,
+  PlayerAchievements,
   ChannelUsage,
   Health,
   Heatmap,
@@ -55,6 +58,121 @@ export const sampleNetworkSettings: NetworkSettings = {
   channels: [
     { id: 3, name: 'Gaming', lastSeen: 1_789_800_000, afk: false },
     { id: 9, name: 'AFK', lastSeen: 1_789_800_000, afk: true },
+  ],
+  state: null,
+};
+
+const H = 3600;
+
+export const sampleAchievements: AchievementList = {
+  persons: 200,
+  achievements: [
+    {
+      id: 'regular',
+      group: 'playtime',
+      unit: 'seconds',
+      tiers: [10 * H, 100 * H, 500 * H, 1000 * H, 2500 * H],
+      secret: false,
+      liveOnly: false,
+      revealed: true,
+      holders: [120, 50, 10, 2, 0],
+      latest: { userId: 1, nickname: 'Alice', tier: 2, earnedAt: 1_789_790_000 },
+    },
+    {
+      id: 'pioneer',
+      group: 'loyalty',
+      unit: 'count',
+      tiers: [1],
+      secret: false,
+      liveOnly: false,
+      revealed: true,
+      holders: [0],
+      latest: null,
+    },
+    {
+      id: 'jubilee',
+      group: 'secret',
+      unit: 'count',
+      tiers: [1000],
+      secret: true,
+      liveOnly: false,
+      revealed: false,
+      holders: [0],
+      latest: null,
+    },
+  ],
+  recent: [
+    {
+      userId: 1,
+      nickname: 'Alice',
+      achievementId: 'regular',
+      tier: 2,
+      earnedAt: 1_789_790_000,
+    },
+  ],
+  state: { lastRun: 1_789_799_000, full: false, checked: 3, awarded: 1, seconds: 0.2 },
+};
+
+export const samplePlayerAchievements: PlayerAchievements = {
+  achievements: [
+    {
+      id: 'regular',
+      group: 'playtime',
+      unit: 'seconds',
+      tiers: [10 * H, 100 * H, 500 * H, 1000 * H, 2500 * H],
+      secret: false,
+      liveOnly: false,
+      earned: [
+        { tier: 1, earnedAt: 1_700_000_000, backfilled: true },
+        { tier: 2, earnedAt: 1_789_790_000, backfilled: false },
+      ],
+      value: 250 * H,
+      nextThreshold: 500 * H,
+    },
+    {
+      id: 'streak',
+      group: 'streak',
+      unit: 'days',
+      tiers: [7, 30, 100],
+      secret: false,
+      liveOnly: false,
+      earned: [],
+      value: 3,
+      nextThreshold: 7,
+    },
+    {
+      id: 'jubilee',
+      group: 'secret',
+      unit: 'count',
+      tiers: [1000],
+      secret: true,
+      liveOnly: false,
+      earned: [],
+      value: 42,
+      nextThreshold: 1000,
+    },
+  ],
+};
+
+export const sampleAchievementSettings: AchievementSettings = {
+  disabled: ['jubilee'],
+  catalog: [
+    {
+      id: 'regular',
+      group: 'playtime',
+      unit: 'seconds',
+      tiers: [10 * H],
+      secret: false,
+      liveOnly: false,
+    },
+    {
+      id: 'jubilee',
+      group: 'secret',
+      unit: 'count',
+      tiers: [1000],
+      secret: true,
+      liveOnly: false,
+    },
   ],
   state: null,
 };
@@ -246,6 +364,9 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/channels/usage': sampleChannelUsage,
     '/api/channels/unused': sampleUnusedChannels,
     '/api/settings/network': sampleNetworkSettings,
+    '/api/achievements': sampleAchievements,
+    '/api/settings/achievements': sampleAchievementSettings,
+    '/api/users/1/achievements': samplePlayerAchievements,
     '/api/users': sampleUsers,
     '/api/users/1': sampleUser,
     '/api/users/1/heatmap': { range: '1y', values: sampleHeatmap.values },

@@ -2,6 +2,7 @@ import type { RouteObject } from 'react-router';
 import { AuthProvider, RequireAuth, RequireRole } from './auth/AuthProvider';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { AchievementsPage } from './pages/AchievementsPage';
 import { AuditPage } from './pages/AuditPage';
 import { AutomationPage } from './pages/AutomationPage';
 import { ChannelCreatorPage } from './pages/ChannelCreatorPage';
@@ -45,6 +46,7 @@ export const routes: RouteObject[] = [
               { path: 'spieler/:id', element: <PlayerPage /> },
               { path: 'leaderboards', element: <LeaderboardsPage /> },
               { path: 'channels', element: <ChannelsPage /> },
+              { path: 'achievements', element: <AchievementsPage /> },
               {
                 element: <RequireRole role="moderator" />,
                 children: [{ path: 'hinweise', element: <FlagsPage /> }],

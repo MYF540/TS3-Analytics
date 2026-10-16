@@ -6,6 +6,7 @@ import { formatBucket, formatResolution, onlineChartOption } from '../charts/opt
 import { CHART_PALETTES } from '../charts/palette';
 import { HeatmapCard } from '../components/HeatmapCard';
 import { OnlineNow } from '../components/OnlineNow';
+import { RecentAchievements } from '../components/RecentAchievements';
 import { RangePicker } from '../components/RangePicker';
 import { useApi } from '../hooks/useApi';
 import { formatNumber, t, type MessageKey } from '../i18n';
@@ -118,6 +119,7 @@ export function DashboardPage() {
       <OnlineNow />
       <OnlineHistory range={range} />
       <ActivityHeatmap />
+      <RecentAchievements />
     </section>
   );
 }
