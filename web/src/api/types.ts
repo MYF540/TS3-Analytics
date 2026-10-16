@@ -815,3 +815,69 @@ export interface Leaderboard extends Paged<LeaderboardEntry> {
   fromDay: number | null;
   toDay: number | null;
 }
+
+/** Achievements (T13.4). Names and descriptions are in the translation file, keyed by `id`. */
+export type AchievementGroup =
+  'playtime' | 'loyalty' | 'streak' | 'session' | 'time' | 'social' | 'server' | 'secret';
+
+export type AchievementUnit = 'seconds' | 'days' | 'years' | 'count';
+
+export interface AchievementDefinition {
+  id: string;
+  group: AchievementGroup;
+  unit: AchievementUnit;
+  /** One threshold per tier, in `unit`. */
+  tiers: number[];
+  secret: boolean;
+  /** Only counts since live tracking (imported history has no activity data). */
+  liveOnly: boolean;
+}
+
+export interface AchievementState {
+  lastRun: number;
+  full: boolean;
+  checked: number;
+  awarded: number;
+  seconds: number;
+}
+
+export interface AchievementOverviewItem extends AchievementDefinition {
+  revealed: boolean;
+  holders: number[];
+  latest: { userId: number; nickname: string | null; tier: number; earnedAt: number } | null;
+}
+
+export interface AchievementList {
+  persons: number;
+  achievements: AchievementOverviewItem[];
+  recent: {
+    userId: number;
+    nickname: string | null;
+    achievementId: string;
+    tier: number;
+    earnedAt: number;
+  }[];
+  state: AchievementState | null;
+}
+
+export interface AchievementHolders {
+  achievementId: string;
+  total: number;
+  holders: { userId: number; nickname: string | null; tier: number; earnedAt: number }[];
+}
+
+export interface PlayerAchievement extends AchievementDefinition {
+  earned: { tier: number; earnedAt: number; backfilled: boolean }[];
+  value: number;
+  nextThreshold: number | null;
+}
+
+export interface PlayerAchievements {
+  achievements: PlayerAchievement[];
+}
+
+export interface AchievementSettings {
+  disabled: string[];
+  catalog: AchievementDefinition[];
+  state: AchievementState | null;
+}

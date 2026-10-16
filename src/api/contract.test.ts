@@ -24,6 +24,12 @@ import type {
   rankRunResponse,
 } from './routes/ranks.js';
 import type { playerRankResponse } from './routes/player-rank.js';
+import type {
+  achievementHoldersResponse,
+  achievementListResponse,
+  achievementSettingsResponse,
+  playerAchievementsResponse,
+} from './routes/achievements.js';
 import type { moderationAction } from '../moderation/actions.js';
 import type { onlineResponse } from './routes/online.js';
 import type { importComparisonResponse } from './routes/import.js';
@@ -116,6 +122,10 @@ export type Contract = [
   Assert<Equals<z.output<typeof rankHistoryItem>, Web.RankHistoryItem>>,
   Assert<Equals<z.output<typeof rankRunResponse>, Web.RankRunResult>>,
   Assert<Equals<z.output<typeof playerRankResponse>, Web.PlayerRank>>,
+  Assert<Equals<z.output<typeof achievementListResponse>, Web.AchievementList>>,
+  Assert<Equals<z.output<typeof achievementHoldersResponse>, Web.AchievementHolders>>,
+  Assert<Equals<z.output<typeof playerAchievementsResponse>, Web.PlayerAchievements>>,
+  Assert<Equals<z.output<typeof achievementSettingsResponse>, Web.AchievementSettings>>,
   Assert<Equals<ApiErrorBody, Web.ApiErrorBody>>,
 ];
 
