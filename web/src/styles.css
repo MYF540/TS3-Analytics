@@ -511,10 +511,14 @@ a.button {
   flex: 0 0 auto;
 }
 
-.leaderboard th:nth-child(2),
-.leaderboard td:nth-child(2) {
+.leaderboard__player {
   text-align: left;
   width: 100%;
+}
+
+.leaderboard__trend {
+  width: 5rem;
+  text-align: left;
 }
 
 .leaderboard__rank {
@@ -1301,4 +1305,63 @@ td .badge {
   align-items: center;
   gap: 0.5rem;
   margin: 0;
+}
+
+/* Trends: green arrow up, blue bar for unchanged, red arrow down. */
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trend__icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: none;
+  fill: currentColor;
+}
+
+.trend--up {
+  color: var(--ok);
+}
+
+.trend--flat {
+  color: var(--accent);
+}
+
+.trend--down {
+  color: var(--bad);
+}
+
+.trend-card .kpis {
+  margin-bottom: 0.75rem;
+}
+
+.trend-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.trend-tile dd {
+  margin: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }

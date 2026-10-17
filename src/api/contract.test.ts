@@ -62,6 +62,7 @@ import type {
   seriesResponse,
   sourcesResponse,
 } from './routes/stats.js';
+import type { playerTrendsResponse, serverTrendsResponse } from './routes/trends.js';
 import type { playerHeatmapResponse, userDetailResponse, userListItem } from './routes/users.js';
 
 // Standard exact type equality check; the single-use type parameters are the point of the trick.
@@ -81,6 +82,8 @@ export type Contract = [
   Assert<Equals<z.output<typeof userListItem>, Web.UserListItem>>,
   Assert<Equals<z.output<typeof userDetailResponse>, Web.UserDetail>>,
   Assert<Equals<z.output<typeof leaderboardResponse>, Web.Leaderboard>>,
+  Assert<Equals<z.output<typeof serverTrendsResponse>, Web.ServerTrends>>,
+  Assert<Equals<z.output<typeof playerTrendsResponse>, Web.PlayerTrends>>,
   Assert<Equals<z.output<typeof onlineResponse>, Web.OnlineNow>>,
   Assert<Equals<z.output<typeof channelUsageResponse>, Web.ChannelUsage>>,
   Assert<Equals<z.output<typeof unusedChannelsResponse>, Web.UnusedChannels>>,

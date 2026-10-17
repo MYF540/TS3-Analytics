@@ -40,6 +40,11 @@ Was der Bot von selbst erledigt, steht unter „Automatik“ – jedes Modul mit
 - **Zeiterfassung** pro Spieler: Online-Zeit, aktive Zeit, inaktiv, AFK; Sessions, Nickname-Verlauf,
   genutzte Channels. Verknüpfte UIDs zählen als eine Person.
 - **Leaderboards**: gesamt, aktiv, Woche, Monat, Jahr, längste Session, freier Zeitraum, CSV-Export.
+  Bei Zeiträumen zeigt eine Trend-Spalte, wie viele Plätze jemand gegenüber dem Zeitraum davor
+  gewonnen oder verloren hat.
+- **Trends**: auf dem Dashboard und je Spieler – mehr oder weniger Spieler, Spielzeit, Aktivzeit,
+  Sessions und Tage online als in der Vorwoche, im Vormonat oder im Vorjahr; grüner Pfeil für
+  steigend, blauer Balken für gleichbleibend, roter Pfeil für sinkend.
 - **Server-Statistik**: Online-Verlauf, Höchststände, Heatmap nach Wochentag und Uhrzeit,
   Nutzung je Channel und Liste der Channels, in denen länger niemand war.
 - **Wann ist wer da?** Dasselbe Wochentag-Raster gibt es je Spieler: Anteil jeder Stunde, in der

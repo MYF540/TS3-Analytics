@@ -200,6 +200,17 @@ Mindestzeit und Spieler-Umfeld filtert der Server, alles andere (Servergruppe, L
 
 Farben: In einem Graphen kann jeder Punkt neben jedem anderen liegen, die Farben müssen also paarweise unterscheidbar sein, auch für Farbenblinde und im dunklen Modus. Das schaffen nur drei Farbtöne. Die drei größten Gruppen im Bild bekommen eine Farbe, der Rest wird grau als „Sonstige“ zusammengefasst. Rang und Aktivität sind geordnet und nutzen drei Helligkeitsstufen eines Blautons.
 
+### Trends T12.3 (2026-10-17)
+
+Eine Trend-Anfrage liest den aktuellen und den Vergleichszeitraum (je 7 oder 30 Tage) aus `user_daily_stats` und `server_hourly`. Der Platz-Trend im Leaderboard rangiert den Zeitraum davor einmal komplett und sucht dann nur die Spieler der Seite heraus.
+
+| Fall                                     | Median |  p95 |  Max |
+| ---------------------------------------- | -----: | ---: | ---: |
+| Trends Server (Monat)                    |    8,9 |  9,6 | 10,0 |
+| Trends Server (Vorjahr)                  |    9,4 | 13,0 | 13,5 |
+| Trends Spieler (aktivster Nutzer, Monat) |    0,1 |  0,1 |  0,2 |
+| Leaderboard Monat mit Platz-Trend        |    9,7 | 10,8 | 10,8 |
+
 ### Einordnung
 
 - Die Messung lief auf einem schnellen Desktop-Rechner. Der Zielserver (Hetzner Dedicated, Windows Server 2016) ist voraussichtlich deutlich langsamer. Kritisch sind dort nur die drei Abfragen über den gesamten Zeitraum (~15–25 ms hier). Bei Faktor 3–4 liegen sie weiterhin unter 100 ms, aber mit wenig Reserve. Nach Inbetriebnahme sollte `pnpm bench` einmal auf dem Server laufen.

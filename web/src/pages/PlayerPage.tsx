@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api } from '../api/client';
-import type { UserDetail } from '../api/types';
+import type { PlayerTrends, UserDetail } from '../api/types';
 import { EChart } from '../charts/EChart';
 import { playtimeChartOption, STATE_KEYS } from '../charts/options';
 import { CHART_PALETTES } from '../charts/palette';
@@ -18,6 +18,7 @@ import { PlayerRulesNotice } from '../components/PlayerRulesNotice';
 import { PrivacyCard } from '../components/PrivacyCard';
 import { PlayerTags } from '../components/PlayerTags';
 import { RangePicker } from '../components/RangePicker';
+import { TrendCard, type TrendItem } from '../components/TrendCard';
 import { useApi } from '../hooks/useApi';
 import { formatDateTime, formatDay, formatDuration, formatNumber, t } from '../i18n';
 import { useCurrentTheme } from '../theme/useCurrentTheme';
@@ -29,6 +30,17 @@ const HEATMAP_RANGES = ['30d', '1y', 'all'] as const;
 
 const DAYS = { '30d': 30, '1y': 365 } as const;
 type DaysRange = keyof typeof DAYS;
+
+const daysText = (value: number) =>
+  t(Math.round(value) === 1 ? 'unit.day' : 'unit.days', { value: formatNumber(Math.round(value)) });
+
+const PLAYER_TRENDS: readonly TrendItem<keyof PlayerTrends['metrics']>[] = [
+  { key: 'onlineS', label: 'trend.player.onlineS', format: formatDuration },
+  { key: 'activeS', label: 'trend.player.activeS', format: formatDuration },
+  { key: 'daysOnline', label: 'trend.player.daysOnline', format: daysText },
+  { key: 'sessions', label: 'trend.player.sessions', format: formatNumber },
+  { key: 'avgSessionS', label: 'trend.player.avgSession', format: formatDuration },
+];
 
 function Kpis({ detail }: { detail: UserDetail }) {
   const items = [
@@ -260,6 +272,12 @@ export function PlayerPage() {
       <PlayerRulesNotice userId={id} />
       <PlayerProxyNotice userId={id} />
       <Kpis detail={data} />
+      <TrendCard
+        key={`trend-${String(id)}-${String(version)}`}
+        title={t('trend.player.title')}
+        items={PLAYER_TRENDS}
+        load={(comparison, signal) => api.playerTrends(id, comparison, signal)}
+      />
       <section className="card chart-card">
         <header className="chart-card__header">
           <h2>{t('player.chart.title')}</h2>

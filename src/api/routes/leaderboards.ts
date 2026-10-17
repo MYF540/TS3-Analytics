@@ -6,7 +6,9 @@ import {
   leaderboardAllTime,
   leaderboardForDays,
 } from '../../db/queries/stats.js';
+import { leaderboardRanksForDays } from '../../db/queries/trends.js';
 import { LEADERBOARD_PERIODS, rollingDays } from '../../domain/periods.js';
+import { precedingRange, rankChange } from '../../domain/trends.js';
 import { berlinDay } from '../../domain/time.js';
 import type { ApiContext } from '../context.js';
 import { ApiError } from '../errors.js';
@@ -29,7 +31,14 @@ export const leaderboardResponse = z.object({
   /** Berlin days (YYYYMMDD), null for "all". */
   fromDay: z.number().int().nullable(),
   toDay: z.number().int().nullable(),
-  items: z.array(leaderboardEntry),
+  /** The period of the same length right before, for the rank trend; null for "all". */
+  previous: z.object({ fromDay: z.number().int(), toDay: z.number().int() }).nullable(),
+  items: z.array(
+    leaderboardEntry.extend({
+      /** Places gained (positive) or lost since the previous period; null = not ranked then. */
+      rankChange: z.number().int().nullable(),
+    }),
+  ),
   total: z.number().int(),
   page: z.number().int(),
   pageSize: z.number().int(),
@@ -92,6 +101,19 @@ export function leaderboardRoutes(context: ApiContext): FastifyPluginAsyncZod {
       (request) => {
         const { period, metric, page, pageSize } = request.query;
         const result = rank(request.query, { limit: pageSize, offset: (page - 1) * pageSize });
+        const previous =
+          result.fromDay === null
+            ? null
+            : precedingRange({ fromDay: result.fromDay, toDay: result.toDay });
+        const previousRanks = previous
+          ? leaderboardRanksForDays(
+              sqlite,
+              metric,
+              previous.fromDay,
+              previous.toDay,
+              result.items.map((e) => e.userId),
+            )
+          : new Map<number, number>();
         return {
           period,
           metric,
@@ -99,7 +121,11 @@ export function leaderboardRoutes(context: ApiContext): FastifyPluginAsyncZod {
           pageSize,
           fromDay: result.fromDay,
           toDay: result.toDay,
-          items: result.items,
+          previous,
+          items: result.items.map((e) => ({
+            ...e,
+            rankChange: previous ? rankChange(e.rank, previousRanks.get(e.userId)) : null,
+          })),
           total: result.total(),
         };
       },

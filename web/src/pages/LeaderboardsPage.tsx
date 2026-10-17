@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router';
 import { api, buildUrl } from '../api/client';
 import type { LeaderboardMetric, LeaderboardPeriod } from '../api/types';
 import { Pagination } from '../components/Pagination';
+import { TrendBadge } from '../components/TrendBadge';
 import { useApi } from '../hooks/useApi';
 import {
   formatDateTime,
@@ -53,6 +54,14 @@ const TABS: Tab[] = [
 ];
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Places gained or lost since the previous period of the same length; "Neu" if not ranked then. */
+function RankTrend({ change }: { change: number | null }) {
+  if (change === null) return <span className="badge">{t('lb.trendNew')}</span>;
+  const direction = change > 0 ? 'up' : change < 0 ? 'down' : 'flat';
+  const text = change > 0 ? `+${String(change)}` : change < 0 ? `−${String(-change)}` : '±0';
+  return <TrendBadge direction={direction} text={text} />;
+}
 
 function useLeaderboardParams() {
   const [params, setParams] = useSearchParams();
@@ -219,6 +228,14 @@ export function LeaderboardsPage() {
             {t('lb.range', { from: formatDay(data.fromDay), to: formatDay(data.toDay) })}
           </p>
         )}
+        {data?.previous && (
+          <p className="muted small">
+            {t('lb.trendHint', {
+              from: formatDay(data.previous.fromDay),
+              to: formatDay(data.previous.toDay),
+            })}
+          </p>
+        )}
 
         {data && data.items.length === 0 && <p className="muted">{t('lb.empty')}</p>}
         {data && data.items.length > 0 && (
@@ -227,7 +244,14 @@ export function LeaderboardsPage() {
               <thead>
                 <tr>
                   <th scope="col">{t('lb.col.rank')}</th>
-                  <th scope="col">{t('lb.col.player')}</th>
+                  {data.previous && (
+                    <th scope="col" className="leaderboard__trend">
+                      {t('lb.col.trend')}
+                    </th>
+                  )}
+                  <th scope="col" className="leaderboard__player">
+                    {t('lb.col.player')}
+                  </th>
                   <th scope="col">{t('lb.col.value')}</th>
                 </tr>
               </thead>
@@ -235,7 +259,12 @@ export function LeaderboardsPage() {
                 {data.items.map((entry) => (
                   <tr key={entry.userId} className={entry.rank <= 3 ? 'is-podium' : undefined}>
                     <td className="leaderboard__rank">{formatNumber(entry.rank)}</td>
-                    <td>
+                    {data.previous && (
+                      <td className="leaderboard__trend">
+                        <RankTrend change={entry.rankChange} />
+                      </td>
+                    )}
+                    <td className="leaderboard__player">
                       <Link to={`/spieler/${String(entry.userId)}`}>
                         {entry.nickname ?? t('players.unknownNick')}
                       </Link>

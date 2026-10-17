@@ -13,11 +13,15 @@ function board(url: URL): { body: Leaderboard } {
       metric,
       fromDay: period === 'all' ? null : 20260913,
       toDay: period === 'all' ? null : 20260919,
+      previous: period === 'all' ? null : { fromDay: 20260906, toDay: 20260912 },
       items: [
         { rank: 1, userId: 1, uid: 'a', nickname: 'Alice', value: 36_000, accounts: 2 },
         { rank: 2, userId: 2, uid: 'b', nickname: 'Bob', value: 18_000, accounts: 1 },
         { rank: 4, userId: 4, uid: 'd', nickname: null, value: 600, accounts: 1 },
-      ],
+      ].map((item, i) => ({
+        ...item,
+        rankChange: period === 'all' ? null : (([3, 0, null] as const)[i] ?? null),
+      })),
       total: 60,
       page: Number(url.searchParams.get('page') ?? 1),
       pageSize: 25,
@@ -52,6 +56,35 @@ describe('imported time', () => {
     mockApi({ '/api/leaderboards': board, '/api/stats/sources': sources });
     renderAt('/leaderboards?art=aktiv');
     expect(await screen.findByText(/Aktive Zeit wird erst seit/)).toBeInTheDocument();
+  });
+});
+
+describe('rank trend', () => {
+  it('has no trend column for all time', async () => {
+    mockApi({ '/api/leaderboards': board });
+    renderAt('/leaderboards');
+    await screen.findByRole('link', { name: 'Alice' });
+    expect(screen.queryByRole('columnheader', { name: 'Trend' })).not.toBeInTheDocument();
+  });
+
+  it('shows places gained, unchanged and new players for a period', async () => {
+    mockApi({ '/api/leaderboards': board });
+    renderAt('/leaderboards?art=woche');
+    const alice = await screen.findByRole('link', { name: 'Alice' });
+    expect(screen.getByRole('columnheader', { name: 'Trend' })).toBeInTheDocument();
+    const rowOf = (el: HTMLElement) => {
+      const row = el.closest('tr');
+      if (!row) throw new Error('row missing');
+      return within(row);
+    };
+    const up = rowOf(alice).getByTitle('steigend');
+    expect(up).toHaveClass('trend--up');
+    expect(up).toHaveTextContent('+3');
+    expect(
+      rowOf(screen.getByRole('link', { name: 'Bob' })).getByTitle('gleichbleibend'),
+    ).toHaveTextContent('±0');
+    expect(screen.getByText('Neu')).toBeInTheDocument();
+    expect(screen.getByText(/Trend: Plätze gegenüber/)).toBeInTheDocument();
   });
 });
 

@@ -865,11 +865,66 @@ export interface LeaderboardEntry {
   accounts: number;
 }
 
-export interface Leaderboard extends Paged<LeaderboardEntry> {
+export interface LeaderboardItem extends LeaderboardEntry {
+  /** Places gained (positive) or lost since the previous period; null = not ranked then. */
+  rankChange: number | null;
+}
+
+export interface Leaderboard extends Paged<LeaderboardItem> {
   period: LeaderboardPeriod;
   metric: LeaderboardMetric;
   fromDay: number | null;
   toDay: number | null;
+  /** The period of the same length right before; null for "all". */
+  previous: DayRange | null;
+}
+
+export type TrendComparison = 'week' | 'month' | 'year';
+export type TrendDirection = 'up' | 'flat' | 'down';
+
+export interface DayRange {
+  fromDay: number;
+  toDay: number;
+}
+
+export interface Trend {
+  current: number;
+  previous: number;
+  change: number;
+  /** Null when the earlier value is 0. */
+  changePct: number | null;
+  direction: TrendDirection;
+}
+
+interface TrendsBase {
+  comparison: TrendComparison;
+  current: DayRange;
+  previous: DayRange;
+}
+
+export interface ServerTrends extends TrendsBase {
+  metrics: {
+    players: Trend;
+    newPlayers: Trend;
+    onlineS: Trend;
+    avgOnlinePerPlayerS: Trend;
+    /** Null: not comparable (too little measured activity in one of the periods). */
+    activeS: Trend | null;
+    avgActivePerPlayerS: Trend | null;
+    sessions: Trend;
+    avgOnline: Trend;
+    peakOnline: Trend;
+  };
+}
+
+export interface PlayerTrends extends TrendsBase {
+  metrics: {
+    onlineS: Trend;
+    activeS: Trend | null;
+    sessions: Trend;
+    daysOnline: Trend;
+    avgSessionS: Trend;
+  };
 }
 
 /** Achievements (T13.4). Names and descriptions are in the translation file, keyed by `id`. */

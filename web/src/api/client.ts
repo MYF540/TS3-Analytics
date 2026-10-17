@@ -67,7 +67,10 @@ import type {
   Tag,
   TagColor,
   TagWithUsage,
+  PlayerTrends,
+  ServerTrends,
   TimeRange,
+  TrendComparison,
   UnusedChannels,
   UserDetail,
   UserListItem,
@@ -278,6 +281,10 @@ export const api = {
     signal?: AbortSignal,
   ) => apiGet<MissingRegulars>('/loyalty/missing', query, signal),
   runLoyaltyJob: () => apiPost<LoyaltyOverview>('/loyalty/run'),
+  trends: (comparison: TrendComparison, signal?: AbortSignal) =>
+    apiGet<ServerTrends>('/stats/trends', { comparison }, signal),
+  playerTrends: (userId: number, comparison: TrendComparison, signal?: AbortSignal) =>
+    apiGet<PlayerTrends>(`/users/${String(userId)}/trends`, { comparison }, signal),
   playerHeatmap: (userId: number, range: TimeRange, signal?: AbortSignal) =>
     apiGet<Heatmap>(`/users/${String(userId)}/heatmap`, { range }, signal),
   importComparison: (

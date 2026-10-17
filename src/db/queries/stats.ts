@@ -47,7 +47,7 @@ const COMBINE: Record<LeaderboardMetric, string> = {
  * person's primary user, unlinked users as themselves. Aggregating per user first keeps the join
  * to a few thousand rows instead of every daily row.
  */
-function bySubject(metric: LeaderboardMetric, perUser: string): string {
+export function bySubject(metric: LeaderboardMetric, perUser: string): string {
   return `SELECT COALESCE(p.primary_user_id, x.user_id) AS subject,
                  ${COMBINE[metric]}(x.value) AS value
           FROM (${perUser}) x
@@ -72,7 +72,7 @@ const totalsPerUser = (metric: LeaderboardMetric) =>
   `SELECT user_id, ${TOTALS_COLUMN[metric]} AS value FROM user_totals
    WHERE ${TOTALS_COLUMN[metric]} > 0 AND ${VISIBLE}`;
 
-const daysPerUser = (metric: LeaderboardMetric) =>
+export const daysPerUser = (metric: LeaderboardMetric) =>
   `SELECT user_id, ${DAILY_EXPRESSION[metric]} AS value FROM user_daily_stats
    WHERE day BETWEEN ? AND ? AND ${VISIBLE} GROUP BY user_id`;
 
@@ -107,7 +107,7 @@ function statementCache(sqlite: Database.Database) {
 
 const caches = new WeakMap<Database.Database, ReturnType<typeof statementCache>>();
 
-function prepared(sqlite: Database.Database, sql: string): Database.Statement {
+export function prepared(sqlite: Database.Database, sql: string): Database.Statement {
   let cache = caches.get(sqlite);
   if (!cache) {
     cache = statementCache(sqlite);
@@ -179,7 +179,7 @@ export function countLeaderboardForDays(
     .get(fromDay, toDay) as number;
 }
 
-function personIds(sqlite: Database.Database, userId: number): number[] {
+export function personIds(sqlite: Database.Database, userId: number): number[] {
   const ids = prepared(
     sqlite,
     `SELECT m2.user_id FROM person_members m1

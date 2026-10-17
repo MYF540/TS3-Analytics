@@ -4,6 +4,33 @@ import { describe, expect, it } from 'vitest';
 import { mockApi, renderAt, requested, sampleSeries } from '../test-utils';
 
 describe('DashboardPage', () => {
+  it('shows trends with arrows and switches the comparison', async () => {
+    const fetchMock = mockApi();
+    renderAt('/');
+    const tile = async (label: string) => {
+      const dt = (await screen.findAllByText(label)).find((el) => el.closest('.trend-tile'));
+      const el = dt?.closest('.trend-tile');
+      if (!(el instanceof HTMLElement)) throw new Error(`trend tile ${label} missing`);
+      return within(el);
+    };
+    const players = await tile('Aktive Spieler');
+    expect(players.getByText('162')).toBeInTheDocument();
+    expect(players.getByTitle('steigend')).toHaveTextContent('+12 (+8 %)');
+    expect(players.getByText('vorher 150')).toBeInTheDocument();
+    expect((await tile('Höchststand')).getByTitle('sinkend')).toHaveTextContent('−12 (−23 %)');
+    expect((await tile('Ø gleichzeitig online')).getByTitle('gleichbleibend')).toBeInTheDocument();
+    expect((await tile('Aktivzeit gesamt')).getByText(/Nicht vergleichbar/)).toBeInTheDocument();
+
+    const picker = screen.getByRole('radiogroup', { name: 'Vergleich' });
+    await userEvent.click(within(picker).getByRole('radio', { name: 'Vorjahr' }));
+    await waitFor(() => {
+      expect(requested(fetchMock, '/api/stats/trends').at(-1)?.searchParams.get('comparison')).toBe(
+        'year',
+      );
+    });
+    expect(screen.getByText(/denselben Tagen im Vorjahr/)).toBeInTheDocument();
+  });
+
   it('shows the key figures', async () => {
     mockApi();
     renderAt('/');
