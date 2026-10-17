@@ -23,6 +23,12 @@ import {
   weekdayHourHeatmap,
 } from '../db/queries/stats.js';
 import { berlinDay, berlinDayStart } from '../domain/time.js';
+import {
+  leaderboardRanksForDays,
+  personPeriodFigures,
+  serverPeriodFigures,
+} from '../db/queries/trends.js';
+import { comparisonWindows, type TrendComparison } from '../domain/trends.js';
 import { networkGraph } from '../db/queries/network.js';
 import { computeNetwork } from '../network/job.js';
 import { FactsReader } from '../achievements/facts.js';
@@ -118,6 +124,17 @@ function main(): void {
         .pluck()
         .get() as number | undefined) ?? heavyUser;
     const page = { limit: 25, offset: 0 };
+    // A trend request reads the current and the earlier period.
+    const serverTrend = (comparison: TrendComparison) => {
+      const w = comparisonWindows(comparison, today);
+      serverPeriodFigures(sqlite, w.current.fromDay, w.current.toDay);
+      serverPeriodFigures(sqlite, w.previous.fromDay, w.previous.toDay);
+    };
+    const playerTrend = (comparison: TrendComparison) => {
+      const w = comparisonWindows(comparison, today);
+      personPeriodFigures(sqlite, heavyUser, w.current.fromDay, w.current.toDay);
+      personPeriodFigures(sqlite, heavyUser, w.previous.fromDay, w.previous.toDay);
+    };
 
     const results: Result[] = [
       measure('Leaderboard gesamt (online)', runs, () =>
@@ -148,6 +165,25 @@ function main(): void {
       measure('Dashboard Kennzahlen (30 Tage)', runs, () =>
         overview(sqlite, since(30), now, since(0)),
       ),
+      measure('Trends Server (Monat)', runs, () => {
+        serverTrend('month');
+      }),
+      measure('Trends Server (Vorjahr)', runs, () => {
+        serverTrend('year');
+      }),
+      measure('Trends Spieler (aktivster Nutzer, Monat)', runs, () => {
+        playerTrend('month');
+      }),
+      measure('Leaderboard Monat mit Platz-Trend', runs, () => {
+        const items = leaderboardForDays(sqlite, 'online', daysBack(29), today, page);
+        leaderboardRanksForDays(
+          sqlite,
+          'online',
+          daysBack(59),
+          daysBack(30),
+          items.map((e) => e.userId),
+        );
+      }),
       measure('Online-Verlauf 24 h', runs, () => onlineSeries(sqlite, now - 86_400, now)),
       measure('Online-Verlauf 30 Tage', runs, () => onlineSeries(sqlite, since(30), now)),
       measure('Online-Verlauf 1 Jahr', runs, () => onlineSeries(sqlite, since(365), now)),

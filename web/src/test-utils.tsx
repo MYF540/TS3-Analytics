@@ -2,6 +2,8 @@ import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { vi } from 'vitest';
 import type {
+  PlayerTrends,
+  ServerTrends,
   AchievementList,
   AchievementSettings,
   PlayerAchievements,
@@ -26,6 +28,50 @@ export const sampleHealth: Health = {
   uptimeS: 1,
   db: { ok: true, latencyMs: 0.1 },
   ts3: { state: 'connected', connected: true },
+};
+
+const trendOf = (current: number, previous: number): ServerTrends['metrics']['players'] => {
+  const change = current - previous;
+  const changePct = previous === 0 ? null : (change / previous) * 100;
+  const direction =
+    changePct !== null && Math.abs(changePct) < 5
+      ? 'flat'
+      : change > 0
+        ? 'up'
+        : change < 0
+          ? 'down'
+          : 'flat';
+  return { current, previous, change, changePct, direction };
+};
+
+export const sampleServerTrends: ServerTrends = {
+  comparison: 'month',
+  current: { fromDay: 20260820, toDay: 20260918 },
+  previous: { fromDay: 20260721, toDay: 20260819 },
+  metrics: {
+    players: trendOf(162, 150),
+    newPlayers: trendOf(12, 20),
+    onlineS: trendOf(3_600_000, 3_550_000),
+    avgOnlinePerPlayerS: trendOf(22_222, 23_667),
+    activeS: null,
+    avgActivePerPlayerS: null,
+    sessions: trendOf(900, 800),
+    avgOnline: trendOf(10.4, 10.1),
+    peakOnline: trendOf(40, 52),
+  },
+};
+
+export const samplePlayerTrends: PlayerTrends = {
+  comparison: 'month',
+  current: { fromDay: 20260820, toDay: 20260918 },
+  previous: { fromDay: 20260721, toDay: 20260819 },
+  metrics: {
+    onlineS: trendOf(72_000, 36_000),
+    activeS: trendOf(50_000, 30_000),
+    sessions: trendOf(20, 20),
+    daysOnline: trendOf(12, 15),
+    avgSessionS: trendOf(3600, 1800),
+  },
 };
 
 export const sampleOverview: Overview = {
@@ -371,6 +417,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/stats/overview': sampleOverview,
     '/api/stats/online': sampleSeries,
     '/api/stats/heatmap': sampleHeatmap,
+    '/api/stats/trends': sampleServerTrends,
     '/api/stats/sources': { importedFrom: null, importedTo: null, liveSince: 1_700_000_000 },
     '/api/online': {
       connected: true,
@@ -404,6 +451,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/users': sampleUsers,
     '/api/users/1': sampleUser,
     '/api/users/1/heatmap': { range: '1y', values: sampleHeatmap.values },
+    '/api/users/1/trends': samplePlayerTrends,
     '/api/users/1/notes': { notes: sampleNotes },
     '/api/update': {
       enabled: false,

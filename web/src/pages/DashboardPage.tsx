@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { api } from '../api/client';
-import type { Overview, TimeRange } from '../api/types';
+import type { Overview, ServerTrends, TimeRange } from '../api/types';
 import { EChart } from '../charts/EChart';
 import { formatBucket, formatResolution, onlineChartOption } from '../charts/options';
 import { CHART_PALETTES } from '../charts/palette';
@@ -8,9 +8,11 @@ import { HeatmapCard } from '../components/HeatmapCard';
 import { OnlineNow } from '../components/OnlineNow';
 import { RecentAchievements } from '../components/RecentAchievements';
 import { RangePicker } from '../components/RangePicker';
+import { TrendCard, type TrendItem } from '../components/TrendCard';
 import { useApi } from '../hooks/useApi';
-import { formatNumber, t, type MessageKey } from '../i18n';
+import { formatDuration, formatNumber, t, type MessageKey } from '../i18n';
 import { useCurrentTheme } from '../theme/useCurrentTheme';
+import { formatDecimal } from '../util/trends';
 
 const SERIES_RANGES = ['24h', '7d', '30d'] as const;
 const HEATMAP_RANGES = ['30d', '1y', 'all'] as const;
@@ -38,6 +40,21 @@ function Kpis({ range }: { range: TimeRange }) {
     </dl>
   );
 }
+
+const hours = (seconds: number) =>
+  t('unit.hours', { value: formatNumber(Math.round(seconds / 3600)) });
+
+const SERVER_TRENDS: readonly TrendItem<keyof ServerTrends['metrics']>[] = [
+  { key: 'players', label: 'trend.server.players', format: formatNumber },
+  { key: 'newPlayers', label: 'trend.server.newPlayers', format: formatNumber },
+  { key: 'onlineS', label: 'trend.server.onlineS', format: hours },
+  { key: 'avgOnlinePerPlayerS', label: 'trend.server.avgOnlinePerPlayer', format: formatDuration },
+  { key: 'activeS', label: 'trend.server.activeS', format: hours },
+  { key: 'avgActivePerPlayerS', label: 'trend.server.avgActivePerPlayer', format: formatDuration },
+  { key: 'sessions', label: 'trend.server.sessions', format: formatNumber },
+  { key: 'avgOnline', label: 'trend.server.avgOnline', format: formatDecimal },
+  { key: 'peakOnline', label: 'trend.server.peakOnline', format: formatNumber },
+];
 
 function OnlineHistory({ range }: { range: TimeRange }) {
   const theme = useCurrentTheme();
@@ -117,6 +134,11 @@ export function DashboardPage() {
       </header>
       <Kpis range={range} />
       <OnlineNow />
+      <TrendCard
+        title={t('trend.server.title')}
+        items={SERVER_TRENDS}
+        load={(comparison, signal) => api.trends(comparison, signal)}
+      />
       <OnlineHistory range={range} />
       <ActivityHeatmap />
       <RecentAchievements />

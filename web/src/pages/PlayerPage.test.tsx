@@ -17,6 +17,28 @@ describe('PlayerPage', () => {
     expect(kpi('Sessions')).toBe('42');
   });
 
+  it('shows the trends of the player', async () => {
+    const fetchMock = mockApi();
+    renderAt('/spieler/1');
+    const label = await screen.findByText('Tage online');
+    const tile = label.closest('.trend-tile');
+    if (!(tile instanceof HTMLElement)) throw new Error('trend tile missing');
+    expect(within(tile).getByText('12 Tage')).toBeInTheDocument();
+    expect(within(tile).getByTitle('sinkend')).toHaveTextContent('−3 Tage (−20 %)');
+    const online = screen.getByText('Spielzeit').closest('.trend-tile');
+    if (!(online instanceof HTMLElement)) throw new Error('trend tile missing');
+    expect(within(online).getByTitle('steigend')).toHaveTextContent('+10 h (+100 %)');
+    const sessions = screen.getByText('Anzahl Sessions').closest('.trend-tile');
+    if (!(sessions instanceof HTMLElement)) throw new Error('trend tile missing');
+    expect(within(sessions).getByTitle('gleichbleibend')).toHaveTextContent('±0');
+    await userEvent.click(screen.getByRole('radio', { name: 'Woche' }));
+    await waitFor(() => {
+      expect(
+        requested(fetchMock, '/api/users/1/trends').at(-1)?.searchParams.get('comparison'),
+      ).toBe('week');
+    });
+  });
+
   it('shows when the player is usually online and switches the range', async () => {
     const fetchMock = mockApi();
     renderAt('/spieler/1');

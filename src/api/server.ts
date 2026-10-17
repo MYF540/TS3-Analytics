@@ -45,6 +45,7 @@ import { settingsRoutes } from './routes/settings.js';
 import { statusRoutes } from './routes/status.js';
 import { onlineRoutes } from './routes/online.js';
 import { statsRoutes } from './routes/stats.js';
+import { trendRoutes } from './routes/trends.js';
 import { userRoutes } from './routes/users.js';
 
 /** Built frontend (`web/dist`), same relative location from `src/api` and `dist/api`. */
@@ -126,6 +127,7 @@ export async function buildServer(
       await api.register(authRoutes(context));
       await api.register(healthRoutes(context));
       await api.register(statsRoutes(context));
+      await api.register(trendRoutes(context));
       await api.register(userRoutes(context));
       await api.register(leaderboardRoutes(context));
       await api.register(onlineRoutes(context));
